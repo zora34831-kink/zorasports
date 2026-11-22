@@ -21,7 +21,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -50,9 +52,7 @@ data class Match(
     val home: String,
     val away: String,
     val time: String,
-    val status: String = "UPCOMING",
-    val homeScore: String = "-",
-    val awayScore: String = "-"
+    val status: String = "UPCOMING"
 )
 
 @Composable
@@ -106,21 +106,24 @@ fun ZoraSportsApp() {
         ) { padding ->
             when (selectedTab) {
                 0 -> HomeScreen(
-                    Modifier.padding(padding),
+                    modifier = Modifier.padding(padding),
                     onNavigate = { selectedTab = it }
                 )
+
                 1 -> SimpleScreen(
                     "Live Scores",
-                    "Skor pertandingan akan ditampilkan setelah API terhubung.",
+                    "Data skor pertandingan akan ditampilkan setelah API terhubung.",
                     Icons.Default.SportsSoccer,
                     Modifier.padding(padding)
                 )
+
                 2 -> SimpleScreen(
                     "Jadwal Pertandingan",
                     "Jadwal sepak bola akan ditampilkan setelah API terhubung.",
                     Icons.Default.CalendarMonth,
                     Modifier.padding(padding)
                 )
+
                 3 -> SimpleScreen(
                     "Tim Favorit",
                     "Tim favorit yang kamu pilih akan muncul di sini.",
@@ -149,21 +152,10 @@ fun HomeScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        item {
-            Header()
-        }
-
-        item {
-            WelcomeSection()
-        }
-
-        item {
-            QuickMenu(onNavigate)
-        }
-
-        item {
-            FeaturedMatch()
-        }
+        item { Header() }
+        item { WelcomeSection() }
+        item { QuickMenu(onNavigate) }
+        item { FeaturedMatch() }
 
         item {
             SectionHeader(
@@ -173,30 +165,13 @@ fun HomeScreen(
             )
         }
 
-        item {
-            DateSelector()
-        }
+        item { DateSelector() }
 
         items(
             listOf(
-                Match(
-                    "PREVIEW LIGA",
-                    "Home FC",
-                    "Away FC",
-                    "20:00"
-                ),
-                Match(
-                    "PREVIEW CUP",
-                    "United FC",
-                    "City FC",
-                    "22:00"
-                ),
-                Match(
-                    "PREVIEW LEAGUE",
-                    "Royal FC",
-                    "Athletic FC",
-                    "23:30"
-                )
+                Match("PREVIEW LIGA", "Home FC", "Away FC", "20:00"),
+                Match("PREVIEW CUP", "United FC", "City FC", "22:00"),
+                Match("PREVIEW LEAGUE", "Royal FC", "Athletic FC", "23:30")
             )
         ) { match ->
             MatchCard(match)
@@ -210,9 +185,7 @@ fun HomeScreen(
             )
         }
 
-        item {
-            ExploreCards()
-        }
+        item { ExploreCards() }
 
         item {
             Text(
@@ -223,7 +196,7 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(top = 8.dp),
-                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                textAlign = TextAlign.Center
             )
         }
     }
@@ -266,6 +239,7 @@ fun Header() {
                     fontWeight = FontWeight.Black,
                     letterSpacing = 2.sp
                 )
+
                 Text(
                     "SPORTS",
                     color = Cyan,
@@ -284,13 +258,17 @@ fun Header() {
 }
 
 @Composable
-fun HeaderButton(icon: androidx.compose.ui.graphics.vector.ImageVector) {
+fun HeaderButton(icon: ImageVector) {
     Box(
         modifier = Modifier
             .size(42.dp)
             .clip(RoundedCornerShape(14.dp))
             .background(Panel)
-            .border(1.dp, Color.White.copy(alpha = 0.07f), RoundedCornerShape(14.dp))
+            .border(
+                1.dp,
+                Color.White.copy(alpha = 0.07f),
+                RoundedCornerShape(14.dp)
+            )
             .clickable { },
         contentAlignment = Alignment.Center
     ) {
@@ -338,12 +316,15 @@ fun QuickMenu(onNavigate: (Int) -> Unit) {
         QuickItem("Live", Icons.Default.Sensors, true) {
             onNavigate(1)
         }
+
         QuickItem("Jadwal", Icons.Default.CalendarMonth) {
             onNavigate(2)
         }
+
         QuickItem("Liga", Icons.Default.EmojiEvents) {
             onNavigate(1)
         }
+
         QuickItem("Favorit", Icons.Default.Star) {
             onNavigate(3)
         }
@@ -353,7 +334,7 @@ fun QuickMenu(onNavigate: (Int) -> Unit) {
 @Composable
 fun QuickItem(
     title: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     active: Boolean = false,
     onClick: () -> Unit
 ) {
@@ -378,7 +359,9 @@ fun QuickItem(
             tint = if (active) Cyan else Muted,
             modifier = Modifier.size(22.dp)
         )
+
         Spacer(Modifier.height(8.dp))
+
         Text(
             title,
             color = White,
@@ -422,6 +405,7 @@ fun FeaturedMatch() {
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.5.sp
             )
+
             Icon(
                 Icons.Default.ArrowOutward,
                 contentDescription = null,
@@ -438,6 +422,7 @@ fun FeaturedMatch() {
             verticalAlignment = Alignment.CenterVertically
         ) {
             TeamPlaceholder("HOME", "A")
+
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     "VS",
@@ -445,6 +430,7 @@ fun FeaturedMatch() {
                     fontSize = 27.sp,
                     fontWeight = FontWeight.Black
                 )
+
                 Text(
                     "MATCH PREVIEW",
                     color = Muted,
@@ -452,6 +438,7 @@ fun FeaturedMatch() {
                     letterSpacing = 1.sp
                 )
             }
+
             TeamPlaceholder("AWAY", "B")
         }
 
@@ -479,7 +466,11 @@ fun TeamPlaceholder(name: String, letter: String) {
                 .size(55.dp)
                 .clip(CircleShape)
                 .background(Color.White.copy(alpha = 0.09f))
-                .border(1.dp, Cyan.copy(alpha = 0.25f), CircleShape),
+                .border(
+                    1.dp,
+                    Cyan.copy(alpha = 0.25f),
+                    CircleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -489,8 +480,15 @@ fun TeamPlaceholder(name: String, letter: String) {
                 fontWeight = FontWeight.Bold
             )
         }
+
         Spacer(Modifier.height(8.dp))
-        Text(name, color = White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+
+        Text(
+            name,
+            color = White,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -517,6 +515,7 @@ fun SectionHeader(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(action, color = Cyan, fontSize = 10.sp)
+
             Icon(
                 Icons.Default.ChevronRight,
                 contentDescription = null,
@@ -585,6 +584,7 @@ fun MatchCard(match: Match) {
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
+
             Text(
                 match.status,
                 color = Cyan,
@@ -600,9 +600,21 @@ fun MatchCard(match: Match) {
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(match.home, color = White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+                Text(
+                    match.home,
+                    color = White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+
                 Spacer(Modifier.height(11.dp))
-                Text(match.away, color = White, fontSize = 13.sp, fontWeight = FontWeight.SemiBold)
+
+                Text(
+                    match.away,
+                    color = White,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
             }
 
             Column(horizontalAlignment = Alignment.End) {
@@ -612,6 +624,7 @@ fun MatchCard(match: Match) {
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold
                 )
+
                 Text(
                     "Waktu contoh",
                     color = Muted,
@@ -629,16 +642,17 @@ fun ExploreCards() {
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         ExploreCard(
-            "STATISTIK",
-            "Analisis pertandingan",
-            Icons.Default.BarChart,
-            Modifier.weight(1f)
+            title = "STATISTIK",
+            subtitle = "Analisis pertandingan",
+            icon = Icons.Default.BarChart,
+            modifier = Modifier.weight(1f)
         )
+
         ExploreCard(
-            "KLASEMEN",
-            "Posisi setiap tim",
-            Icons.Default.EmojiEvents,
-            Modifier.weight(1f)
+            title = "KLASEMEN",
+            subtitle = "Posisi setiap tim",
+            icon = Icons.Default.EmojiEvents,
+            modifier = Modifier.weight(1f)
         )
     }
 }
@@ -647,21 +661,43 @@ fun ExploreCards() {
 fun ExploreCard(
     title: String,
     subtitle: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     modifier: Modifier = Modifier
 ) {
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
             .background(Panel)
-            .border(1.dp, Color.White.copy(alpha = 0.06f), RoundedCornerShape(18.dp))
+            .border(
+                1.dp,
+                Color.White.copy(alpha = 0.06f),
+                RoundedCornerShape(18.dp)
+            )
             .padding(14.dp)
     ) {
-        Icon(icon, contentDescription = null, tint = Cyan, modifier = Modifier.size(23.dp))
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = Cyan,
+            modifier = Modifier.size(23.dp)
+        )
+
         Spacer(Modifier.height(15.dp))
-        Text(title, color = White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+
+        Text(
+            title,
+            color = White,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold
+        )
+
         Spacer(Modifier.height(4.dp))
-        Text(subtitle, color = Muted, fontSize = 9.sp)
+
+        Text(
+            subtitle,
+            color = Muted,
+            fontSize = 9.sp
+        )
     }
 }
 
@@ -669,7 +705,7 @@ fun ExploreCard(
 fun SimpleScreen(
     title: String,
     description: String,
-    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    icon: ImageVector,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -686,19 +722,24 @@ fun SimpleScreen(
             tint = Cyan,
             modifier = Modifier.size(55.dp)
         )
+
         Spacer(Modifier.height(18.dp))
+
         Text(
             title,
             color = White,
             fontSize = 23.sp,
             fontWeight = FontWeight.Bold
         )
+
         Spacer(Modifier.height(9.dp))
+
         Text(
             description,
             color = Muted,
             fontSize = 12.sp,
-            lineHeight = 19.sp
+            lineHeight = 19.sp,
+            textAlign = TextAlign.Center
         )
     }
 }
