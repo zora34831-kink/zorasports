@@ -1,13 +1,10 @@
 
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <uses-permission android:name="android.permission.INTERNET" />
-
     <application
         android:allowBackup="false"
         android:label="ZORASPORTS"
-        android:theme="@android:style/Theme.Material.Light.NoActionBar"
-        android:usesCleartextTraffic="false">
+        android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
             android:name=".MainActivity"
@@ -19,6 +16,6 @@
             </intent-filter>
 
         </activity>
-
     </application>
+
 </manifest>
