@@ -13,8 +13,15 @@ android {
         applicationId = "com.zora.sports"
         minSdk = 23
         targetSdk = 35
+
         versionCode = 2
         versionName = "1.0.1"
+
+        buildConfigField(
+            "String",
+            "FOOTBALL_API_KEY",
+            "\"${project.findProperty("FOOTBALL_API_KEY") ?: ""}\""
+        )
     }
 
     buildFeatures {
@@ -33,9 +40,7 @@ android {
 }
 
 dependencies {
-    val composeBom = platform(
-        "androidx.compose:compose-bom:2025.11.00"
-    )
+    val composeBom = platform("androidx.compose:compose-bom:2025.11.00")
 
     implementation(composeBom)
 
