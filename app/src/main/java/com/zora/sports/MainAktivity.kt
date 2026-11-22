@@ -75,32 +75,33 @@ fun ZoraSportsApp() {
                     containerColor = Color(0xFF0B1B2B),
                     contentColor = White
                 ) {
-                    val tabs = listOf(
-                        Triple("Home", Icons.Default.Home, 0),
-                        Triple("Scores", Icons.Default.SportsSoccer, 1),
-                        Triple("Jadwal", Icons.Default.CalendarMonth, 2),
-                        Triple("Favorit", Icons.Default.Star, 3)
+                    NavigationBarItem(
+                        selected = selectedTab == 0,
+                        onClick = { selectedTab = 0 },
+                        icon = { Icon(Icons.Default.Home, null) },
+                        label = { Text("Home", fontSize = 10.sp) }
                     )
 
-                    tabs.forEach { tab ->
-                        NavigationBarItem(
-                            selected = selectedTab == tab.third,
-                            onClick = { selectedTab = tab.third },
-                            icon = {
-                                Icon(tab.second, contentDescription = tab.first)
-                            },
-                            label = {
-                                Text(tab.first, fontSize = 10.sp)
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Cyan,
-                                selectedTextColor = Cyan,
-                                indicatorColor = PanelLight,
-                                unselectedIconColor = Muted,
-                                unselectedTextColor = Muted
-                            )
-                        )
-                    }
+                    NavigationBarItem(
+                        selected = selectedTab == 1,
+                        onClick = { selectedTab = 1 },
+                        icon = { Icon(Icons.Default.SportsSoccer, null) },
+                        label = { Text("Scores", fontSize = 10.sp) }
+                    )
+
+                    NavigationBarItem(
+                        selected = selectedTab == 2,
+                        onClick = { selectedTab = 2 },
+                        icon = { Icon(Icons.Default.CalendarMonth, null) },
+                        label = { Text("Jadwal", fontSize = 10.sp) }
+                    )
+
+                    NavigationBarItem(
+                        selected = selectedTab == 3,
+                        onClick = { selectedTab = 3 },
+                        icon = { Icon(Icons.Default.Star, null) },
+                        label = { Text("Favorit", fontSize = 10.sp) }
+                    )
                 }
             }
         ) { padding ->
@@ -112,7 +113,7 @@ fun ZoraSportsApp() {
 
                 1 -> SimpleScreen(
                     "Live Scores",
-                    "Data skor pertandingan akan ditampilkan setelah API terhubung.",
+                    "Data pertandingan akan ditampilkan setelah API terhubung.",
                     Icons.Default.SportsSoccer,
                     Modifier.padding(padding)
                 )
@@ -126,7 +127,7 @@ fun ZoraSportsApp() {
 
                 3 -> SimpleScreen(
                     "Tim Favorit",
-                    "Tim favorit yang kamu pilih akan muncul di sini.",
+                    "Tim favorit akan muncul di sini.",
                     Icons.Default.Star,
                     Modifier.padding(padding)
                 )
@@ -160,9 +161,10 @@ fun HomeScreen(
         item {
             SectionHeader(
                 "Pertandingan",
-                "Lihat jadwal",
-                { onNavigate(2) }
-            )
+                "Lihat jadwal"
+            ) {
+                onNavigate(2)
+            }
         }
 
         item { DateSelector() }
@@ -180,9 +182,10 @@ fun HomeScreen(
         item {
             SectionHeader(
                 "Jelajahi",
-                "Semua statistik",
-                { onNavigate(1) }
-            )
+                "Semua statistik"
+            ) {
+                onNavigate(1)
+            }
         }
 
         item { ExploreCards() }
@@ -193,9 +196,7 @@ fun HomeScreen(
                 color = Muted,
                 fontSize = 10.sp,
                 letterSpacing = 1.5.sp,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
         }
@@ -311,23 +312,35 @@ fun WelcomeSection() {
 fun QuickMenu(onNavigate: (Int) -> Unit) {
     Row(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(9.dp)
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        QuickItem("Live", Icons.Default.Sensors, true) {
-            onNavigate(1)
-        }
+        QuickItem(
+            "Live",
+            Icons.Default.Sensors,
+            true,
+            Modifier.width(72.dp)
+        ) { onNavigate(1) }
 
-        QuickItem("Jadwal", Icons.Default.CalendarMonth) {
-            onNavigate(2)
-        }
+        QuickItem(
+            "Jadwal",
+            Icons.Default.CalendarMonth,
+            false,
+            Modifier.width(82.dp)
+        ) { onNavigate(2) }
 
-        QuickItem("Liga", Icons.Default.EmojiEvents) {
-            onNavigate(1)
-        }
+        QuickItem(
+            "Liga",
+            Icons.Default.EmojiEvents,
+            false,
+            Modifier.width(72.dp)
+        ) { onNavigate(1) }
 
-        QuickItem("Favorit", Icons.Default.Star) {
-            onNavigate(3)
-        }
+        QuickItem(
+            "Favorit",
+            Icons.Default.Star,
+            false,
+            Modifier.width(82.dp)
+        ) { onNavigate(3) }
     }
 }
 
@@ -336,11 +349,11 @@ fun QuickItem(
     title: String,
     icon: ImageVector,
     active: Boolean = false,
+    modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
     Column(
-        modifier = Modifier
-            .weight(1f)
+        modifier = modifier
             .clip(RoundedCornerShape(17.dp))
             .background(if (active) PanelLight else Panel)
             .border(
@@ -535,7 +548,7 @@ fun DateSelector() {
         listOf("TODAY", "TOMORROW", "ALL").forEachIndexed { index, date ->
             Box(
                 modifier = Modifier
-                    .weight(1f)
+                    .width(100.dp)
                     .clip(RoundedCornerShape(12.dp))
                     .background(if (index == 0) PanelLight else Panel)
                     .border(
@@ -599,7 +612,9 @@ fun MatchCard(match: Match) {
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Column(
+                modifier = Modifier.width(180.dp)
+            ) {
                 Text(
                     match.home,
                     color = White,
@@ -616,6 +631,8 @@ fun MatchCard(match: Match) {
                     fontWeight = FontWeight.SemiBold
                 )
             }
+
+            Spacer(Modifier.weight(1f))
 
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -642,17 +659,15 @@ fun ExploreCards() {
         horizontalArrangement = Arrangement.spacedBy(10.dp)
     ) {
         ExploreCard(
-            title = "STATISTIK",
-            subtitle = "Analisis pertandingan",
-            icon = Icons.Default.BarChart,
-            modifier = Modifier.weight(1f)
+            "STATISTIK",
+            "Analisis pertandingan",
+            Icons.Default.BarChart
         )
 
         ExploreCard(
-            title = "KLASEMEN",
-            subtitle = "Posisi setiap tim",
-            icon = Icons.Default.EmojiEvents,
-            modifier = Modifier.weight(1f)
+            "KLASEMEN",
+            "Posisi setiap tim",
+            Icons.Default.EmojiEvents
         )
     }
 }
@@ -661,11 +676,11 @@ fun ExploreCards() {
 fun ExploreCard(
     title: String,
     subtitle: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier
+    icon: ImageVector
 ) {
     Column(
-        modifier = modifier
+        modifier = Modifier
+            .width(150.dp)
             .clip(RoundedCornerShape(18.dp))
             .background(Panel)
             .border(
