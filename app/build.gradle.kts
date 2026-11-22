@@ -14,8 +14,8 @@ android {
         minSdk = 23
         targetSdk = 35
 
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.1.0"
 
         buildConfigField(
             "String",
@@ -40,7 +40,10 @@ android {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2025.11.00")
+
+    // Jetpack Compose
+    val composeBom =
+        platform("androidx.compose:compose-bom:2025.11.00")
 
     implementation(composeBom)
 
@@ -52,9 +55,13 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
+    // Retrofit API
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
+
+    // HTTP Client
     implementation("com.squareup.okhttp3:okhttp:5.3.0")
 
+    // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
