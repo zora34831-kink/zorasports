@@ -1,60 +1,43 @@
 
 package com.zora.sports
 
-import retrofit2.Retrofit
-import retrofit2.converter.gson.GsonConverterFactory
-import retrofit2.http.GET
-import retrofit2.http.Query
-import okhttp3.OkHttpClient
-import okhttp3.Interceptor
-
-interface FootballApi {
-    @GET("fixtures")
-    suspend fun getFixtures(
-        @Query("date") date: String
-    ): FootballResponse
-
-    @GET("fixtures")
-    suspend fun getLiveFixtures(
-        @Query("live") live: String = "all"
-    ): FootballResponse
-}
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 
 object FootballRepository {
 
-    private val client = OkHttpClient.Builder()
-        .addInterceptor(
-            Interceptor { chain ->
-                val request = chain.request()
-                    .newBuilder()
-                    .addHeader(
-                        "x-apisports-key",
-                        BuildConfig.FOOTBALL_API_KEY
-                    )
-                    .build()
-
-                chain.proceed(request)
-            }
-        )
-        .build()
-
-    private val api = Retrofit.Builder()
-        .baseUrl("https://v3.football.api-sports.io/")
-        .client(client)
-        .addConverterFactory(GsonConverterFactory.create())
-        .build()
-        .create(FootballApi::class.java)
-
-    suspend fun today(): List<FixtureItem> {
-        val date = java.text.SimpleDateFormat(
+    private fun today(): String {
+        return SimpleDateFormat(
             "yyyy-MM-dd",
-            java.util.Locale.US
-        ).format(java.util.Date())
-
-        return api.getFixtures(date).response
+            Locale.US
+        ).format(Date())
     }
 
-    suspend fun live(): List<FixtureItem> {
-        return api.getLiveFixtures().response
+    suspend fun getTodayMatches(): List<FixtureItem> {
+        return FootballApiClient.api
+            .getFixtures(today())
+            .response
+    }
+
+    suspend fun getLiveMatches(): List<FixtureItem> {
+        return FootballApiClient.api
+            .getLiveFixtures()
+            .response
+    }
+
+    suspend fun getStandings(
+        leagueId: Int,
+        season: Int
+    ): List<StandingTeam> {
+        val result = FootballApiClient.api
+            .getStandings(leagueId, season)
+
+        return result.response
+            .firstOrNull()
+            ?.league
+            ?.standings
+            ?.firstOrNull()
+            ?: emptyList()
     }
 }
