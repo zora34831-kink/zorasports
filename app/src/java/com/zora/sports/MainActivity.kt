@@ -20,70 +20,87 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        window.statusBarColor = android.graphics.Color.rgb(7, 19, 33)
+        window.navigationBarColor = android.graphics.Color.rgb(7, 19, 33)
+
         setContent {
-            MaterialTheme(
-                colorScheme = darkColorScheme(
-                    primary = Color(0xFF45D9F5),
-                    background = Color(0xFF071321),
-                    surface = Color(0xFF112438)
-                )
-            ) {
-                ZoraTestScreen()
-            }
+            ZoraSportsApp()
         }
     }
 }
 
 @Composable
-fun ZoraTestScreen() {
-    Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = Color(0xFF071321)
+fun ZoraSportsApp() {
+    val navy = Color(0xFF071321)
+    val panel = Color(0xFF112438)
+    val cyan = Color(0xFF45D9F5)
+
+    MaterialTheme(
+        colorScheme = darkColorScheme(
+            primary = cyan,
+            background = navy,
+            surface = panel
+        )
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = navy
         ) {
-            Text(
-                "ZORA",
-                fontSize = 38.sp,
-                fontWeight = FontWeight.Black,
-                color = Color.White
-            )
-
-            Text(
-                "SPORTS",
-                fontSize = 17.sp,
-                letterSpacing = 6.sp,
-                color = Color(0xFF45D9F5)
-            )
-
-            Spacer(Modifier.height(35.dp))
-
-            Surface(
-                color = Color(0xFF112438),
-                shape = RoundedCornerShape(22.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
             ) {
-                Column(
-                    modifier = Modifier.padding(24.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                Text(
+                    "ZORA",
+                    color = Color.White,
+                    fontSize = 42.sp,
+                    fontWeight = FontWeight.Black
+                )
+
+                Text(
+                    "SPORTS",
+                    color = cyan,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 7.sp
+                )
+
+                Spacer(Modifier.height(35.dp))
+
+                Surface(
+                    color = panel,
+                    shape = RoundedCornerShape(24.dp)
                 ) {
-                    Text(
-                        "ZORASPORTS READY",
-                        color = Color.White,
-                        fontWeight = FontWeight.Bold
-                    )
+                    Column(
+                        modifier = Modifier.padding(25.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "WELCOME TO ZORASPORTS",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold
+                        )
 
-                    Spacer(Modifier.height(8.dp))
+                        Spacer(Modifier.height(12.dp))
 
-                    Text(
-                        "Aplikasi berhasil dijalankan.",
-                        color = Color.LightGray,
-                        fontSize = 13.sp
-                    )
+                        Text(
+                            "Your world of football.",
+                            color = Color.LightGray,
+                            fontSize = 13.sp
+                        )
+
+                        Spacer(Modifier.height(20.dp))
+
+                        Text(
+                            "SYSTEM READY",
+                            color = cyan,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
