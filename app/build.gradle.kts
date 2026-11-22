@@ -7,7 +7,7 @@ plugins {
 
 android {
     namespace = "com.zora.sports"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.zora.sports"
