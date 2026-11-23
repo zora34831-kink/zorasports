@@ -123,7 +123,7 @@ fun ZoraSportsApp() {
             WindowInsetsControllerCompat(
                 activity.window,
                 activity.window.decorView
-            ).show(WindowInsetsCompat.Type.systemBars)
+            ).show(WindowInsetsCompat.Type.systemBars())
         }
     }
 
