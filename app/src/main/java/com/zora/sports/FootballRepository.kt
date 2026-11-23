@@ -13,7 +13,10 @@ object FootballRepository {
             "yyyy-MM-dd",
             Locale.US
         )
-        formatter.timeZone = TimeZone.getTimeZone("Asia/Jakarta")
+
+        formatter.timeZone =
+            TimeZone.getTimeZone("Asia/Jakarta")
+
         return formatter.format(Date())
     }
 
@@ -54,5 +57,14 @@ object FootballRepository {
             ?.standings
             ?.firstOrNull()
             .orEmpty()
+    }
+
+    suspend fun getLineups(
+        fixtureId: Int
+    ): List<FixtureLineup> {
+        val result =
+            FootballApiClient.api.getLineups(fixtureId)
+
+        return result.response.orEmpty()
     }
 }
