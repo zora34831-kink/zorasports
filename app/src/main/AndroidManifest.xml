@@ -7,10 +7,11 @@
         android:allowBackup="false"
         android:label="ZORASPORTS"
         android:supportsRtl="true"
+        android:usesCleartextTraffic="false"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
-            android:name="com.zora.sports.MainActivity"
+            android:name=".MainActivity"
             android:exported="true">
 
             <intent-filter>
