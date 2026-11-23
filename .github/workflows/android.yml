@@ -28,7 +28,7 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: '8.13'
+          gradle-version: '8.14.4'
 
       - name: Validate Android Manifest
         run: |
@@ -36,7 +36,30 @@ jobs:
           test -s app/src/main/AndroidManifest.xml
           python3 -c "import xml.etree.ElementTree as ET; ET.parse('app/src/main/AndroidManifest.xml'); print('MANIFEST XML VALID')"
 
-      # Generate SHA-1 and SHA-256
+      - name: Generate Debug Keystore
+        run: |
+          mkdir -p "$HOME/.android"
+          keytool -genkeypair \
+            -v \
+            -storetype JKS \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android \
+            -alias AndroidDebugKey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
+
+      - name: Verify Debug Keystore
+        run: |
+          test -f "$HOME/.android/debug.keystore"
+          keytool -list \
+            -v \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android \
+            -alias AndroidDebugKey
+
       - name: Generate SHA Fingerprints
         run: |
           gradle :app:signingReport --no-daemon
@@ -45,7 +68,6 @@ jobs:
         env:
           FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
         run: |
-          gradle --version
           gradle assembleDebug \
             --no-daemon \
             --stacktrace \
