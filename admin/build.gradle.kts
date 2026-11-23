@@ -20,13 +20,21 @@ android {
 
     signingConfigs {
         create("stable") {
+            storeType = "JKS"
+
             storeFile = file(
                 System.getenv("ANDROID_KEYSTORE_FILE")
                     ?: "${System.getProperty("user.home")}/.android/zora-upload.jks"
             )
-            storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
-            keyAlias = System.getenv("ANDROID_KEY_ALIAS")
-            keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+
+            storePassword =
+                System.getenv("ANDROID_KEYSTORE_PASSWORD")
+
+            keyAlias =
+                System.getenv("ANDROID_KEY_ALIAS")
+
+            keyPassword =
+                System.getenv("ANDROID_KEY_PASSWORD")
         }
     }
 
