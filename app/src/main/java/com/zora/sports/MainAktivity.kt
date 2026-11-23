@@ -34,6 +34,7 @@ private val Muted = Color(0xFF91A5B8)
 private val White = Color(0xFFF4FAFF)
 
 class MainActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -44,7 +45,7 @@ class MainActivity : ComponentActivity() {
             android.graphics.Color.rgb(7, 19, 33)
 
         setContent {
-            ZoraSportsApp()
+            ZoraSportsApp(this@MainActivity)
         }
     }
 }
@@ -55,9 +56,14 @@ data class AppTab(
 )
 
 @Composable
-fun ZoraSportsApp() {
+fun ZoraSportsApp(activity: ComponentActivity) {
+
     var selectedTab by remember {
         mutableIntStateOf(0)
+    }
+
+    var showAdmin by remember {
+        mutableStateOf(false)
     }
 
     val tabs = listOf(
@@ -79,68 +85,87 @@ fun ZoraSportsApp() {
     ) {
         Scaffold(
             containerColor = Navy,
+
             bottomBar = {
-                NavigationBar(
-                    containerColor = Color(0xFF0B1B2B)
-                ) {
-                    tabs.forEachIndexed { index, tab ->
-                        NavigationBarItem(
-                            selected = selectedTab == index,
-                            onClick = {
-                                selectedTab = index
-                            },
-                            icon = {
-                                Icon(
-                                    tab.icon,
-                                    contentDescription = tab.title
+                if (!showAdmin) {
+                    NavigationBar(
+                        containerColor = Color(0xFF0B1B2B)
+                    ) {
+                        tabs.forEachIndexed { index, tab ->
+                            NavigationBarItem(
+                                selected = selectedTab == index,
+                                onClick = {
+                                    selectedTab = index
+                                },
+                                icon = {
+                                    Icon(
+                                        tab.icon,
+                                        contentDescription = tab.title
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        tab.title,
+                                        fontSize = 10.sp
+                                    )
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Cyan,
+                                    selectedTextColor = Cyan,
+                                    indicatorColor = PanelLight,
+                                    unselectedIconColor = Muted,
+                                    unselectedTextColor = Muted
                                 )
-                            },
-                            label = {
-                                Text(
-                                    tab.title,
-                                    fontSize = 10.sp
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Cyan,
-                                selectedTextColor = Cyan,
-                                indicatorColor = PanelLight,
-                                unselectedIconColor = Muted,
-                                unselectedTextColor = Muted
                             )
-                        )
+                        }
                     }
                 }
             }
         ) { padding ->
 
-            when (selectedTab) {
-                0 -> HomeScreen(
-                    Modifier.padding(padding),
-                    onNavigate = {
-                        selectedTab = it
+            if (showAdmin) {
+
+                StreamAdminScreen(
+                    activity = activity,
+                    onBack = {
+                        showAdmin = false
                     }
                 )
 
-                1 -> MatchPage(
-                    "LIVE SCORES",
-                    "Pantau pertandingan yang sedang berlangsung.",
-                    Modifier.padding(padding)
-                )
+            } else {
 
-                2 -> MatchPage(
-                    "JADWAL PERTANDINGAN",
-                    "Lihat pertandingan hari ini dan jadwal mendatang.",
-                    Modifier.padding(padding)
-                )
+                when (selectedTab) {
 
-                3 -> LeaguePage(
-                    Modifier.padding(padding)
-                )
+                    0 -> HomeScreen(
+                        modifier = Modifier.padding(padding),
+                        onNavigate = {
+                            selectedTab = it
+                        },
+                        onAdminClick = {
+                            showAdmin = true
+                        }
+                    )
 
-                4 -> FavoritePage(
-                    Modifier.padding(padding)
-                )
+                    1 -> MatchPage(
+                        title = "LIVE SCORES",
+                        description = "Pantau pertandingan yang sedang berlangsung.",
+                        modifier = Modifier.padding(padding)
+                    )
+
+                    2 -> MatchPage(
+                        title = "JADWAL PERTANDINGAN",
+                        description = "Lihat pertandingan hari ini dan jadwal mendatang.",
+                        modifier = Modifier.padding(padding)
+                    )
+
+                    3 -> LeaguePage(
+                        modifier = Modifier.padding(padding)
+                    )
+
+                    4 -> FavoritePage(
+                        modifier = Modifier.padding(padding)
+                    )
+                }
             }
         }
     }
@@ -149,26 +174,34 @@ fun ZoraSportsApp() {
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    onNavigate: (Int) -> Unit
+    onNavigate: (Int) -> Unit,
+    onAdminClick: () -> Unit
 ) {
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .background(Navy),
+
         contentPadding = PaddingValues(
             horizontal = 18.dp,
             vertical = 18.dp
         ),
+
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
+
         item {
-            Header()
+            Header(
+                onAdminClick = onAdminClick
+            )
         }
 
         item {
             Column(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
+
                 Text(
                     "THE WORLD OF FOOTBALL",
                     color = Cyan,
@@ -192,9 +225,7 @@ fun HomeScreen(
             }
         }
 
-        item {
-            QuickMenu(onNavigate)
-        }
+        // Empat tombol menu duplikat sudah dihapus.
 
         item {
             FeaturedMatch(onNavigate)
@@ -240,15 +271,20 @@ fun HomeScreen(
 }
 
 @Composable
-fun Header() {
+fun Header(
+    onAdminClick: () -> Unit
+) {
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+
         Row(
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             Box(
                 modifier = Modifier
                     .size(43.dp)
@@ -263,6 +299,7 @@ fun Header() {
                     ),
                 contentAlignment = Alignment.Center
             ) {
+
                 Text(
                     "Z",
                     color = Navy,
@@ -274,6 +311,7 @@ fun Header() {
             Spacer(Modifier.width(11.dp))
 
             Column {
+
                 Text(
                     "ZORA",
                     color = White,
@@ -292,64 +330,37 @@ fun Header() {
             }
         }
 
-        Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = Panel,
-            modifier = Modifier.clickable { }
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.NotificationsNone,
-                contentDescription = "Notifikasi",
-                tint = White,
-                modifier = Modifier.padding(12.dp)
-            )
-        }
-    }
-}
 
-@Composable
-fun QuickMenu(onNavigate: (Int) -> Unit) {
-    val items = listOf(
-        Triple("Live", Icons.Default.Sensors, 1),
-        Triple("Jadwal", Icons.Default.CalendarMonth, 2),
-        Triple("Liga", Icons.Default.EmojiEvents, 3),
-        Triple("Favorit", Icons.Default.Star, 4)
-    )
-
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        items.forEach { item ->
-            Column(
-                modifier = Modifier
-                    .weight(1f)
-                    .clip(RoundedCornerShape(17.dp))
-                    .background(Panel)
-                    .border(
-                        1.dp,
-                        Color.White.copy(alpha = 0.07f),
-                        RoundedCornerShape(17.dp)
-                    )
-                    .clickable {
-                        onNavigate(item.third)
-                    }
-                    .padding(vertical = 14.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Panel,
+                modifier = Modifier.clickable {
+                    onAdminClick()
+                }
             ) {
+
                 Icon(
-                    item.second,
-                    contentDescription = item.first,
+                    Icons.Default.AdminPanelSettings,
+                    contentDescription = "ZORAADMIN",
                     tint = Cyan,
-                    modifier = Modifier.size(22.dp)
+                    modifier = Modifier.padding(12.dp)
                 )
+            }
 
-                Spacer(Modifier.height(7.dp))
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Panel
+            ) {
 
-                Text(
-                    item.first,
-                    color = White,
-                    fontSize = 10.sp
+                Icon(
+                    Icons.Default.NotificationsNone,
+                    contentDescription = "Notifikasi",
+                    tint = White,
+                    modifier = Modifier.padding(12.dp)
                 )
             }
         }
@@ -357,7 +368,10 @@ fun QuickMenu(onNavigate: (Int) -> Unit) {
 }
 
 @Composable
-fun FeaturedMatch(onNavigate: (Int) -> Unit) {
+fun FeaturedMatch(
+    onNavigate: (Int) -> Unit
+) {
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -381,10 +395,12 @@ fun FeaturedMatch(onNavigate: (Int) -> Unit) {
             }
             .padding(19.dp)
     ) {
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+
             Text(
                 "MATCH CENTER",
                 color = Cyan,
@@ -407,11 +423,13 @@ fun FeaturedMatch(onNavigate: (Int) -> Unit) {
             horizontalArrangement = Arrangement.SpaceAround,
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             TeamPlaceholder("HOME", "H")
 
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
+
                 Text(
                     "VS",
                     color = White,
@@ -450,9 +468,11 @@ fun TeamPlaceholder(
     name: String,
     letter: String
 ) {
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
+
         Box(
             modifier = Modifier
                 .size(54.dp)
@@ -467,6 +487,7 @@ fun TeamPlaceholder(
                 ),
             contentAlignment = Alignment.Center
         ) {
+
             Text(
                 letter,
                 color = Cyan,
@@ -492,11 +513,13 @@ fun SectionHeader(
     action: String,
     onClick: () -> Unit
 ) {
+
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
+
         Text(
             title,
             color = White,
@@ -510,6 +533,7 @@ fun SectionHeader(
             },
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             Text(
                 action,
                 color = Cyan,
@@ -527,13 +551,18 @@ fun SectionHeader(
 }
 
 @Composable
-fun ExploreGrid(onNavigate: (Int) -> Unit) {
+fun ExploreGrid(
+    onNavigate: (Int) -> Unit
+) {
+
     Column(
         verticalArrangement = Arrangement.spacedBy(10.dp)
     ) {
+
         Row(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+
             ExploreCard(
                 "KLASEMEN",
                 "Posisi setiap tim",
@@ -556,6 +585,7 @@ fun ExploreGrid(onNavigate: (Int) -> Unit) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
+
             ExploreCard(
                 "HASIL",
                 "Pertandingan selesai",
@@ -585,6 +615,7 @@ fun ExploreCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(18.dp))
@@ -599,6 +630,7 @@ fun ExploreCard(
             }
             .padding(14.dp)
     ) {
+
         Icon(
             icon,
             contentDescription = title,
@@ -631,14 +663,19 @@ fun MatchPage(
     description: String,
     modifier: Modifier = Modifier
 ) {
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
             .background(Navy),
+
         contentPadding = PaddingValues(18.dp),
+
         verticalArrangement = Arrangement.spacedBy(18.dp)
     ) {
+
         item {
+
             Text(
                 title,
                 color = White,
@@ -648,6 +685,7 @@ fun MatchPage(
         }
 
         item {
+
             Text(
                 description,
                 color = Muted,
@@ -661,27 +699,31 @@ fun MatchPage(
     }
 }
 
-// HALAMAN LIGA TERHUBUNG KE API KLASEMEN
-
 @Composable
 fun LeaguePage(
     modifier: Modifier = Modifier
 ) {
+
     StandingsSection(
         modifier = modifier
     )
 }
 
 @Composable
-fun FavoritePage(modifier: Modifier = Modifier) {
+fun FavoritePage(
+    modifier: Modifier = Modifier
+) {
+
     Column(
         modifier = modifier
             .fillMaxSize()
             .background(Navy)
             .padding(20.dp),
+
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+
         Icon(
             Icons.Default.Star,
             contentDescription = null,
@@ -714,6 +756,7 @@ fun InfoCard(
     title: String,
     description: String
 ) {
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -726,6 +769,7 @@ fun InfoCard(
             )
             .padding(16.dp)
     ) {
+
         Text(
             title,
             color = Cyan,
