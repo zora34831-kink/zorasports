@@ -4,8 +4,6 @@ package com.zora.admin
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -16,13 +14,21 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import com.google.firebase.database.ValueEventListener
+
+private val sourceTypes = listOf(
+    "AUTO",
+    "MP4",
+    "HLS",
+    "DASH",
+    "YOUTUBE",
+    "WEBSITE"
+)
 
 class MainActivity : ComponentActivity() {
 
@@ -35,7 +41,7 @@ class MainActivity : ComponentActivity() {
         loggedIn = AdminAuth.isAdmin()
 
         val loginLauncher = registerForActivityResult(
-            ActivityResultContracts.StartActivityForResult()
+            androidx.activity.result.contract.ActivityResultContracts.StartActivityForResult()
         ) { result ->
             AdminAuth.signIn(this, result.data) { success, message ->
                 runOnUiThread {
@@ -51,9 +57,7 @@ class MainActivity : ComponentActivity() {
                     loggedIn = loggedIn,
                     loginMessage = loginMessage,
                     onLogin = {
-                        loginLauncher.launch(
-                            AdminAuth.signInIntent(this)
-                        )
+                        loginLauncher.launch(AdminAuth.signInIntent(this))
                     },
                     onLogout = {
                         AdminAuth.signOut()
@@ -90,15 +94,13 @@ fun AdminApp(
         }
 
         onDispose {
-            listener?.let {
-                StreamRepository.removeListener(it)
-            }
+            listener?.let { StreamRepository.removeListener(it) }
         }
     }
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF4F6FA)
+        color = Color(0xFFF2F5FA)
     ) {
         if (!loggedIn) {
             LoginScreen(
@@ -120,7 +122,8 @@ fun AdminApp(
                         Text(
                             "ZORAADMIN",
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold
+                            fontWeight = FontWeight.Bold,
+                            color = Color(0xFF174A91)
                         )
                         Text(
                             "STREAM MANAGEMENT",
@@ -223,14 +226,14 @@ fun AdminApp(
                                     showEditor = true
                                 },
                                 onDelete = {
-                                    StreamRepository.delete(link.id) { ok, msg ->
+                                    StreamRepository.delete(link.id) { _, msg ->
                                         message = msg
                                     }
                                 },
                                 onPublish = { value ->
                                     StreamRepository.save(
                                         link.copy(published = value)
-                                    ) { ok, msg ->
+                                    ) { _, msg ->
                                         message = msg
                                     }
                                 }
@@ -247,7 +250,7 @@ fun AdminApp(
             initial = editing,
             onDismiss = { showEditor = false },
             onSave = { link ->
-                StreamRepository.save(link) { success, msg ->
+                StreamRepository.save(link) { _, msg ->
                     message = msg
                 }
                 showEditor = false
@@ -270,7 +273,8 @@ fun LoginScreen(
         Text(
             "ZORAADMIN",
             style = MaterialTheme.typography.headlineLarge,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            color = Color(0xFF174A91)
         )
 
         Spacer(Modifier.height(8.dp))
@@ -330,10 +334,17 @@ fun StreamCard(
             )
 
             Text(
+                "Tipe sumber: ${link.sourceType}",
+                color = Color(0xFF2866B2),
+                style = MaterialTheme.typography.labelMedium,
+                modifier = Modifier.padding(top = 6.dp)
+            )
+
+            Text(
                 link.url,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
-                color = Color(0xFF2866B2),
+                color = Color.Gray,
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
@@ -368,12 +379,26 @@ fun StreamEditor(
     onDismiss: () -> Unit,
     onSave: (StreamLink) -> Unit
 ) {
-    var matchName by remember { mutableStateOf(initial?.matchName ?: "") }
-    var competition by remember { mutableStateOf(initial?.competition ?: "") }
-    var provider by remember { mutableStateOf(initial?.provider ?: "") }
-    var url by remember { mutableStateOf(initial?.url ?: "") }
-    var published by remember { mutableStateOf(initial?.published ?: false) }
+    var matchName by remember(initial?.id) {
+        mutableStateOf(initial?.matchName ?: "")
+    }
+    var competition by remember(initial?.id) {
+        mutableStateOf(initial?.competition ?: "")
+    }
+    var provider by remember(initial?.id) {
+        mutableStateOf(initial?.provider ?: "")
+    }
+    var url by remember(initial?.id) {
+        mutableStateOf(initial?.url ?: "")
+    }
+    var sourceType by remember(initial?.id) {
+        mutableStateOf(initial?.sourceType ?: "AUTO")
+    }
+    var published by remember(initial?.id) {
+        mutableStateOf(initial?.published ?: false)
+    }
     var error by remember { mutableStateOf("") }
+    var typeExpanded by remember { mutableStateOf(false) }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -428,6 +453,44 @@ fun StreamEditor(
                     )
                 )
 
+                Spacer(Modifier.height(10.dp))
+
+                Text(
+                    "JENIS SUMBER",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.Gray
+                )
+
+                Box {
+                    OutlinedButton(
+                        onClick = { typeExpanded = true },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            sourceType,
+                            modifier = Modifier.weight(1f)
+                        )
+                        Text("▼")
+                    }
+
+                    DropdownMenu(
+                        expanded = typeExpanded,
+                        onDismissRequest = { typeExpanded = false }
+                    ) {
+                        sourceTypes.forEach { type ->
+                            DropdownMenuItem(
+                                text = { Text(type) },
+                                onClick = {
+                                    sourceType = type
+                                    typeExpanded = false
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
                 Row(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -460,7 +523,9 @@ fun StreamEditor(
 
                     Button(
                         onClick = {
-                            val validUrl = url.trim().startsWith("https://")
+                            val cleanUrl = url.trim()
+                            val validUrl = cleanUrl.startsWith("https://") ||
+                                cleanUrl.startsWith("http://")
 
                             if (
                                 matchName.isBlank() ||
@@ -468,7 +533,7 @@ fun StreamEditor(
                                 provider.isBlank() ||
                                 !validUrl
                             ) {
-                                error = "Lengkapi data dan gunakan URL HTTPS resmi."
+                                error = "Lengkapi data dan gunakan URL streaming yang valid."
                             } else {
                                 onSave(
                                     StreamLink(
@@ -476,7 +541,8 @@ fun StreamEditor(
                                         matchName = matchName.trim(),
                                         competition = competition.trim(),
                                         provider = provider.trim(),
-                                        url = url.trim(),
+                                        url = cleanUrl,
+                                        sourceType = sourceType,
                                         published = published,
                                         updatedAt = System.currentTimeMillis()
                                     )
