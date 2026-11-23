@@ -7,6 +7,7 @@ data class StreamLink(
     val competition: String = "",
     val provider: String = "",
     val url: String = "",
+    val sourceType: String = "AUTO",
     val published: Boolean = false,
     val updatedAt: Long = 0L
 )
