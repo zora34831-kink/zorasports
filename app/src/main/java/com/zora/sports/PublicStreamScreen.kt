@@ -2,6 +2,10 @@
 package com.zora.sports
 
 import android.annotation.SuppressLint
+import android.app.Activity
+import android.content.Context
+import android.content.ContextWrapper
+import android.content.pm.ActivityInfo
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
 import android.webkit.WebView
@@ -47,6 +51,14 @@ private data class StreamQualityOption(
     val trackIndex: Int,
     val label: String
 )
+
+private tailrec fun Context.findActivity(): Activity? {
+    return when (this) {
+        is Activity -> this
+        is ContextWrapper -> baseContext.findActivity()
+        else -> null
+    }
+}
 
 @Composable
 fun PublicStreamScreen(
@@ -275,12 +287,31 @@ private fun StreamPlayerDialog(
     onEnterPip: () -> Unit,
     onPlaybackChanged: (Boolean) -> Unit
 ) {
+    val context = LocalContext.current
+    val activity = remember(context) {
+        context.findActivity()
+    }
+
     var isPlaying by remember {
         mutableStateOf(false)
     }
 
     var fullScreen by remember {
         mutableStateOf(false)
+    }
+
+    var landscape by remember {
+        mutableStateOf(false)
+    }
+
+    DisposableEffect(activity) {
+        val previousOrientation =
+            activity?.requestedOrientation
+                ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+
+        onDispose {
+            activity?.requestedOrientation = previousOrientation
+        }
     }
 
     val type = stream.sourceType.uppercase()
@@ -291,7 +322,12 @@ private fun StreamPlayerDialog(
 
     Dialog(
         onDismissRequest = {
-            if (fullScreen) {
+            if (landscape) {
+                landscape = false
+                fullScreen = false
+                activity?.requestedOrientation =
+                    ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+            } else if (fullScreen) {
                 fullScreen = false
             } else {
                 onDismiss()
@@ -328,6 +364,29 @@ private fun StreamPlayerDialog(
 
                 TextButton(
                     onClick = {
+                        landscape = !landscape
+                        fullScreen = landscape
+
+                        activity?.requestedOrientation =
+                            if (landscape) {
+                                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+                            } else {
+                                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                            }
+                    }
+                ) {
+                    Text(
+                        text = if (landscape) {
+                            "KELUAR MIRING"
+                        } else {
+                            "MODE MIRING"
+                        },
+                        color = StreamBlue
+                    )
+                }
+
+                TextButton(
+                    onClick = {
                         fullScreen = !fullScreen
                     }
                 ) {
@@ -335,7 +394,7 @@ private fun StreamPlayerDialog(
                         text = if (fullScreen) {
                             "KELUAR PENUH"
                         } else {
-                            "RESOLUSI PENUH"
+                            "PENUH"
                         },
                         color = StreamBlue
                     )
@@ -343,7 +402,12 @@ private fun StreamPlayerDialog(
 
                 IconButton(
                     onClick = {
-                        if (fullScreen) {
+                        if (landscape) {
+                            landscape = false
+                            fullScreen = false
+                            activity?.requestedOrientation =
+                                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                        } else if (fullScreen) {
                             fullScreen = false
                         } else {
                             onDismiss()
@@ -361,10 +425,7 @@ private fun StreamPlayerDialog(
             Spacer(Modifier.height(8.dp))
 
             if (isWebSource) {
-                StreamWebPlayer(
-                    url = stream.url,
-                    fullScreen = fullScreen
-                )
+                StreamWebPlayer(url = stream.url)
             } else {
                 StreamExoPlayer(
                     url = stream.url,
@@ -549,9 +610,7 @@ private fun StreamExoPlayer(
                     }
                 ) {
                     DropdownMenuItem(
-                        text = {
-                            Text("AUTO")
-                        },
+                        text = { Text("AUTO") },
                         onClick = {
                             player.trackSelectionParameters =
                                 player.trackSelectionParameters
@@ -567,9 +626,7 @@ private fun StreamExoPlayer(
 
                     qualityOptions.forEach { option ->
                         DropdownMenuItem(
-                            text = {
-                                Text(option.label)
-                            },
+                            text = { Text(option.label) },
                             onClick = {
                                 player.trackSelectionParameters =
                                     player.trackSelectionParameters
@@ -608,21 +665,13 @@ private fun StreamExoPlayer(
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun StreamWebPlayer(
-    url: String,
-    fullScreen: Boolean
+    url: String
 ) {
     AndroidView(
-        modifier = if (fullScreen) {
-            Modifier
-                .fillMaxWidth()
-                .weight(1f)
-                .clip(RoundedCornerShape(12.dp))
-        } else {
-            Modifier
-                .fillMaxWidth()
-                .aspectRatio(16f / 9f)
-                .clip(RoundedCornerShape(12.dp))
-        },
+        modifier = Modifier
+            .fillMaxWidth()
+            .aspectRatio(16f / 9f)
+            .clip(RoundedCornerShape(12.dp)),
         factory = { context ->
             WebView(context).apply {
                 settings.javaScriptEnabled = true
