@@ -1,8 +1,8 @@
-
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -13,9 +13,8 @@ android {
         applicationId = "com.zora.sports"
         minSdk = 23
         targetSdk = 35
-
-        versionCode = 3
-        versionName = "1.1.0"
+        versionCode = 4
+        versionName = "1.2.0"
 
         buildConfigField(
             "String",
@@ -40,11 +39,7 @@ android {
 }
 
 dependencies {
-
-    // Jetpack Compose
-    val composeBom =
-        platform("androidx.compose:compose-bom:2025.11.00")
-
+    val composeBom = platform("androidx.compose:compose-bom:2025.11.00")
     implementation(composeBom)
 
     implementation("androidx.core:core-ktx:1.17.0")
@@ -55,13 +50,17 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Retrofit API
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
-
-    // HTTP Client
     implementation("com.squareup.okhttp3:okhttp:5.3.0")
 
-    // Debug
+    // Firebase
+    implementation(platform("com.google.firebase:firebase-bom:35.2.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-database")
+
+    // Google Sign-In
+    implementation("com.google.android.gms:play-services-auth:21.4.0")
+
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
