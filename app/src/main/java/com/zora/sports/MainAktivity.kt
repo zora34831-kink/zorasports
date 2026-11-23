@@ -1,8 +1,12 @@
 
 package com.zora.sports
 
+import android.app.PictureInPictureParams
 import android.content.pm.ActivityInfo
+import android.content.res.Configuration
+import android.os.Build
 import android.os.Bundle
+import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
@@ -40,6 +44,46 @@ private val Muted = Color(0xFF91A5B8)
 private val White = Color(0xFFF4FAFF)
 
 class MainActivity : ComponentActivity() {
+
+    var pipMode by mutableStateOf(false)
+        private set
+
+    var streamTabActive = false
+
+    fun enterStreamPip() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            streamTabActive
+        ) {
+            val params = PictureInPictureParams.Builder()
+                .setAspectRatio(Rational(16, 9))
+                .build()
+
+            enterPictureInPictureMode(params)
+        }
+    }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+
+        if (streamTabActive &&
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+        ) {
+            enterStreamPip()
+        }
+    }
+
+    override fun onPictureInPictureModeChanged(
+        isInPictureInPictureMode: Boolean,
+        newConfig: Configuration
+    ) {
+        super.onPictureInPictureModeChanged(
+            isInPictureInPictureMode,
+            newConfig
+        )
+
+        pipMode = isInPictureInPictureMode
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -50,7 +94,15 @@ class MainActivity : ComponentActivity() {
             android.graphics.Color.rgb(7, 19, 33)
 
         setContent {
-            ZoraSportsApp()
+            ZoraSportsApp(
+                isInPipMode = pipMode,
+                onEnterPip = {
+                    enterStreamPip()
+                },
+                onStreamTabChanged = {
+                    streamTabActive = it
+                }
+            )
         }
     }
 }
@@ -61,7 +113,11 @@ data class AppTab(
 )
 
 @Composable
-fun ZoraSportsApp() {
+fun ZoraSportsApp(
+    isInPipMode: Boolean,
+    onEnterPip: () -> Unit,
+    onStreamTabChanged: (Boolean) -> Unit
+) {
     val activity = LocalContext.current as ComponentActivity
 
     var selectedTab by remember {
@@ -70,6 +126,10 @@ fun ZoraSportsApp() {
 
     var fullscreen by remember {
         mutableStateOf(false)
+    }
+
+    SideEffect {
+        onStreamTabChanged(selectedTab == 2)
     }
 
     fun toggleFullscreen() {
@@ -148,7 +208,7 @@ fun ZoraSportsApp() {
         Scaffold(
             containerColor = Navy,
             bottomBar = {
-                if (!fullscreen) {
+                if (!fullscreen && !isInPipMode) {
                     NavigationBar(
                         containerColor = Color(0xFF0B1B2B)
                     ) {
@@ -185,7 +245,7 @@ fun ZoraSportsApp() {
         ) { padding ->
 
             val pageModifier =
-                if (fullscreen) {
+                if (fullscreen || isInPipMode) {
                     Modifier.fillMaxSize()
                 } else {
                     Modifier.padding(padding)
@@ -211,7 +271,9 @@ fun ZoraSportsApp() {
                 )
 
                 2 -> PublicStreamScreen(
-                    modifier = pageModifier
+                    modifier = pageModifier,
+                    pipMode = isInPipMode,
+                    onEnterPip = onEnterPip
                 )
 
                 3 -> MatchPage(
