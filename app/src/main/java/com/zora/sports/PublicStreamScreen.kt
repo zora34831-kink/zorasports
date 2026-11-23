@@ -14,7 +14,6 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
-import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -46,8 +45,14 @@ fun PublicStreamScreen(
     onEnterPip: () -> Unit = {},
     onPlaybackChanged: (Boolean) -> Unit = {}
 ) {
-    var streams by remember { mutableStateOf<List<StreamLink>>(emptyList()) }
-    var selectedStream by remember { mutableStateOf<StreamLink?>(null) }
+    var streams by remember {
+        mutableStateOf<List<StreamLink>>(emptyList())
+    }
+
+    var selectedStream by remember {
+        mutableStateOf<StreamLink?>(null)
+    }
+
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
@@ -58,14 +63,14 @@ fun PublicStreamScreen(
                 loading = false
                 error = null
             },
-            onError = {
+            onError = { message ->
                 loading = false
-                error = it.message ?: "Gagal memuat daftar streaming"
+                error = message
             }
         )
 
         onDispose {
-            listener.remove()
+            StreamRepository.removeListener(listener)
         }
     }
 
@@ -85,6 +90,8 @@ fun PublicStreamScreen(
                 fontWeight = FontWeight.Bold
             )
 
+            Spacer(Modifier.height(4.dp))
+
             Text(
                 text = "Saksikan pertandingan pilihan",
                 color = StreamMuted,
@@ -94,43 +101,56 @@ fun PublicStreamScreen(
             Spacer(Modifier.height(18.dp))
         }
 
-        if (loading && streams.isEmpty()) {
-            Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                CircularProgressIndicator(color = StreamBlue)
+        when {
+            loading && streams.isEmpty() -> {
+                Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = StreamBlue)
+                }
             }
-        } else if (error != null && streams.isEmpty()) {
-            Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(error ?: "Terjadi kesalahan", color = StreamWhite)
-            }
-        } else if (streams.isEmpty()) {
-            Box(
-                Modifier.fillMaxSize(),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "Belum ada pertandingan tersedia",
-                    color = StreamMuted
-                )
-            }
-        } else {
-            LazyColumn(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                contentPadding = PaddingValues(bottom = 24.dp)
-            ) {
-                items(
-                    items = streams,
-                    key = { it.id }
-                ) { stream ->
-                    StreamCard(
-                        stream = stream,
-                        onClick = { selectedStream = stream }
+
+            error != null && streams.isEmpty() -> {
+                Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = error ?: "Terjadi kesalahan",
+                        color = StreamWhite
                     )
+                }
+            }
+
+            streams.isEmpty() -> {
+                Box(
+                    Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Belum ada pertandingan tersedia",
+                        color = StreamMuted
+                    )
+                }
+            }
+
+            else -> {
+                LazyColumn(
+                    verticalArrangement = Arrangement.spacedBy(12.dp),
+                    contentPadding = PaddingValues(bottom = 24.dp)
+                ) {
+                    items(
+                        items = streams,
+                        key = { it.id }
+                    ) { stream ->
+                        StreamCard(
+                            stream = stream,
+                            onClick = {
+                                selectedStream = stream
+                            }
+                        )
+                    }
                 }
             }
         }
@@ -169,10 +189,13 @@ private fun StreamCard(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
                     .background(Color(0xFFB32635))
-                    .padding(horizontal = 9.dp, vertical = 4.dp)
+                    .padding(
+                        horizontal = 9.dp,
+                        vertical = 4.dp
+                    )
             ) {
                 Text(
-                    "LIVE",
+                    text = "LIVE",
                     color = Color.White,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold
@@ -182,7 +205,7 @@ private fun StreamCard(
             Spacer(Modifier.width(8.dp))
 
             Text(
-                stream.competition,
+                text = stream.competition,
                 color = StreamMuted,
                 style = MaterialTheme.typography.labelMedium
             )
@@ -191,7 +214,7 @@ private fun StreamCard(
         Spacer(Modifier.height(12.dp))
 
         Text(
-            stream.matchName,
+            text = stream.matchName,
             color = StreamWhite,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold
@@ -200,7 +223,7 @@ private fun StreamCard(
         Spacer(Modifier.height(5.dp))
 
         Text(
-            "Penyedia: ${stream.provider}",
+            text = "Penyedia: ${stream.provider}",
             color = StreamMuted,
             style = MaterialTheme.typography.bodySmall
         )
@@ -217,7 +240,7 @@ private fun StreamCard(
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
-                Icons.Default.PlayArrow,
+                imageVector = Icons.Default.PlayArrow,
                 contentDescription = null,
                 tint = StreamBackground
             )
@@ -225,7 +248,7 @@ private fun StreamCard(
             Spacer(Modifier.width(6.dp))
 
             Text(
-                "TONTON SEKARANG",
+                text = "TONTON SEKARANG",
                 color = StreamBackground,
                 fontWeight = FontWeight.Bold
             )
@@ -240,10 +263,12 @@ private fun StreamPlayerDialog(
     onEnterPip: () -> Unit,
     onPlaybackChanged: (Boolean) -> Unit
 ) {
-    var isPlaying by remember { mutableStateOf(false) }
-    var fullscreen by remember { mutableStateOf(false) }
+    var isPlaying by remember {
+        mutableStateOf(false)
+    }
 
     val type = stream.sourceType.uppercase()
+
     val isWebSource = type == "YOUTUBE" ||
         type == "WEBSITE" ||
         type == "HTML"
@@ -263,7 +288,7 @@ private fun StreamPlayerDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    stream.matchName,
+                    text = stream.matchName,
                     modifier = Modifier.weight(1f),
                     color = StreamWhite,
                     fontWeight = FontWeight.Bold
@@ -271,7 +296,7 @@ private fun StreamPlayerDialog(
 
                 IconButton(onClick = onDismiss) {
                     Icon(
-                        Icons.Default.ArrowBack,
+                        imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Tutup",
                         tint = StreamWhite
                     )
@@ -282,19 +307,15 @@ private fun StreamPlayerDialog(
 
             if (isWebSource) {
                 StreamWebPlayer(
-                    url = stream.url,
-                    onPlaybackChanged = {
-                        isPlaying = it
-                        onPlaybackChanged(it)
-                    }
+                    url = stream.url
                 )
             } else {
                 StreamExoPlayer(
                     url = stream.url,
                     sourceType = type,
-                    onPlaybackChanged = {
-                        isPlaying = it
-                        onPlaybackChanged(it)
+                    onPlaybackChanged = { playing ->
+                        isPlaying = playing
+                        onPlaybackChanged(playing)
                     }
                 )
             }
@@ -306,14 +327,21 @@ private fun StreamPlayerDialog(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    if (isPlaying) "Sedang diputar" else "Pemutar siap",
+                    text = if (isPlaying) {
+                        "Sedang diputar"
+                    } else {
+                        "Pemutar siap"
+                    },
                     modifier = Modifier.weight(1f),
                     color = StreamMuted
                 )
 
                 if (isPlaying && !isWebSource) {
                     TextButton(onClick = onEnterPip) {
-                        Text("PiP", color = StreamBlue)
+                        Text(
+                            text = "PiP",
+                            color = StreamBlue
+                        )
                     }
                 }
             }
@@ -330,21 +358,28 @@ private fun StreamExoPlayer(
     val context = LocalContext.current
 
     val player = remember(url) {
-        ExoPlayer.Builder(context).build().apply {
-            val mediaItem = MediaItem.fromUri(url)
-            setMediaItem(mediaItem)
-            prepare()
-            playWhenReady = true
-        }
+        ExoPlayer.Builder(context)
+            .build()
+            .apply {
+                val mediaItem = MediaItem.fromUri(url)
+                setMediaItem(mediaItem)
+                prepare()
+                playWhenReady = true
+            }
     }
 
     DisposableEffect(player) {
         val listener = object : Player.Listener {
-            override fun onIsPlayingChanged(isPlaying: Boolean) {
+
+            override fun onIsPlayingChanged(
+                isPlaying: Boolean
+            ) {
                 onPlaybackChanged(isPlaying)
             }
 
-            override fun onPlayerError(error: androidx.media3.common.PlaybackException) {
+            override fun onPlayerError(
+                error: androidx.media3.common.PlaybackException
+            ) {
                 onPlaybackChanged(false)
             }
         }
@@ -363,19 +398,21 @@ private fun StreamExoPlayer(
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
             .clip(RoundedCornerShape(12.dp)),
-        factory = {
-            PlayerView(it).apply {
-                this.player = player
+        factory = { context ->
+            PlayerView(context).apply {
+                player = player
                 useController = true
-                resizeMode = AspectRatioFrameLayout.RESIZE_MODE_FIT
+                resizeMode =
+                    AspectRatioFrameLayout.RESIZE_MODE_FIT
+
                 layoutParams = ViewGroup.LayoutParams(
                     ViewGroup.LayoutParams.MATCH_PARENT,
                     ViewGroup.LayoutParams.MATCH_PARENT
                 )
             }
         },
-        update = {
-            it.player = player
+        update = { view ->
+            view.player = player
         }
     )
 }
@@ -383,8 +420,7 @@ private fun StreamExoPlayer(
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun StreamWebPlayer(
-    url: String,
-    onPlaybackChanged: (Boolean) -> Unit
+    url: String
 ) {
     AndroidView(
         modifier = Modifier
@@ -396,13 +432,17 @@ private fun StreamWebPlayer(
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 settings.mediaPlaybackRequiresUserGesture = true
+
                 webChromeClient = WebChromeClient()
                 webViewClient = WebViewClient()
+
                 loadUrl(url)
             }
         },
-        update = {
-            if (it.url != url) it.loadUrl(url)
+        update = { view ->
+            if (view.url != url) {
+                view.loadUrl(url)
+            }
         }
     )
 }
