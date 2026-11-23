@@ -1,0 +1,77 @@
+{
+  "project_info": {
+    "project_number": "1006039613910",
+    "firebase_url": "https://zorasports-cf452-default-rtdb.asia-southeast1.firebasedatabase.app",
+    "project_id": "zorasports-cf452",
+    "storage_bucket": "zorasports-cf452.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1006039613910:android:6954d22d8e474bb71ae477",
+        "android_client_info": {
+          "package_name": "com.zora.admin"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1006039613910-jmv4kmcufevudtq5okf6krjijmp0vnad.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zora.admin",
+            "certificate_hash": "ed7e8a07913168988c7687713be4289664c6a20f"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxav9ffm-PA_bslw-f-8LmR0uClC6WeIg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1006039613910-a6jurm431t9goln7a94ul35u937pii64.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1006039613910:android:1a96bfb98855f9141ae477",
+        "android_client_info": {
+          "package_name": "com.zora.sports"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1006039613910-2j8tkkq2gevositcnmt19g96g18ic1v5.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zora.sports",
+            "certificate_hash": "ca6ebdbb44bf8404964d853c5734a9656ce73d35"
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCxav9ffm-PA_bslw-f-8LmR0uClC6WeIg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1006039613910-a6jurm431t9goln7a94ul35u937pii64.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
