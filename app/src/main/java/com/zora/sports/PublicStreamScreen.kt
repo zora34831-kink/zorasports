@@ -53,8 +53,13 @@ fun PublicStreamScreen(
         mutableStateOf<StreamLink?>(null)
     }
 
-    var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
+    var loading by remember {
+        mutableStateOf(true)
+    }
+
+    var error by remember {
+        mutableStateOf<String?>(null)
+    }
 
     DisposableEffect(Unit) {
         val listener = StreamRepository.listen(
@@ -107,7 +112,9 @@ fun PublicStreamScreen(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = StreamBlue)
+                    CircularProgressIndicator(
+                        color = StreamBlue
+                    )
                 }
             }
 
@@ -138,7 +145,9 @@ fun PublicStreamScreen(
             else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp)
+                    contentPadding = PaddingValues(
+                        bottom = 24.dp
+                    )
                 ) {
                     items(
                         items = streams,
@@ -294,7 +303,9 @@ private fun StreamPlayerDialog(
                     fontWeight = FontWeight.Bold
                 )
 
-                IconButton(onClick = onDismiss) {
+                IconButton(
+                    onClick = onDismiss
+                ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
                         contentDescription = "Tutup",
@@ -337,7 +348,9 @@ private fun StreamPlayerDialog(
                 )
 
                 if (isPlaying && !isWebSource) {
-                    TextButton(onClick = onEnterPip) {
+                    TextButton(
+                        onClick = onEnterPip
+                    ) {
                         Text(
                             text = "PiP",
                             color = StreamBlue
@@ -398,9 +411,9 @@ private fun StreamExoPlayer(
             .fillMaxWidth()
             .aspectRatio(16f / 9f)
             .clip(RoundedCornerShape(12.dp)),
-        factory = { context ->
-            PlayerView(context).apply {
-                player = player
+        factory = { viewContext ->
+            PlayerView(viewContext).apply {
+                this.player = player
                 useController = true
                 resizeMode =
                     AspectRatioFrameLayout.RESIZE_MODE_FIT
