@@ -12,11 +12,10 @@ permissions:
 
 jobs:
   build:
-    name: Build Two APKs
     runs-on: ubuntu-latest
 
     steps:
-      - name: Checkout Repository
+      - name: Checkout
         uses: actions/checkout@v4
 
       - name: Setup Java
@@ -30,7 +29,7 @@ jobs:
         with:
           gradle-version: '8.14.4'
 
-      - name: Generate Debug Keystore
+      - name: Generate Debug Keystore for ZORASPORTS
         run: |
           mkdir -p "$HOME/.android"
           keytool -genkeypair \
@@ -45,9 +44,24 @@ jobs:
             -validity 10000 \
             -dname "CN=Android Debug,O=Android,C=US"
 
+      - name: Prepare Permanent Admin Keystore
+        env:
+          KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          if [ -z "$KEYSTORE_BASE64" ]; then
+            echo "ANDROID_KEYSTORE_BASE64 belum diatur"
+            exit 1
+          fi
+          echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/zora-upload.jks"
+          test -s "$RUNNER_TEMP/zora-upload.jks"
+
       - name: Build Both APKs
         env:
           FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/zora-upload.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           gradle :app:assembleDebug :admin:assembleDebug \
             --no-daemon \
