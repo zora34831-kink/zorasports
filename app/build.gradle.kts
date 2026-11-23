@@ -47,14 +47,17 @@ dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2025.11.00")
     implementation(composeBom)
 
+    // Android Core
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity-compose:1.12.0")
 
+    // Jetpack Compose
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
+    // Networking
     implementation("com.squareup.retrofit2:retrofit:3.0.0")
     implementation("com.squareup.retrofit2:converter-gson:3.0.0")
     implementation("com.squareup.okhttp3:okhttp:5.3.0")
@@ -67,5 +70,10 @@ dependencies {
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.4.0")
 
+    // Media3 Video Player
+    implementation("androidx.media3:media3-exoplayer:1.6.1")
+    implementation("androidx.media3:media3-ui:1.6.1")
+
+    // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
