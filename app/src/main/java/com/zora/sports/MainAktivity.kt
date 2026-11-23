@@ -34,7 +34,6 @@ private val Muted = Color(0xFF91A5B8)
 private val White = Color(0xFFF4FAFF)
 
 class MainActivity : ComponentActivity() {
-
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
@@ -57,7 +56,6 @@ data class AppTab(
 
 @Composable
 fun ZoraSportsApp() {
-
     var selectedTab by remember {
         mutableIntStateOf(0)
     }
@@ -65,6 +63,7 @@ fun ZoraSportsApp() {
     val tabs = listOf(
         AppTab("Home", Icons.Default.Home),
         AppTab("Live", Icons.Default.SportsSoccer),
+        AppTab("Stream", Icons.Default.PlayCircle),
         AppTab("Jadwal", Icons.Default.CalendarMonth),
         AppTab("Liga", Icons.Default.EmojiEvents),
         AppTab("Favorit", Icons.Default.Star)
@@ -117,7 +116,6 @@ fun ZoraSportsApp() {
         ) { padding ->
 
             when (selectedTab) {
-
                 0 -> HomeScreen(
                     modifier = Modifier.padding(padding),
                     onNavigate = {
@@ -131,17 +129,21 @@ fun ZoraSportsApp() {
                     modifier = Modifier.padding(padding)
                 )
 
-                2 -> MatchPage(
+                2 -> PublicStreamScreen(
+                    modifier = Modifier.padding(padding)
+                )
+
+                3 -> MatchPage(
                     title = "JADWAL PERTANDINGAN",
                     description = "Lihat pertandingan hari ini dan jadwal mendatang.",
                     modifier = Modifier.padding(padding)
                 )
 
-                3 -> LeaguePage(
+                4 -> LeaguePage(
                     modifier = Modifier.padding(padding)
                 )
 
-                4 -> FavoritePage(
+                5 -> FavoritePage(
                     modifier = Modifier.padding(padding)
                 )
             }
@@ -164,7 +166,6 @@ fun HomeScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-
         item {
             Header()
         }
@@ -218,7 +219,7 @@ fun HomeScreen(
                 "Jelajahi",
                 "Lihat liga"
             ) {
-                onNavigate(3)
+                onNavigate(4)
             }
         }
 
@@ -494,7 +495,7 @@ fun ExploreGrid(
                 Icons.Default.EmojiEvents,
                 Modifier.weight(1f)
             ) {
-                onNavigate(3)
+                onNavigate(4)
             }
 
             ExploreCard(
@@ -525,7 +526,7 @@ fun ExploreGrid(
                 Icons.Default.Star,
                 Modifier.weight(1f)
             ) {
-                onNavigate(4)
+                onNavigate(5)
             }
         }
     }
