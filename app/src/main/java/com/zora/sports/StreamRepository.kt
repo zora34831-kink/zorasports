@@ -1,3 +1,4 @@
+
 package com.zora.sports
 
 import com.google.firebase.database.DataSnapshot
@@ -24,6 +25,7 @@ object StreamRepository {
                         id = child.key ?: ""
                     )
                 }
+
                 onData(links.sortedByDescending { it.updatedAt })
             }
 
@@ -53,18 +55,46 @@ object StreamRepository {
             return
         }
 
-        val data = link.copy(
-            id = key,
-            updatedAt = System.currentTimeMillis()
-        )
+        reference.child(key).get()
+            .addOnSuccessListener { snapshot ->
 
-        reference.child(key)
-            .setValue(data)
-            .addOnSuccessListener {
-                onResult(true, "Link berhasil disimpan")
+                val previous = snapshot.getValue(StreamLink::class.java)
+                val now = System.currentTimeMillis()
+
+                val liveStartedAt = when {
+                    !link.published -> 0L
+
+                    previous?.published == true ->
+                        previous.liveStartedAt.takeIf { it > 0L }
+                            ?: link.liveStartedAt.takeIf { it > 0L }
+                            ?: now
+
+                    else -> now
+                }
+
+                val data = link.copy(
+                    id = key,
+                    updatedAt = now,
+                    liveStartedAt = liveStartedAt
+                )
+
+                reference.child(key)
+                    .setValue(data)
+                    .addOnSuccessListener {
+                        onResult(true, "Link berhasil disimpan")
+                    }
+                    .addOnFailureListener {
+                        onResult(
+                            false,
+                            it.message ?: "Gagal menyimpan link"
+                        )
+                    }
             }
             .addOnFailureListener {
-                onResult(false, it.message ?: "Gagal menyimpan link")
+                onResult(
+                    false,
+                    it.message ?: "Gagal membaca data live"
+                )
             }
     }
 
