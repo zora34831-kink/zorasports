@@ -1,3 +1,4 @@
+
 package com.zora.sports
 
 import androidx.activity.ComponentActivity
@@ -25,6 +26,27 @@ private val AdminPanel = Color(0xFF102337)
 private val AdminCyan = Color(0xFF42DDF5)
 private val AdminMuted = Color(0xFF91A5B8)
 
+private val streamTypes = listOf(
+    "AUTO",
+    "MP4",
+    "HLS",
+    "DASH",
+    "YOUTUBE",
+    "WEBSITE"
+)
+
+private fun streamTypeLabel(type: String): String {
+    return when (type) {
+        "AUTO" -> "Otomatis"
+        "MP4" -> "Video MP4"
+        "HLS" -> "HLS / M3U8"
+        "DASH" -> "MPEG-DASH / MPD"
+        "YOUTUBE" -> "YouTube"
+        "WEBSITE" -> "Website / HTML"
+        else -> type
+    }
+}
+
 @Composable
 fun StreamAdminScreen(
     activity: ComponentActivity,
@@ -33,12 +55,18 @@ fun StreamAdminScreen(
     var signedIn by remember { mutableStateOf(AdminAuth.isAdmin()) }
     var message by remember { mutableStateOf("") }
     var links by remember { mutableStateOf(emptyList<StreamLink>()) }
+
     var matchName by remember { mutableStateOf("") }
     var competition by remember { mutableStateOf("") }
     var provider by remember { mutableStateOf("") }
     var url by remember { mutableStateOf("") }
+    var sourceType by remember { mutableStateOf("AUTO") }
+
     var editingId by remember { mutableStateOf("") }
     var published by remember { mutableStateOf(true) }
+    var saving by remember { mutableStateOf(false) }
+    var showTypeMenu by remember { mutableStateOf(false) }
+    var confirmDelete by remember { mutableStateOf<StreamLink?>(null) }
 
     val launcher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -65,6 +93,16 @@ fun StreamAdminScreen(
             listener?.let(StreamRepository::removeListener)
             listener = null
         }
+    }
+
+    fun resetForm() {
+        matchName = ""
+        competition = ""
+        provider = ""
+        url = ""
+        sourceType = "AUTO"
+        editingId = ""
+        published = true
     }
 
     Column(
@@ -118,12 +156,15 @@ fun StreamAdminScreen(
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold
                 )
+
                 Spacer(Modifier.height(8.dp))
+
                 Text(
-                    "Login menggunakan akun Google admin yang sudah terdaftar.",
+                    "Login menggunakan akun Google administrator yang sudah terdaftar.",
                     color = AdminMuted,
                     fontSize = 12.sp
                 )
+
                 Spacer(Modifier.height(18.dp))
 
                 Button(
@@ -164,6 +205,7 @@ fun StreamAdminScreen(
                         AdminAuth.signOut()
                         signedIn = false
                         links = emptyList()
+                        resetForm()
                         message = "Admin logout"
                     }
                 ) {
@@ -175,7 +217,8 @@ fun StreamAdminScreen(
 
             AdminCard {
                 Text(
-                    if (editingId.isBlank()) "Tambah streaming" else "Edit streaming",
+                    if (editingId.isBlank()) "Tambah streaming"
+                    else "Edit streaming",
                     color = Color.White,
                     fontSize = 17.sp,
                     fontWeight = FontWeight.Bold
@@ -201,11 +244,76 @@ fun StreamAdminScreen(
                     label = "Nama penyedia streaming"
                 )
 
+                Text(
+                    "JENIS SUMBER STREAMING",
+                    color = AdminMuted,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(6.dp))
+
+                Box {
+                    OutlinedButton(
+                        onClick = { showTypeMenu = true },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(13.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            streamTypeLabel(sourceType),
+                            modifier = Modifier.weight(1f)
+                        )
+                        Icon(
+                            Icons.Default.ArrowDropDown,
+                            contentDescription = "Pilih jenis sumber"
+                        )
+                    }
+
+                    DropdownMenu(
+                        expanded = showTypeMenu,
+                        onDismissRequest = { showTypeMenu = false }
+                    ) {
+                        streamTypes.forEach { type ->
+                            DropdownMenuItem(
+                                text = {
+                                    Text(streamTypeLabel(type))
+                                },
+                                onClick = {
+                                    sourceType = type
+                                    showTypeMenu = false
+                                },
+                                trailingIcon = {
+                                    if (sourceType == type) {
+                                        Icon(
+                                            Icons.Default.Check,
+                                            contentDescription = null,
+                                            tint = AdminCyan
+                                        )
+                                    }
+                                }
+                            )
+                        }
+                    }
+                }
+
+                Spacer(Modifier.height(12.dp))
+
                 AdminInput(
                     value = url,
                     onValueChange = { url = it },
                     label = "URL streaming resmi"
                 )
+
+                Text(
+                    "URL hanya ditampilkan di panel admin.",
+                    color = AdminMuted,
+                    fontSize = 10.sp
+                )
+
+                Spacer(Modifier.height(8.dp))
 
                 Row(
                     verticalAlignment = Alignment.CenterVertically
@@ -217,6 +325,7 @@ fun StreamAdminScreen(
                             checkedColor = AdminCyan
                         )
                     )
+
                     Text(
                         "Publikasikan ke pengguna",
                         color = Color.White,
@@ -227,35 +336,38 @@ fun StreamAdminScreen(
                 Spacer(Modifier.height(10.dp))
 
                 Button(
+                    enabled = !saving,
                     onClick = {
-                        val validUrl = url.trim().startsWith("https://") ||
-                            url.trim().startsWith("http://")
+                        val cleanUrl = url.trim()
+                        val validUrl = cleanUrl.startsWith("https://") ||
+                            cleanUrl.startsWith("http://")
 
                         if (
                             matchName.isBlank() ||
                             provider.isBlank() ||
                             !validUrl
                         ) {
-                            message = "Isi nama pertandingan, penyedia, dan URL yang valid"
+                            message =
+                                "Isi nama pertandingan, penyedia, dan URL HTTP/HTTPS yang valid."
                         } else {
+                            saving = true
+
                             StreamRepository.save(
                                 StreamLink(
                                     id = editingId,
                                     matchName = matchName.trim(),
                                     competition = competition.trim(),
                                     provider = provider.trim(),
-                                    url = url.trim(),
+                                    url = cleanUrl,
+                                    sourceType = sourceType,
                                     published = published
                                 )
                             ) { success, resultMessage ->
+                                saving = false
                                 message = resultMessage
+
                                 if (success) {
-                                    matchName = ""
-                                    competition = ""
-                                    provider = ""
-                                    url = ""
-                                    editingId = ""
-                                    published = true
+                                    resetForm()
                                 }
                             }
                         }
@@ -266,21 +378,27 @@ fun StreamAdminScreen(
                         contentColor = AdminBg
                     )
                 ) {
-                    Icon(Icons.Default.Save, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text(if (editingId.isBlank()) "SIMPAN STREAMING" else "UPDATE STREAMING")
+                    if (saving) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(18.dp),
+                            color = AdminBg,
+                            strokeWidth = 2.dp
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    } else {
+                        Icon(Icons.Default.Save, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                    }
+
+                    Text(
+                        if (editingId.isBlank()) "SIMPAN STREAMING"
+                        else "UPDATE STREAMING"
+                    )
                 }
 
                 if (editingId.isNotBlank()) {
                     TextButton(
-                        onClick = {
-                            editingId = ""
-                            matchName = ""
-                            competition = ""
-                            provider = ""
-                            url = ""
-                            published = true
-                        }
+                        onClick = { resetForm() }
                     ) {
                         Text("BATAL EDIT", color = AdminMuted)
                     }
@@ -314,15 +432,30 @@ fun StreamAdminScreen(
                                     color = Color.White,
                                     fontWeight = FontWeight.Bold
                                 )
+
                                 Text(
                                     "${item.competition} • ${item.provider}",
                                     color = AdminMuted,
                                     fontSize = 10.sp
                                 )
+
+                                Text(
+                                    "Tipe: ${streamTypeLabel(item.sourceType)}",
+                                    color = AdminCyan,
+                                    fontSize = 10.sp
+                                )
+
                                 Text(
                                     if (item.published) "TERPUBLISH" else "DRAF",
                                     color = if (item.published) AdminCyan else AdminMuted,
                                     fontSize = 9.sp
+                                )
+
+                                Text(
+                                    item.url,
+                                    color = AdminMuted,
+                                    fontSize = 9.sp,
+                                    maxLines = 2
                                 )
                             }
 
@@ -333,7 +466,9 @@ fun StreamAdminScreen(
                                     competition = item.competition
                                     provider = item.provider
                                     url = item.url
+                                    sourceType = item.sourceType
                                     published = item.published
+                                    message = "Mode edit: ${item.matchName}"
                                 }
                             ) {
                                 Icon(
@@ -345,9 +480,7 @@ fun StreamAdminScreen(
 
                             IconButton(
                                 onClick = {
-                                    StreamRepository.delete(item.id) { _, text ->
-                                        message = text
-                                    }
+                                    confirmDelete = item
                                 }
                             ) {
                                 Icon(
@@ -366,6 +499,43 @@ fun StreamAdminScreen(
             Spacer(Modifier.height(8.dp))
             Text(message, color = AdminCyan, fontSize = 11.sp)
         }
+    }
+
+    confirmDelete?.let { item ->
+        AlertDialog(
+            onDismissRequest = { confirmDelete = null },
+            title = {
+                Text("Hapus streaming?")
+            },
+            text = {
+                Text("Hapus data ${item.matchName} dari daftar streaming?")
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        StreamRepository.delete(item.id) { success, text ->
+                            message = text
+                            if (success && editingId == item.id) {
+                                resetForm()
+                            }
+                        }
+                        confirmDelete = null
+                    }
+                ) {
+                    Text(
+                        "HAPUS",
+                        color = Color(0xFFFF8B8B)
+                    )
+                }
+            },
+            dismissButton = {
+                TextButton(
+                    onClick = { confirmDelete = null }
+                ) {
+                    Text("BATAL")
+                }
+            }
+        )
     }
 }
 
