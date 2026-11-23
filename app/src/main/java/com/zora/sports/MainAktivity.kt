@@ -28,6 +28,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -42,6 +43,9 @@ private val PanelLight = Color(0xFF18334A)
 private val Cyan = Color(0xFF42DDF5)
 private val Muted = Color(0xFF91A5B8)
 private val White = Color(0xFFF4FAFF)
+
+private const val WHATSAPP_CHANNEL =
+    "https://whatsapp.com/channel/0029Vb9PO5tEAKWNW4GCQd1b"
 
 class MainActivity : ComponentActivity() {
 
@@ -130,6 +134,14 @@ fun ZoraSportsApp(
         mutableStateOf(false)
     }
 
+    var showHamburger by remember {
+        mutableStateOf(false)
+    }
+
+    var extraPage by remember {
+        mutableStateOf("")
+    }
+
     fun toggleFullscreen() {
         fullscreen = !fullscreen
 
@@ -164,8 +176,14 @@ fun ZoraSportsApp(
         }
     }
 
-    BackHandler(enabled = fullscreen) {
-        toggleFullscreen()
+    BackHandler(
+        enabled = showHamburger || extraPage.isNotEmpty() || fullscreen
+    ) {
+        when {
+            showHamburger -> showHamburger = false
+            extraPage.isNotEmpty() -> extraPage = ""
+            fullscreen -> toggleFullscreen()
+        }
     }
 
     DisposableEffect(activity) {
@@ -206,7 +224,11 @@ fun ZoraSportsApp(
         Scaffold(
             containerColor = Navy,
             bottomBar = {
-                if (!fullscreen && !isInPipMode) {
+                if (
+                    !fullscreen &&
+                    !isInPipMode &&
+                    extraPage.isEmpty()
+                ) {
                     NavigationBar(
                         containerColor = Color(0xFF0B1B2B)
                     ) {
@@ -243,54 +265,621 @@ fun ZoraSportsApp(
         ) { padding ->
 
             val pageModifier =
-                if (fullscreen || isInPipMode) {
+                if (
+                    fullscreen ||
+                    isInPipMode ||
+                    extraPage.isNotEmpty()
+                ) {
                     Modifier.fillMaxSize()
                 } else {
                     Modifier.padding(padding)
                 }
 
-            when (selectedTab) {
-                0 -> HomeScreen(
-                    modifier = pageModifier,
-                    onNavigate = {
-                        selectedTab = it
-                    },
-                    onFullscreen = {
-                        toggleFullscreen()
-                    },
-                    fullscreen = fullscreen
+            when {
+                extraPage == "DUKUNGAN" -> {
+                    SupportPage(
+                        modifier = pageModifier,
+                        onBack = {
+                            extraPage = ""
+                        }
+                    )
+                }
+
+                extraPage == "INFO APK" -> {
+                    AppInfoPage(
+                        modifier = pageModifier,
+                        onBack = {
+                            extraPage = ""
+                        }
+                    )
+                }
+
+                else -> {
+                    when (selectedTab) {
+                        0 -> HomeScreen(
+                            modifier = pageModifier,
+                            onNavigate = {
+                                selectedTab = it
+                            },
+                            onFullscreen = {
+                                toggleFullscreen()
+                            },
+                            fullscreen = fullscreen,
+                            onMenuClick = {
+                                showHamburger = true
+                            }
+                        )
+
+                        1 -> MatchPage(
+                            title = "LIVE SCORES",
+                            description =
+                                "Pantau pertandingan yang sedang berlangsung.",
+                            modifier = pageModifier
+                        )
+
+                        2 -> PublicStreamScreen(
+                            modifier = pageModifier,
+                            pipMode = isInPipMode,
+                            onEnterPip = onEnterPip,
+                            onPlaybackChanged = onStreamPlaybackChanged
+                        )
+
+                        3 -> MatchPage(
+                            title = "JADWAL PERTANDINGAN",
+                            description =
+                                "Lihat pertandingan hari ini dan jadwal mendatang.",
+                            modifier = pageModifier
+                        )
+
+                        4 -> LeaguePage(
+                            modifier = pageModifier
+                        )
+
+                        5 -> FavoritePage(
+                            modifier = pageModifier
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    if (showHamburger) {
+        HamburgerMenu(
+            onDismiss = {
+                showHamburger = false
+            },
+            onSupport = {
+                showHamburger = false
+                extraPage = "DUKUNGAN"
+            },
+            onInfo = {
+                showHamburger = false
+                extraPage = "INFO APK"
+            }
+        )
+    }
+}
+
+@Composable
+fun HamburgerMenu(
+    onDismiss: () -> Unit,
+    onSupport: () -> Unit,
+    onInfo: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        containerColor = Panel,
+        title = {
+            Text(
+                "MENU",
+                color = White,
+                fontSize = 19.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.5.sp
+            )
+        },
+        text = {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                MenuOption(
+                    title = "DUKUNGAN",
+                    subtitle = "Dukung pengembangan ZORASPORTS",
+                    icon = Icons.Default.Favorite,
+                    onClick = onSupport
                 )
 
-                1 -> MatchPage(
-                    title = "LIVE SCORES",
-                    description =
-                        "Pantau pertandingan yang sedang berlangsung.",
-                    modifier = pageModifier
+                MenuOption(
+                    title = "INFO APK",
+                    subtitle = "Informasi aplikasi dan developer",
+                    icon = Icons.Default.Info,
+                    onClick = onInfo
                 )
-
-                2 -> PublicStreamScreen(
-                    modifier = pageModifier,
-                    pipMode = isInPipMode,
-                    onEnterPip = onEnterPip,
-                    onPlaybackChanged = onStreamPlaybackChanged
-                )
-
-                3 -> MatchPage(
-                    title = "JADWAL PERTANDINGAN",
-                    description =
-                        "Lihat pertandingan hari ini dan jadwal mendatang.",
-                    modifier = pageModifier
-                )
-
-                4 -> LeaguePage(
-                    modifier = pageModifier
-                )
-
-                5 -> FavoritePage(
-                    modifier = pageModifier
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onDismiss) {
+                Text(
+                    "TUTUP",
+                    color = Cyan
                 )
             }
         }
+    )
+}
+
+@Composable
+fun MenuOption(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(15.dp))
+            .background(PanelLight)
+            .clickable(onClick = onClick)
+            .padding(15.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            icon,
+            contentDescription = null,
+            tint = Cyan,
+            modifier = Modifier.size(25.dp)
+        )
+
+        Spacer(Modifier.width(13.dp))
+
+        Column(
+            modifier = Modifier.weight(1f)
+        ) {
+            Text(
+                title,
+                color = White,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            Text(
+                subtitle,
+                color = Muted,
+                fontSize = 10.sp
+            )
+        }
+
+        Icon(
+            Icons.Default.ChevronRight,
+            contentDescription = null,
+            tint = Muted
+        )
+    }
+}
+
+@Composable
+fun SupportPage(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit
+) {
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Navy),
+        contentPadding = PaddingValues(18.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        item {
+            PageTopBar(
+                title = "DUKUNGAN",
+                onBack = onBack
+            )
+        }
+
+        item {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(7.dp)
+            ) {
+                Text(
+                    "Dukung ZORASPORTS",
+                    color = White,
+                    fontSize = 25.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    "Dukungan sukarela untuk membantu pengembangan aplikasi.",
+                    color = Muted,
+                    fontSize = 12.sp
+                )
+            }
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(Panel)
+                    .border(
+                        1.dp,
+                        Cyan.copy(alpha = 0.16f),
+                        RoundedCornerShape(22.dp)
+                    )
+                    .padding(18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "QRIS DONASI",
+                    color = Cyan,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.5.sp
+                )
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .aspectRatio(1f)
+                        .clip(RoundedCornerShape(15.dp))
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.QrCode2,
+                            contentDescription = null,
+                            tint = Color(0xFF071321),
+                            modifier = Modifier.size(90.dp)
+                        )
+
+                        Text(
+                            "QRIS AKAN DIPASANG DI SINI",
+                            color = Color(0xFF334155),
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Text(
+                    "Scan QRIS, lalu masukkan nominal pembayaran sendiri di aplikasi pembayaran.",
+                    color = Muted,
+                    fontSize = 11.sp,
+                    textAlign = TextAlign.Center
+                )
+
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(7.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        tint = Cyan,
+                        modifier = Modifier.size(16.dp)
+                    )
+
+                    Text(
+                        "Pastikan nama penerima benar sebelum membayar.",
+                        color = Muted,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(17.dp))
+                    .background(Panel)
+                    .padding(16.dp),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "CARA BERDONASI",
+                    color = White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp
+                )
+
+                SupportStep("01", "Buka aplikasi pembayaran yang mendukung QRIS.")
+                SupportStep("02", "Scan QRIS ZORASPORTS.")
+                SupportStep("03", "Masukkan nominal yang ingin diberikan.")
+                SupportStep("04", "Periksa penerima dan konfirmasi pembayaran.")
+            }
+        }
+
+        item {
+            Text(
+                "DONASI BERSIFAT SUKARELA",
+                color = Muted,
+                fontSize = 9.sp,
+                letterSpacing = 1.2.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun SupportStep(
+    number: String,
+    description: String
+) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(32.dp)
+                .clip(CircleShape)
+                .background(PanelLight),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                number,
+                color = Cyan,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Text(
+            description,
+            color = Muted,
+            fontSize = 11.sp
+        )
+    }
+}
+
+@Composable
+fun AppInfoPage(
+    modifier: Modifier = Modifier,
+    onBack: () -> Unit
+) {
+    val uriHandler = LocalUriHandler.current
+    val versionName = BuildConfig.VERSION_NAME
+
+    LazyColumn(
+        modifier = modifier
+            .fillMaxSize()
+            .background(Navy),
+        contentPadding = PaddingValues(18.dp),
+        verticalArrangement = Arrangement.spacedBy(18.dp)
+    ) {
+        item {
+            PageTopBar(
+                title = "INFO APK",
+                onBack = onBack
+            )
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(22.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(
+                                Color(0xFF153C55),
+                                Color(0xFF102337)
+                            )
+                        )
+                    )
+                    .padding(20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(9.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(65.dp)
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(Cyan),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "Z",
+                        color = Navy,
+                        fontSize = 39.sp,
+                        fontWeight = FontWeight.Black
+                    )
+                }
+
+                Text(
+                    "ZORASPORTS",
+                    color = White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.Black,
+                    letterSpacing = 2.sp
+                )
+
+                Text(
+                    "FOOTBALL • ALL IN ONE",
+                    color = Cyan,
+                    fontSize = 10.sp,
+                    letterSpacing = 1.5.sp
+                )
+            }
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Panel)
+                    .padding(17.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                InfoRow(
+                    "Developer",
+                    "ZORA"
+                )
+
+                HorizontalDivider(
+                    color = Color.White.copy(alpha = 0.08f)
+                )
+
+                InfoRow(
+                    "Versi APK",
+                    versionName
+                )
+
+                HorizontalDivider(
+                    color = Color.White.copy(alpha = 0.08f)
+                )
+
+                InfoRow(
+                    "Package",
+                    "com.zora.sports"
+                )
+            }
+        }
+
+        item {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(Panel)
+                    .padding(17.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Radio,
+                        contentDescription = null,
+                        tint = Cyan
+                    )
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            "SALURAN WHATSAPP",
+                            color = White,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            "Pengumuman dan update ZORASPORTS.",
+                            color = Muted,
+                            fontSize = 10.sp
+                        )
+                    }
+                }
+
+                Button(
+                    onClick = {
+                        uriHandler.openUri(WHATSAPP_CHANNEL)
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Cyan,
+                        contentColor = Navy
+                    ),
+                    shape = RoundedCornerShape(13.dp)
+                ) {
+                    Icon(
+                        Icons.Default.OpenInNew,
+                        contentDescription = null
+                    )
+
+                    Spacer(Modifier.width(8.dp))
+
+                    Text(
+                        "BUKA SALURAN WHATSAPP",
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
+        item {
+            Text(
+                "ZORASPORTS © ZORA",
+                color = Muted,
+                fontSize = 10.sp,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+    }
+}
+
+@Composable
+fun InfoRow(
+    label: String,
+    value: String
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            label,
+            color = Muted,
+            fontSize = 12.sp
+        )
+
+        Text(
+            value,
+            color = White,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+        )
+    }
+}
+
+@Composable
+fun PageTopBar(
+    title: String,
+    onBack: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Surface(
+            onClick = onBack,
+            color = Panel,
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Icon(
+                Icons.Default.ArrowBack,
+                contentDescription = "Kembali",
+                tint = Cyan,
+                modifier = Modifier.padding(11.dp)
+            )
+        }
+
+        Spacer(Modifier.width(13.dp))
+
+        Text(
+            title,
+            color = White,
+            fontSize = 17.sp,
+            fontWeight = FontWeight.Bold
+        )
     }
 }
 
@@ -299,7 +888,8 @@ fun HomeScreen(
     modifier: Modifier = Modifier,
     onNavigate: (Int) -> Unit,
     onFullscreen: () -> Unit,
-    fullscreen: Boolean
+    fullscreen: Boolean,
+    onMenuClick: () -> Unit
 ) {
     LazyColumn(
         modifier = modifier
@@ -314,7 +904,8 @@ fun HomeScreen(
         item {
             Header(
                 onFullscreen = onFullscreen,
-                fullscreen = fullscreen
+                fullscreen = fullscreen,
+                onMenuClick = onMenuClick
             )
         }
 
@@ -385,7 +976,8 @@ fun HomeScreen(
 @Composable
 fun Header(
     onFullscreen: () -> Unit,
-    fullscreen: Boolean
+    fullscreen: Boolean,
+    onMenuClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -434,7 +1026,7 @@ fun Header(
         }
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(9.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Surface(
@@ -446,7 +1038,7 @@ fun Header(
             ) {
                 Row(
                     modifier = Modifier.padding(
-                        horizontal = 12.dp,
+                        horizontal = 10.dp,
                         vertical = 11.dp
                     ),
                     verticalAlignment = Alignment.CenterVertically
@@ -457,25 +1049,20 @@ fun Header(
                         contentDescription = "Fullscreen",
                         tint = Cyan
                     )
-
-                    Spacer(Modifier.width(6.dp))
-
-                    Text(
-                        if (fullscreen) "Normal" else "Fullscreen",
-                        color = White,
-                        fontSize = 10.sp
-                    )
                 }
             }
 
             Surface(
+                modifier = Modifier.clickable {
+                    onMenuClick()
+                },
                 shape = RoundedCornerShape(14.dp),
                 color = Panel
             ) {
                 Icon(
-                    Icons.Default.NotificationsNone,
-                    contentDescription = "Notifikasi",
-                    tint = White,
+                    Icons.Default.Menu,
+                    contentDescription = "Menu",
+                    tint = Cyan,
                     modifier = Modifier.padding(12.dp)
                 )
             }
