@@ -1,4 +1,4 @@
-package com.zora.sports
+package com.zora.admin
 
 data class StreamLink(
     val id: String = "",
