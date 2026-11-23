@@ -16,8 +16,8 @@ android {
         applicationId = "com.zora.sports"
         minSdk = 24
         targetSdk = 35
-        versionCode = 4
-        versionName = "1.2.0"
+        versionCode = 5
+        versionName = "1.3.0"
 
         buildConfigField(
             "String",
@@ -44,7 +44,9 @@ kotlin {
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2025.11.00")
+    val composeBom =
+        platform("androidx.compose:compose-bom:2025.11.00")
+
     implementation(composeBom)
 
     // Android Core
@@ -70,9 +72,15 @@ dependencies {
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.4.0")
 
-    // Media3 Video Player
+    // Media3 Player
     implementation("androidx.media3:media3-exoplayer:1.6.1")
     implementation("androidx.media3:media3-ui:1.6.1")
+
+    // HLS / M3U8
+    implementation("androidx.media3:media3-exoplayer-hls:1.6.1")
+
+    // MPEG-DASH / MPD
+    implementation("androidx.media3:media3-exoplayer-dash:1.6.1")
 
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
