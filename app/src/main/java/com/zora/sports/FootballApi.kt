@@ -77,7 +77,36 @@ data class StandingStats(
     val lose: Int = 0
 )
 
+// LINEUP MODELS
+
+data class FixtureLineup(
+    val team: TeamInfo? = null,
+    val formation: String? = null,
+    val startXI: List<LineupPlayerWrapper>? = emptyList(),
+    val substitutes: List<LineupPlayerWrapper>? = emptyList(),
+    val coach: CoachInfo? = null
+)
+
+data class LineupPlayerWrapper(
+    val player: LineupPlayer? = null
+)
+
+data class LineupPlayer(
+    val id: Int? = null,
+    val name: String? = null,
+    val number: Int? = null,
+    val pos: String? = null,
+    val grid: String? = null
+)
+
+data class CoachInfo(
+    val id: Int? = null,
+    val name: String? = null,
+    val photo: String? = null
+)
+
 interface FootballApi {
+
     @GET("fixtures")
     suspend fun getFixtures(
         @Query("date") date: String,
@@ -95,6 +124,11 @@ interface FootballApi {
         @Query("league") league: Int,
         @Query("season") season: Int
     ): FootballResponse<StandingResponse>
+
+    @GET("fixtures/lineups")
+    suspend fun getLineups(
+        @Query("fixture") fixture: Int
+    ): FootballResponse<FixtureLineup>
 }
 
 object FootballApiClient {
