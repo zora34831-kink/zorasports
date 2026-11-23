@@ -10,6 +10,7 @@ import android.util.Rational
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,12 +28,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -86,7 +90,6 @@ class MainActivity : ComponentActivity() {
             isInPictureInPictureMode,
             newConfig
         )
-
         pipMode = isInPictureInPictureMode
     }
 
@@ -102,9 +105,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             ZoraSportsApp(
                 isInPipMode = pipMode,
-                onEnterPip = {
-                    enterStreamPip()
-                },
+                onEnterPip = { enterStreamPip() },
                 onStreamPlaybackChanged = {
                     streamPlaybackActive = it
                 }
@@ -126,21 +127,10 @@ fun ZoraSportsApp(
 ) {
     val activity = LocalContext.current as ComponentActivity
 
-    var selectedTab by remember {
-        mutableIntStateOf(0)
-    }
-
-    var fullscreen by remember {
-        mutableStateOf(false)
-    }
-
-    var showHamburger by remember {
-        mutableStateOf(false)
-    }
-
-    var extraPage by remember {
-        mutableStateOf("")
-    }
+    var selectedTab by remember { mutableIntStateOf(0) }
+    var fullscreen by remember { mutableStateOf(false) }
+    var showHamburger by remember { mutableStateOf(false) }
+    var extraPage by remember { mutableStateOf("") }
 
     fun toggleFullscreen() {
         fullscreen = !fullscreen
@@ -163,16 +153,12 @@ fun ZoraSportsApp(
         )
 
         if (fullscreen) {
-            controller.hide(
-                WindowInsetsCompat.Type.systemBars()
-            )
+            controller.hide(WindowInsetsCompat.Type.systemBars())
             controller.systemBarsBehavior =
                 WindowInsetsControllerCompat
                     .BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
         } else {
-            controller.show(
-                WindowInsetsCompat.Type.systemBars()
-            )
+            controller.show(WindowInsetsCompat.Type.systemBars())
         }
     }
 
@@ -235,9 +221,7 @@ fun ZoraSportsApp(
                         tabs.forEachIndexed { index, tab ->
                             NavigationBarItem(
                                 selected = selectedTab == index,
-                                onClick = {
-                                    selectedTab = index
-                                },
+                                onClick = { selectedTab = index },
                                 icon = {
                                     Icon(
                                         tab.icon,
@@ -245,10 +229,7 @@ fun ZoraSportsApp(
                                     )
                                 },
                                 label = {
-                                    Text(
-                                        tab.title,
-                                        fontSize = 10.sp
-                                    )
+                                    Text(tab.title, fontSize = 10.sp)
                                 },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = Cyan,
@@ -279,18 +260,14 @@ fun ZoraSportsApp(
                 extraPage == "DUKUNGAN" -> {
                     SupportPage(
                         modifier = pageModifier,
-                        onBack = {
-                            extraPage = ""
-                        }
+                        onBack = { extraPage = "" }
                     )
                 }
 
                 extraPage == "INFO APK" -> {
                     AppInfoPage(
                         modifier = pageModifier,
-                        onBack = {
-                            extraPage = ""
-                        }
+                        onBack = { extraPage = "" }
                     )
                 }
 
@@ -298,16 +275,10 @@ fun ZoraSportsApp(
                     when (selectedTab) {
                         0 -> HomeScreen(
                             modifier = pageModifier,
-                            onNavigate = {
-                                selectedTab = it
-                            },
-                            onFullscreen = {
-                                toggleFullscreen()
-                            },
+                            onNavigate = { selectedTab = it },
+                            onFullscreen = { toggleFullscreen() },
                             fullscreen = fullscreen,
-                            onMenuClick = {
-                                showHamburger = true
-                            }
+                            onMenuClick = { showHamburger = true }
                         )
 
                         1 -> MatchPage(
@@ -331,13 +302,8 @@ fun ZoraSportsApp(
                             modifier = pageModifier
                         )
 
-                        4 -> LeaguePage(
-                            modifier = pageModifier
-                        )
-
-                        5 -> FavoritePage(
-                            modifier = pageModifier
-                        )
+                        4 -> LeaguePage(modifier = pageModifier)
+                        5 -> FavoritePage(modifier = pageModifier)
                     }
                 }
             }
@@ -346,9 +312,7 @@ fun ZoraSportsApp(
 
     if (showHamburger) {
         HamburgerMenu(
-            onDismiss = {
-                showHamburger = false
-            },
+            onDismiss = { showHamburger = false },
             onSupport = {
                 showHamburger = false
                 extraPage = "DUKUNGAN"
@@ -400,10 +364,7 @@ fun HamburgerMenu(
         },
         confirmButton = {
             TextButton(onClick = onDismiss) {
-                Text(
-                    "TUTUP",
-                    color = Cyan
-                )
+                Text("TUTUP", color = Cyan)
             }
         }
     )
@@ -434,9 +395,7 @@ fun MenuOption(
 
         Spacer(Modifier.width(13.dp))
 
-        Column(
-            modifier = Modifier.weight(1f)
-        ) {
+        Column(modifier = Modifier.weight(1f)) {
             Text(
                 title,
                 color = White,
@@ -466,6 +425,8 @@ fun SupportPage(
     modifier: Modifier = Modifier,
     onBack: () -> Unit
 ) {
+    var showQr by remember { mutableStateOf(false) }
+
     LazyColumn(
         modifier = modifier
             .fillMaxSize()
@@ -522,33 +483,25 @@ fun SupportPage(
                     letterSpacing = 1.5.sp
                 )
 
-                Box(
+                Image(
+                    painter = painterResource(id = R.drawable.qris),
+                    contentDescription = "QRIS dukungan ZORA",
                     modifier = Modifier
                         .fillMaxWidth()
                         .aspectRatio(1f)
                         .clip(RoundedCornerShape(15.dp))
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.QrCode2,
-                            contentDescription = null,
-                            tint = Color(0xFF071321),
-                            modifier = Modifier.size(90.dp)
-                        )
+                        .background(Color.White)
+                        .clickable { showQr = true }
+                        .padding(8.dp),
+                    contentScale = ContentScale.Fit
+                )
 
-                        Text(
-                            "QRIS AKAN DIPASANG DI SINI",
-                            color = Color(0xFF334155),
-                            fontSize = 10.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                    }
-                }
+                Text(
+                    "Tekan QRIS untuk memperbesar",
+                    color = Cyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
 
                 Text(
                     "Scan QRIS, lalu masukkan nominal pembayaran sendiri di aplikasi pembayaran.",
@@ -584,7 +537,7 @@ fun SupportPage(
                     .clip(RoundedCornerShape(17.dp))
                     .background(Panel)
                     .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
                     "CARA BERDONASI",
@@ -609,6 +562,26 @@ fun SupportPage(
                 textAlign = TextAlign.Center,
                 modifier = Modifier.fillMaxWidth()
             )
+        }
+    }
+
+    if (showQr) {
+        Dialog(onDismissRequest = { showQr = false }) {
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.White)
+                    .clickable { showQr = false }
+                    .padding(12.dp)
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.qris),
+                    contentDescription = "QRIS ukuran besar",
+                    modifier = Modifier.fillMaxWidth(),
+                    contentScale = ContentScale.Fit
+                )
+            }
         }
     }
 }
@@ -725,28 +698,19 @@ fun AppInfoPage(
                     .padding(17.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                InfoRow(
-                    "Developer",
-                    "ZORA"
-                )
+                InfoRow("Developer", "ZORA")
 
                 HorizontalDivider(
                     color = Color.White.copy(alpha = 0.08f)
                 )
 
-                InfoRow(
-                    "Versi APK",
-                    versionName
-                )
+                InfoRow("Versi APK", versionName)
 
                 HorizontalDivider(
                     color = Color.White.copy(alpha = 0.08f)
                 )
 
-                InfoRow(
-                    "Package",
-                    "com.zora.sports"
-                )
+                InfoRow("Package", "com.zora.sports")
             }
         }
 
@@ -769,9 +733,7 @@ fun AppInfoPage(
                         tint = Cyan
                     )
 
-                    Column(
-                        modifier = Modifier.weight(1f)
-                    ) {
+                    Column(modifier = Modifier.weight(1f)) {
                         Text(
                             "SALURAN WHATSAPP",
                             color = White,
@@ -835,11 +797,7 @@ fun InfoRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(
-            label,
-            color = Muted,
-            fontSize = 12.sp
-        )
+        Text(label, color = Muted, fontSize = 12.sp)
 
         Text(
             value,
@@ -936,9 +894,7 @@ fun HomeScreen(
             }
         }
 
-        item {
-            FeaturedMatch(onNavigate)
-        }
+        item { FeaturedMatch(onNavigate) }
 
         item {
             SectionHeader("Pertandingan", "Lihat semua") {
@@ -946,9 +902,7 @@ fun HomeScreen(
             }
         }
 
-        item {
-            LiveMatchSection()
-        }
+        item { LiveMatchSection() }
 
         item {
             SectionHeader("Jelajahi", "Lihat liga") {
@@ -956,9 +910,7 @@ fun HomeScreen(
             }
         }
 
-        item {
-            ExploreGrid(onNavigate)
-        }
+        item { ExploreGrid(onNavigate) }
 
         item {
             Text(
@@ -1036,20 +988,13 @@ fun Header(
                 shape = RoundedCornerShape(14.dp),
                 color = Panel
             ) {
-                Row(
-                    modifier = Modifier.padding(
-                        horizontal = 10.dp,
-                        vertical = 11.dp
-                    ),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        if (fullscreen) Icons.Default.FullscreenExit
-                        else Icons.Default.Fullscreen,
-                        contentDescription = "Fullscreen",
-                        tint = Cyan
-                    )
-                }
+                Icon(
+                    if (fullscreen) Icons.Default.FullscreenExit
+                    else Icons.Default.Fullscreen,
+                    contentDescription = "Fullscreen",
+                    tint = Cyan,
+                    modifier = Modifier.padding(11.dp)
+                )
             }
 
             Surface(
@@ -1340,9 +1285,7 @@ fun MatchPage(
             )
         }
 
-        item {
-            LiveMatchSection()
-        }
+        item { LiveMatchSection() }
     }
 }
 
