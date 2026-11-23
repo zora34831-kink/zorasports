@@ -1,3 +1,4 @@
+
 package com.zora.sports
 
 import android.app.Activity
@@ -11,6 +12,9 @@ object AdminAuth {
 
     const val ADMIN_EMAIL = "zora24jb@gmail.com"
 
+    private const val WEB_CLIENT_ID =
+        "1006039613910-a6jurm431t9goln7a94ul35u937pii64.apps.googleusercontent.com"
+
     private val auth: FirebaseAuth
         get() = FirebaseAuth.getInstance()
 
@@ -18,9 +22,7 @@ object AdminAuth {
         val options = GoogleSignInOptions.Builder(
             GoogleSignInOptions.DEFAULT_SIGN_IN
         )
-            .requestIdToken(
-                activity.getString(R.string.default_web_client_id)
-            )
+            .requestIdToken(WEB_CLIENT_ID)
             .requestEmail()
             .build()
 
@@ -39,8 +41,15 @@ object AdminAuth {
                 com.google.android.gms.common.api.ApiException::class.java
             )
 
+            val idToken = account.idToken
+
+            if (idToken.isNullOrBlank()) {
+                onResult(false, "Google ID Token tidak tersedia")
+                return
+            }
+
             val credential = GoogleAuthProvider.getCredential(
-                account.idToken,
+                idToken,
                 null
             )
 
@@ -57,7 +66,10 @@ object AdminAuth {
                         onResult(true, "Login admin berhasil")
                     } else {
                         auth.signOut()
-                        onResult(false, "Akun ini bukan admin ZORASPORTS")
+                        onResult(
+                            false,
+                            "Akun ini bukan admin ZORASPORTS"
+                        )
                     }
                 }
                 .addOnFailureListener {
