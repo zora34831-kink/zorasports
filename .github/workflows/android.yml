@@ -52,8 +52,37 @@ jobs:
             echo "ANDROID_KEYSTORE_BASE64 belum diatur"
             exit 1
           fi
+
           echo "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/zora-upload.jks"
+
           test -s "$RUNNER_TEMP/zora-upload.jks"
+
+      - name: Verify Signing Credentials
+        env:
+          ANDROID_KEYSTORE_FILE: ${{ runner.temp }}/zora-upload.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          echo "Checking keystore password..."
+
+          keytool -list \
+            -keystore "$ANDROID_KEYSTORE_FILE" \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" >/dev/null
+
+          echo "Keystore password OK"
+
+          echo "Checking private key password..."
+
+          keytool -certreq \
+            -keystore "$ANDROID_KEYSTORE_FILE" \
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -keypass "$ANDROID_KEY_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS" \
+            -file "$RUNNER_TEMP/test.csr"
+
+          echo "SIGNING_CREDENTIALS_OK"
 
       - name: Build Both APKs
         env:
@@ -71,8 +100,13 @@ jobs:
       - name: Prepare APK Files
         run: |
           mkdir -p release
-          cp app/build/outputs/apk/debug/app-debug.apk release/ZORASPORTS.apk
-          cp admin/build/outputs/apk/debug/admin-debug.apk release/ZORAADMIN.apk
+
+          cp app/build/outputs/apk/debug/app-debug.apk \
+            release/ZORASPORTS.apk
+
+          cp admin/build/outputs/apk/debug/admin-debug.apk \
+            release/ZORAADMIN.apk
+
           ls -lh release/
 
       - name: Upload Both APKs
