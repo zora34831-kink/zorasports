@@ -37,8 +37,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        window.statusBarColor = android.graphics.Color.rgb(7, 19, 33)
-        window.navigationBarColor = android.graphics.Color.rgb(7, 19, 33)
+        window.statusBarColor =
+            android.graphics.Color.rgb(7, 19, 33)
+
+        window.navigationBarColor =
+            android.graphics.Color.rgb(7, 19, 33)
 
         setContent {
             ZoraSportsApp()
@@ -53,7 +56,9 @@ data class AppTab(
 
 @Composable
 fun ZoraSportsApp() {
-    var selectedTab by remember { mutableIntStateOf(0) }
+    var selectedTab by remember {
+        mutableIntStateOf(0)
+    }
 
     val tabs = listOf(
         AppTab("Home", Icons.Default.Home),
@@ -81,12 +86,20 @@ fun ZoraSportsApp() {
                     tabs.forEachIndexed { index, tab ->
                         NavigationBarItem(
                             selected = selectedTab == index,
-                            onClick = { selectedTab = index },
+                            onClick = {
+                                selectedTab = index
+                            },
                             icon = {
-                                Icon(tab.icon, contentDescription = tab.title)
+                                Icon(
+                                    tab.icon,
+                                    contentDescription = tab.title
+                                )
                             },
                             label = {
-                                Text(tab.title, fontSize = 10.sp)
+                                Text(
+                                    tab.title,
+                                    fontSize = 10.sp
+                                )
                             },
                             colors = NavigationBarItemDefaults.colors(
                                 selectedIconColor = Cyan,
@@ -100,10 +113,13 @@ fun ZoraSportsApp() {
                 }
             }
         ) { padding ->
+
             when (selectedTab) {
                 0 -> HomeScreen(
                     Modifier.padding(padding),
-                    onNavigate = { selectedTab = it }
+                    onNavigate = {
+                        selectedTab = it
+                    }
                 )
 
                 1 -> MatchPage(
@@ -118,9 +134,13 @@ fun ZoraSportsApp() {
                     Modifier.padding(padding)
                 )
 
-                3 -> LeaguePage(Modifier.padding(padding))
+                3 -> LeaguePage(
+                    Modifier.padding(padding)
+                )
 
-                4 -> FavoritePage(Modifier.padding(padding))
+                4 -> FavoritePage(
+                    Modifier.padding(padding)
+                )
             }
         }
     }
@@ -141,10 +161,14 @@ fun HomeScreen(
         ),
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
-        item { Header() }
+        item {
+            Header()
+        }
 
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
                 Text(
                     "THE WORLD OF FOOTBALL",
                     color = Cyan,
@@ -168,12 +192,19 @@ fun HomeScreen(
             }
         }
 
-        item { QuickMenu(onNavigate) }
-
-        item { FeaturedMatch(onNavigate) }
+        item {
+            QuickMenu(onNavigate)
+        }
 
         item {
-            SectionHeader("Pertandingan", "Lihat semua") {
+            FeaturedMatch(onNavigate)
+        }
+
+        item {
+            SectionHeader(
+                "Pertandingan",
+                "Lihat semua"
+            ) {
                 onNavigate(1)
             }
         }
@@ -183,7 +214,10 @@ fun HomeScreen(
         }
 
         item {
-            SectionHeader("Jelajahi", "Lihat liga") {
+            SectionHeader(
+                "Jelajahi",
+                "Lihat liga"
+            ) {
                 onNavigate(3)
             }
         }
@@ -212,14 +246,19 @@ fun Header() {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
+        Row(
+            verticalAlignment = Alignment.CenterVertically
+        ) {
             Box(
                 modifier = Modifier
                     .size(43.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
                         Brush.linearGradient(
-                            listOf(Cyan, Color(0xFF1679A5))
+                            listOf(
+                                Cyan,
+                                Color(0xFF1679A5)
+                            )
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -242,6 +281,7 @@ fun Header() {
                     fontWeight = FontWeight.Black,
                     letterSpacing = 2.sp
                 )
+
                 Text(
                     "SPORTS",
                     color = Cyan,
@@ -291,7 +331,9 @@ fun QuickMenu(onNavigate: (Int) -> Unit) {
                         Color.White.copy(alpha = 0.07f),
                         RoundedCornerShape(17.dp)
                     )
-                    .clickable { onNavigate(item.third) }
+                    .clickable {
+                        onNavigate(item.third)
+                    }
                     .padding(vertical = 14.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
@@ -334,7 +376,9 @@ fun FeaturedMatch(onNavigate: (Int) -> Unit) {
                 Cyan.copy(alpha = 0.2f),
                 RoundedCornerShape(23.dp)
             )
-            .clickable { onNavigate(1) }
+            .clickable {
+                onNavigate(1)
+            }
             .padding(19.dp)
     ) {
         Row(
@@ -365,13 +409,16 @@ fun FeaturedMatch(onNavigate: (Int) -> Unit) {
         ) {
             TeamPlaceholder("HOME", "H")
 
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
                 Text(
                     "VS",
                     color = White,
                     fontSize = 28.sp,
                     fontWeight = FontWeight.Black
                 )
+
                 Text(
                     "MATCH CENTER",
                     color = Muted,
@@ -383,7 +430,11 @@ fun FeaturedMatch(onNavigate: (Int) -> Unit) {
         }
 
         Spacer(Modifier.height(20.dp))
-        HorizontalDivider(color = Color.White.copy(alpha = 0.12f))
+
+        HorizontalDivider(
+            color = Color.White.copy(alpha = 0.12f)
+        )
+
         Spacer(Modifier.height(12.dp))
 
         Text(
@@ -395,14 +446,25 @@ fun FeaturedMatch(onNavigate: (Int) -> Unit) {
 }
 
 @Composable
-fun TeamPlaceholder(name: String, letter: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+fun TeamPlaceholder(
+    name: String,
+    letter: String
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
         Box(
             modifier = Modifier
                 .size(54.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.08f))
-                .border(1.dp, Cyan.copy(alpha = 0.3f), CircleShape),
+                .background(
+                    Color.White.copy(alpha = 0.08f)
+                )
+                .border(
+                    1.dp,
+                    Cyan.copy(alpha = 0.3f),
+                    CircleShape
+                ),
             contentAlignment = Alignment.Center
         ) {
             Text(
@@ -443,10 +505,17 @@ fun SectionHeader(
         )
 
         Row(
-            modifier = Modifier.clickable { onClick() },
+            modifier = Modifier.clickable {
+                onClick()
+            },
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(action, color = Cyan, fontSize = 10.sp)
+            Text(
+                action,
+                color = Cyan,
+                fontSize = 10.sp
+            )
+
             Icon(
                 Icons.Default.ChevronRight,
                 contentDescription = null,
@@ -459,37 +528,51 @@ fun SectionHeader(
 
 @Composable
 fun ExploreGrid(onNavigate: (Int) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             ExploreCard(
                 "KLASEMEN",
                 "Posisi setiap tim",
                 Icons.Default.EmojiEvents,
                 Modifier.weight(1f)
-            ) { onNavigate(3) }
+            ) {
+                onNavigate(3)
+            }
 
             ExploreCard(
                 "STATISTIK",
                 "Analisis pertandingan",
                 Icons.Default.BarChart,
                 Modifier.weight(1f)
-            ) { onNavigate(1) }
+            ) {
+                onNavigate(1)
+            }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             ExploreCard(
                 "HASIL",
                 "Pertandingan selesai",
                 Icons.Default.Scoreboard,
                 Modifier.weight(1f)
-            ) { onNavigate(1) }
+            ) {
+                onNavigate(1)
+            }
 
             ExploreCard(
                 "FAVORIT",
                 "Tim pilihanmu",
                 Icons.Default.Star,
                 Modifier.weight(1f)
-            ) { onNavigate(4) }
+            ) {
+                onNavigate(4)
+            }
         }
     }
 }
@@ -511,7 +594,9 @@ fun ExploreCard(
                 Color.White.copy(alpha = 0.06f),
                 RoundedCornerShape(18.dp)
             )
-            .clickable { onClick() }
+            .clickable {
+                onClick()
+            }
             .padding(14.dp)
     ) {
         Icon(
@@ -576,43 +661,15 @@ fun MatchPage(
     }
 }
 
+// HALAMAN LIGA TERHUBUNG KE API KLASEMEN
+
 @Composable
-fun LeaguePage(modifier: Modifier = Modifier) {
-    Column(
+fun LeaguePage(
+    modifier: Modifier = Modifier
+) {
+    StandingsSection(
         modifier = modifier
-            .fillMaxSize()
-            .background(Navy)
-            .padding(20.dp)
-    ) {
-        Text(
-            "KOMPETISI",
-            color = White,
-            fontSize = 24.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            "Pusat liga dan klasemen sepak bola.",
-            color = Muted,
-            fontSize = 12.sp
-        )
-
-        Spacer(Modifier.height(22.dp))
-
-        InfoCard(
-            "KLASEMEN LIGA",
-            "Data klasemen belum dihubungkan ke tampilan."
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        InfoCard(
-            "KOMPETISI DUNIA",
-            "Pilih liga untuk melihat posisi setiap tim."
-        )
-    }
+    )
 }
 
 @Composable
@@ -653,7 +710,10 @@ fun FavoritePage(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun InfoCard(title: String, description: String) {
+fun InfoCard(
+    title: String,
+    description: String
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
