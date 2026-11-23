@@ -1,3 +1,4 @@
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -11,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "com.zora.sports"
-        minSdk = 23
+        minSdk = 24
         targetSdk = 35
         versionCode = 4
         versionName = "1.2.0"
