@@ -6,74 +6,75 @@ import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
 import retrofit2.http.GET
 import retrofit2.http.Query
+import java.util.concurrent.TimeUnit
 
 data class FootballResponse<T>(
-    val response: List<T> = emptyList(),
+    val response: List<T>? = emptyList(),
     val errors: Any? = null
 )
 
 data class FixtureItem(
-    val fixture: FixtureInfo,
-    val league: LeagueInfo,
-    val teams: TeamsInfo,
-    val goals: GoalsInfo
+    val fixture: FixtureInfo? = null,
+    val league: LeagueInfo? = null,
+    val teams: TeamsInfo? = null,
+    val goals: GoalsInfo? = null
 )
 
 data class FixtureInfo(
-    val id: Int,
-    val date: String,
-    val status: StatusInfo
+    val id: Int? = null,
+    val date: String? = null,
+    val status: StatusInfo? = null
 )
 
 data class StatusInfo(
-    val short: String,
-    val elapsed: Int?
+    val short: String? = null,
+    val elapsed: Int? = null
 )
 
 data class LeagueInfo(
-    val id: Int,
-    val name: String,
-    val logo: String?
+    val id: Int? = null,
+    val name: String? = null,
+    val logo: String? = null
 )
 
 data class TeamsInfo(
-    val home: TeamInfo,
-    val away: TeamInfo
+    val home: TeamInfo? = null,
+    val away: TeamInfo? = null
 )
 
 data class TeamInfo(
-    val id: Int,
-    val name: String,
-    val logo: String?
+    val id: Int? = null,
+    val name: String? = null,
+    val logo: String? = null
 )
 
 data class GoalsInfo(
-    val home: Int?,
-    val away: Int?
+    val home: Int? = null,
+    val away: Int? = null
 )
 
 data class StandingResponse(
-    val league: StandingLeague
+    val league: StandingLeague? = null
 )
 
 data class StandingLeague(
-    val name: String,
-    val standings: List<List<StandingTeam>>
+    val name: String? = null,
+    val standings: List<List<StandingTeam>>? = null
 )
 
 data class StandingTeam(
-    val rank: Int,
-    val team: TeamInfo,
-    val points: Int,
-    val goalsDiff: Int,
-    val all: StandingStats
+    val rank: Int = 0,
+    val team: TeamInfo? = null,
+    val points: Int = 0,
+    val goalsDiff: Int = 0,
+    val all: StandingStats? = null
 )
 
 data class StandingStats(
-    val played: Int,
-    val win: Int,
-    val draw: Int,
-    val lose: Int
+    val played: Int = 0,
+    val win: Int = 0,
+    val draw: Int = 0,
+    val lose: Int = 0
 )
 
 interface FootballApi {
@@ -99,6 +100,9 @@ interface FootballApi {
 object FootballApiClient {
 
     private val client = OkHttpClient.Builder()
+        .connectTimeout(15, TimeUnit.SECONDS)
+        .readTimeout(15, TimeUnit.SECONDS)
+        .writeTimeout(15, TimeUnit.SECONDS)
         .addInterceptor { chain ->
             val request = chain.request()
                 .newBuilder()
