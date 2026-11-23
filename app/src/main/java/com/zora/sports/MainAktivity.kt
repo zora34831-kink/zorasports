@@ -48,11 +48,12 @@ class MainActivity : ComponentActivity() {
     var pipMode by mutableStateOf(false)
         private set
 
-    var streamTabActive = false
+    var streamPlaybackActive = false
 
     fun enterStreamPip() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-            streamTabActive
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            streamPlaybackActive
         ) {
             val params = PictureInPictureParams.Builder()
                 .setAspectRatio(Rational(16, 9))
@@ -65,8 +66,9 @@ class MainActivity : ComponentActivity() {
     override fun onUserLeaveHint() {
         super.onUserLeaveHint()
 
-        if (streamTabActive &&
-            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O
+        if (
+            Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
+            streamPlaybackActive
         ) {
             enterStreamPip()
         }
@@ -99,8 +101,8 @@ class MainActivity : ComponentActivity() {
                 onEnterPip = {
                     enterStreamPip()
                 },
-                onStreamTabChanged = {
-                    streamTabActive = it
+                onStreamPlaybackChanged = {
+                    streamPlaybackActive = it
                 }
             )
         }
@@ -116,7 +118,7 @@ data class AppTab(
 fun ZoraSportsApp(
     isInPipMode: Boolean,
     onEnterPip: () -> Unit,
-    onStreamTabChanged: (Boolean) -> Unit
+    onStreamPlaybackChanged: (Boolean) -> Unit
 ) {
     val activity = LocalContext.current as ComponentActivity
 
@@ -126,10 +128,6 @@ fun ZoraSportsApp(
 
     var fullscreen by remember {
         mutableStateOf(false)
-    }
-
-    SideEffect {
-        onStreamTabChanged(selectedTab == 2)
     }
 
     fun toggleFullscreen() {
@@ -273,7 +271,8 @@ fun ZoraSportsApp(
                 2 -> PublicStreamScreen(
                     modifier = pageModifier,
                     pipMode = isInPipMode,
-                    onEnterPip = onEnterPip
+                    onEnterPip = onEnterPip,
+                    onPlaybackChanged = onStreamPlaybackChanged
                 )
 
                 3 -> MatchPage(
@@ -351,10 +350,7 @@ fun HomeScreen(
         }
 
         item {
-            SectionHeader(
-                "Pertandingan",
-                "Lihat semua"
-            ) {
+            SectionHeader("Pertandingan", "Lihat semua") {
                 onNavigate(1)
             }
         }
@@ -364,10 +360,7 @@ fun HomeScreen(
         }
 
         item {
-            SectionHeader(
-                "Jelajahi",
-                "Lihat liga"
-            ) {
+            SectionHeader("Jelajahi", "Lihat liga") {
                 onNavigate(4)
             }
         }
@@ -399,19 +392,14 @@ fun Header(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Row(
-            verticalAlignment = Alignment.CenterVertically
-        ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
                 modifier = Modifier
                     .size(43.dp)
                     .clip(RoundedCornerShape(14.dp))
                     .background(
                         Brush.linearGradient(
-                            listOf(
-                                Cyan,
-                                Color(0xFF1679A5)
-                            )
+                            listOf(Cyan, Color(0xFF1679A5))
                         )
                     ),
                 contentAlignment = Alignment.Center
@@ -464,15 +452,14 @@ fun Header(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Icon(
-                        if (fullscreen) {
-                            Icons.Default.FullscreenExit
-                        } else {
-                            Icons.Default.Fullscreen
-                        },
+                        if (fullscreen) Icons.Default.FullscreenExit
+                        else Icons.Default.Fullscreen,
                         contentDescription = "Fullscreen",
                         tint = Cyan
                     )
+
                     Spacer(Modifier.width(6.dp))
+
                     Text(
                         if (fullscreen) "Normal" else "Fullscreen",
                         color = White,
@@ -497,9 +484,7 @@ fun Header(
 }
 
 @Composable
-fun FeaturedMatch(
-    onNavigate: (Int) -> Unit
-) {
+fun FeaturedMatch(onNavigate: (Int) -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -518,9 +503,7 @@ fun FeaturedMatch(
                 Cyan.copy(alpha = 0.2f),
                 RoundedCornerShape(23.dp)
             )
-            .clickable {
-                onNavigate(1)
-            }
+            .clickable { onNavigate(1) }
             .padding(19.dp)
     ) {
         Row(
@@ -551,9 +534,7 @@ fun FeaturedMatch(
         ) {
             TeamPlaceholder("HOME", "H")
 
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
-            ) {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
                     "VS",
                     color = White,
@@ -588,20 +569,13 @@ fun FeaturedMatch(
 }
 
 @Composable
-fun TeamPlaceholder(
-    name: String,
-    letter: String
-) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
+fun TeamPlaceholder(name: String, letter: String) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Box(
             modifier = Modifier
                 .size(54.dp)
                 .clip(CircleShape)
-                .background(
-                    Color.White.copy(alpha = 0.08f)
-                )
+                .background(Color.White.copy(alpha = 0.08f))
                 .border(
                     1.dp,
                     Cyan.copy(alpha = 0.3f),
@@ -647,9 +621,7 @@ fun SectionHeader(
         )
 
         Row(
-            modifier = Modifier.clickable {
-                onClick()
-            },
+            modifier = Modifier.clickable { onClick() },
             verticalAlignment = Alignment.CenterVertically
         ) {
             Text(
@@ -669,54 +641,38 @@ fun SectionHeader(
 }
 
 @Composable
-fun ExploreGrid(
-    onNavigate: (Int) -> Unit
-) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+fun ExploreGrid(onNavigate: (Int) -> Unit) {
+    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ExploreCard(
                 "KLASEMEN",
                 "Posisi setiap tim",
                 Icons.Default.EmojiEvents,
                 Modifier.weight(1f)
-            ) {
-                onNavigate(4)
-            }
+            ) { onNavigate(4) }
 
             ExploreCard(
                 "STATISTIK",
                 "Analisis pertandingan",
                 Icons.Default.BarChart,
                 Modifier.weight(1f)
-            ) {
-                onNavigate(1)
-            }
+            ) { onNavigate(1) }
         }
 
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
+        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             ExploreCard(
                 "HASIL",
                 "Pertandingan selesai",
                 Icons.Default.Scoreboard,
                 Modifier.weight(1f)
-            ) {
-                onNavigate(1)
-            }
+            ) { onNavigate(1) }
 
             ExploreCard(
                 "FAVORIT",
                 "Tim pilihanmu",
                 Icons.Default.Star,
                 Modifier.weight(1f)
-            ) {
-                onNavigate(5)
-            }
+            ) { onNavigate(5) }
         }
     }
 }
@@ -738,9 +694,7 @@ fun ExploreCard(
                 Color.White.copy(alpha = 0.06f),
                 RoundedCornerShape(18.dp)
             )
-            .clickable {
-                onClick()
-            }
+            .clickable { onClick() }
             .padding(14.dp)
     ) {
         Icon(
@@ -806,18 +760,12 @@ fun MatchPage(
 }
 
 @Composable
-fun LeaguePage(
-    modifier: Modifier = Modifier
-) {
-    StandingsSection(
-        modifier = modifier
-    )
+fun LeaguePage(modifier: Modifier = Modifier) {
+    StandingsSection(modifier = modifier)
 }
 
 @Composable
-fun FavoritePage(
-    modifier: Modifier = Modifier
-) {
+fun FavoritePage(modifier: Modifier = Modifier) {
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -854,10 +802,7 @@ fun FavoritePage(
 }
 
 @Composable
-fun InfoCard(
-    title: String,
-    description: String
-) {
+fun InfoCard(title: String, description: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
