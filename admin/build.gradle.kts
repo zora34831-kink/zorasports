@@ -18,6 +18,24 @@ android {
         versionName = "1.0.0"
     }
 
+    signingConfigs {
+        create("stable") {
+            storeFile = file(
+                System.getenv("ANDROID_KEYSTORE_FILE")
+                    ?: "${System.getProperty("user.home")}/.android/zora-upload.jks"
+            )
+            storePassword = System.getenv("ANDROID_KEYSTORE_PASSWORD")
+            keyAlias = System.getenv("ANDROID_KEY_ALIAS")
+            keyPassword = System.getenv("ANDROID_KEY_PASSWORD")
+        }
+    }
+
+    buildTypes {
+        getByName("debug") {
+            signingConfig = signingConfigs.getByName("stable")
+        }
+    }
+
     buildFeatures {
         compose = true
     }
