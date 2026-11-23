@@ -12,10 +12,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.text.font.FontWeight
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.TimeoutCancellationException
+import kotlinx.coroutines.withTimeout
+import retrofit2.HttpException
+import java.io.IOException
 
 @Composable
 fun LiveMatchSection() {
+
     var matches by remember {
         mutableStateOf<List<FixtureItem>>(emptyList())
     }
@@ -23,33 +28,47 @@ fun LiveMatchSection() {
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var liveOnly by remember { mutableStateOf(false) }
+    var refreshVersion by remember { mutableIntStateOf(0) }
 
-    val scope = rememberCoroutineScope()
+    LaunchedEffect(liveOnly, refreshVersion) {
+        loading = true
+        error = null
 
-    fun refresh() {
-        scope.launch {
-            loading = true
-            error = null
-
-            try {
-                matches = if (liveOnly) {
+        try {
+            val result = withTimeout(20000L) {
+                if (liveOnly) {
                     FootballRepository.getLiveMatches()
                 } else {
                     FootballRepository.getTodayMatches()
                 }
-            } catch (e: Exception) {
-                error = e.message ?: "Gagal mengambil data"
             }
 
+            matches = result
+
+        } catch (e: TimeoutCancellationException) {
+            error = "Koneksi terlalu lama. Coba refresh."
+
+        } catch (e: CancellationException) {
+            throw e
+
+        } catch (e: HttpException) {
+            error = "Server API bermasalah (${e.code()})."
+
+        } catch (e: IOException) {
+            error = "Tidak dapat terhubung ke internet."
+
+        } catch (e: Exception) {
+            error = "Gagal memuat pertandingan. Coba lagi."
+
+        } finally {
             loading = false
         }
     }
 
-    LaunchedEffect(liveOnly) {
-        refresh()
-    }
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
 
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
@@ -62,12 +81,16 @@ fun LiveMatchSection() {
                 fontWeight = FontWeight.Bold
             )
 
-            TextButton(onClick = { refresh() }) {
+            TextButton(
+                onClick = { refreshVersion++ }
+            ) {
                 Text("Refresh", color = Color(0xFF42DDF5))
             }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             FilterChip(
                 selected = !liveOnly,
                 onClick = { liveOnly = false },
@@ -82,25 +105,57 @@ fun LiveMatchSection() {
         }
 
         when {
-            loading -> CircularProgressIndicator(
-                color = Color(0xFF42DDF5),
-                modifier = Modifier.size(28.dp)
-            )
+            loading -> {
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(
+                        color = Color(0xFF42DDF5),
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+            }
 
-            error != null -> Text(
-                "Gagal memuat: $error",
-                color = Color(0xFFFF8A80),
-                fontSize = 12.sp
-            )
+            error != null -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            Color(0xFF102337),
+                            RoundedCornerShape(15.dp)
+                        )
+                        .padding(16.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        error ?: "Terjadi kesalahan",
+                        color = Color(0xFFFF8A80),
+                        fontSize = 12.sp
+                    )
 
-            matches.isEmpty() -> Text(
-                "Belum ada pertandingan.",
-                color = Color.LightGray,
-                fontSize = 12.sp
-            )
+                    TextButton(
+                        onClick = { refreshVersion++ }
+                    ) {
+                        Text("Coba lagi", color = Color(0xFF42DDF5))
+                    }
+                }
+            }
 
-            else -> matches.forEach { match ->
-                ApiMatchCard(match)
+            matches.isEmpty() -> {
+                Text(
+                    "Belum ada pertandingan untuk ditampilkan.",
+                    color = Color.LightGray,
+                    fontSize = 12.sp
+                )
+            }
+
+            else -> {
+                matches.forEach { match ->
+                    ApiMatchCard(match)
+                }
             }
         }
     }
@@ -108,7 +163,17 @@ fun LiveMatchSection() {
 
 @Composable
 fun ApiMatchCard(match: FixtureItem) {
-    val status = match.fixture.status.short
+
+    val fixture = match.fixture ?: return
+    val league = match.league ?: return
+    val teams = match.teams ?: return
+
+    val home = teams.home?.name ?: "Home"
+    val away = teams.away?.name ?: "Away"
+    val goals = match.goals
+
+    val status = fixture.status?.short ?: "NS"
+    val elapsed = fixture.status?.elapsed
 
     val isLive = status in listOf(
         "1H", "HT", "2H", "ET", "BT", "P"
@@ -123,12 +188,13 @@ fun ApiMatchCard(match: FixtureItem) {
             )
             .padding(15.dp)
     ) {
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             Text(
-                match.league.name,
+                league.name ?: "Kompetisi",
                 color = Color(0xFF91A5B8),
                 fontSize = 10.sp
             )
@@ -149,9 +215,10 @@ fun ApiMatchCard(match: FixtureItem) {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
+
             Column {
                 Text(
-                    match.teams.home.name,
+                    home,
                     color = Color.White,
                     fontSize = 12.sp
                 )
@@ -159,23 +226,24 @@ fun ApiMatchCard(match: FixtureItem) {
                 Spacer(Modifier.height(12.dp))
 
                 Text(
-                    match.teams.away.name,
+                    away,
                     color = Color.White,
                     fontSize = 12.sp
                 )
             }
 
-            Column(horizontalAlignment = Alignment.End) {
+            Column(
+                horizontalAlignment = Alignment.End
+            ) {
                 Text(
-                    "${match.goals.home ?: "-"} : ${match.goals.away ?: "-"}",
+                    "${goals?.home ?: "-"} : ${goals?.away ?: "-"}",
                     color = Color(0xFF42DDF5),
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    match.fixture.status.elapsed?.let { "$it'" }
-                        ?: status,
+                    elapsed?.let { "$it'" } ?: status,
                     color = Color(0xFF91A5B8),
                     fontSize = 10.sp
                 )
