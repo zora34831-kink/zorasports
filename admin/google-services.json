@@ -15,11 +15,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "1006039613910-jmv4kmcufevudtq5okf6krjijmp0vnad.apps.googleusercontent.com",
+          "client_id": "1006039613910-j5ud837n77kgou7fkcg3evtoto41ck5d.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.zora.admin",
-            "certificate_hash": "ed7e8a07913168988c7687713be4289664c6a20f"
+            "certificate_hash": "9dccff2cb7dc4f47d91f4efd722d821926eaefaa"
           }
         }
       ],
