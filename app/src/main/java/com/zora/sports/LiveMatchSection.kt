@@ -25,10 +25,21 @@ fun LiveMatchSection() {
         mutableStateOf<List<FixtureItem>>(emptyList())
     }
 
-    var loading by remember { mutableStateOf(true) }
-    var error by remember { mutableStateOf<String?>(null) }
-    var liveOnly by remember { mutableStateOf(false) }
-    var refreshVersion by remember { mutableIntStateOf(0) }
+    var loading by remember {
+        mutableStateOf(true)
+    }
+
+    var error by remember {
+        mutableStateOf<String?>(null)
+    }
+
+    var liveOnly by remember {
+        mutableStateOf(false)
+    }
+
+    var refreshVersion by remember {
+        mutableIntStateOf(0)
+    }
 
     LaunchedEffect(liveOnly, refreshVersion) {
         loading = true
@@ -82,9 +93,14 @@ fun LiveMatchSection() {
             )
 
             TextButton(
-                onClick = { refreshVersion++ }
+                onClick = {
+                    refreshVersion++
+                }
             ) {
-                Text("Refresh", color = Color(0xFF42DDF5))
+                Text(
+                    "Refresh",
+                    color = Color(0xFF42DDF5)
+                )
             }
         }
 
@@ -93,18 +109,27 @@ fun LiveMatchSection() {
         ) {
             FilterChip(
                 selected = !liveOnly,
-                onClick = { liveOnly = false },
-                label = { Text("Hari ini") }
+                onClick = {
+                    liveOnly = false
+                },
+                label = {
+                    Text("Hari ini")
+                }
             )
 
             FilterChip(
                 selected = liveOnly,
-                onClick = { liveOnly = true },
-                label = { Text("Live") }
+                onClick = {
+                    liveOnly = true
+                },
+                label = {
+                    Text("Live")
+                }
             )
         }
 
         when {
+
             loading -> {
                 Box(
                     modifier = Modifier
@@ -137,9 +162,14 @@ fun LiveMatchSection() {
                     )
 
                     TextButton(
-                        onClick = { refreshVersion++ }
+                        onClick = {
+                            refreshVersion++
+                        }
                     ) {
-                        Text("Coba lagi", color = Color(0xFF42DDF5))
+                        Text(
+                            "Coba lagi",
+                            color = Color(0xFF42DDF5)
+                        )
                     }
                 }
             }
@@ -162,7 +192,9 @@ fun LiveMatchSection() {
 }
 
 @Composable
-fun ApiMatchCard(match: FixtureItem) {
+fun ApiMatchCard(
+    match: FixtureItem
+) {
 
     val fixture = match.fixture ?: return
     val league = match.league ?: return
@@ -175,8 +207,12 @@ fun ApiMatchCard(match: FixtureItem) {
     val status = fixture.status?.short ?: "NS"
     val elapsed = fixture.status?.elapsed
 
+    var showLineups by remember(fixture.id) {
+        mutableStateOf(false)
+    }
+
     val isLive = status in listOf(
-        "1H", "HT", "2H", "ET", "BT", "P"
+        "1H", "HT", "2H", "ET", "BT", "P", "LIVE"
     )
 
     Column(
@@ -249,5 +285,33 @@ fun ApiMatchCard(match: FixtureItem) {
                 )
             }
         }
+
+        HorizontalDivider(
+            modifier = Modifier.padding(vertical = 10.dp),
+            color = Color.White.copy(alpha = 0.1f)
+        )
+
+        TextButton(
+            onClick = {
+                showLineups = true
+            },
+            enabled = fixture.id != null
+        ) {
+            Text(
+                "LIHAT SUSUNAN PEMAIN",
+                color = Color(0xFF42DDF5),
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+        }
+    }
+
+    if (showLineups && fixture.id != null) {
+        LineupDialog(
+            fixtureId = fixture.id,
+            onDismiss = {
+                showLineups = false
+            }
+        )
     }
 }
