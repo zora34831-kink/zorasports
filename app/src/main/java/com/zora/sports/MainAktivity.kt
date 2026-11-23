@@ -1,8 +1,10 @@
 
 package com.zora.sports
 
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -21,10 +23,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
 
 private val Navy = Color(0xFF071321)
 private val Panel = Color(0xFF102337)
@@ -56,8 +62,69 @@ data class AppTab(
 
 @Composable
 fun ZoraSportsApp() {
+    val activity = LocalContext.current as ComponentActivity
+
     var selectedTab by remember {
         mutableIntStateOf(0)
+    }
+
+    var fullscreen by remember {
+        mutableStateOf(false)
+    }
+
+    fun toggleFullscreen() {
+        fullscreen = !fullscreen
+
+        activity.requestedOrientation =
+            if (fullscreen) {
+                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+            } else {
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+            }
+
+        WindowCompat.setDecorFitsSystemWindows(
+            activity.window,
+            !fullscreen
+        )
+
+        val controller = WindowInsetsControllerCompat(
+            activity.window,
+            activity.window.decorView
+        )
+
+        if (fullscreen) {
+            controller.hide(
+                WindowInsetsCompat.Type.systemBars()
+            )
+            controller.systemBarsBehavior =
+                WindowInsetsControllerCompat
+                    .BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        } else {
+            controller.show(
+                WindowInsetsCompat.Type.systemBars()
+            )
+        }
+    }
+
+    BackHandler(enabled = fullscreen) {
+        toggleFullscreen()
+    }
+
+    DisposableEffect(activity) {
+        onDispose {
+            activity.requestedOrientation =
+                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+
+            WindowCompat.setDecorFitsSystemWindows(
+                activity.window,
+                true
+            )
+
+            WindowInsetsControllerCompat(
+                activity.window,
+                activity.window.decorView
+            ).show(WindowInsetsCompat.Type.systemBars)
+        }
     }
 
     val tabs = listOf(
@@ -81,70 +148,85 @@ fun ZoraSportsApp() {
         Scaffold(
             containerColor = Navy,
             bottomBar = {
-                NavigationBar(
-                    containerColor = Color(0xFF0B1B2B)
-                ) {
-                    tabs.forEachIndexed { index, tab ->
-                        NavigationBarItem(
-                            selected = selectedTab == index,
-                            onClick = {
-                                selectedTab = index
-                            },
-                            icon = {
-                                Icon(
-                                    tab.icon,
-                                    contentDescription = tab.title
+                if (!fullscreen) {
+                    NavigationBar(
+                        containerColor = Color(0xFF0B1B2B)
+                    ) {
+                        tabs.forEachIndexed { index, tab ->
+                            NavigationBarItem(
+                                selected = selectedTab == index,
+                                onClick = {
+                                    selectedTab = index
+                                },
+                                icon = {
+                                    Icon(
+                                        tab.icon,
+                                        contentDescription = tab.title
+                                    )
+                                },
+                                label = {
+                                    Text(
+                                        tab.title,
+                                        fontSize = 10.sp
+                                    )
+                                },
+                                colors = NavigationBarItemDefaults.colors(
+                                    selectedIconColor = Cyan,
+                                    selectedTextColor = Cyan,
+                                    indicatorColor = PanelLight,
+                                    unselectedIconColor = Muted,
+                                    unselectedTextColor = Muted
                                 )
-                            },
-                            label = {
-                                Text(
-                                    tab.title,
-                                    fontSize = 10.sp
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = Cyan,
-                                selectedTextColor = Cyan,
-                                indicatorColor = PanelLight,
-                                unselectedIconColor = Muted,
-                                unselectedTextColor = Muted
                             )
-                        )
+                        }
                     }
                 }
             }
         ) { padding ->
 
+            val pageModifier =
+                if (fullscreen) {
+                    Modifier.fillMaxSize()
+                } else {
+                    Modifier.padding(padding)
+                }
+
             when (selectedTab) {
                 0 -> HomeScreen(
-                    modifier = Modifier.padding(padding),
+                    modifier = pageModifier,
                     onNavigate = {
                         selectedTab = it
-                    }
+                    },
+                    onFullscreen = {
+                        toggleFullscreen()
+                    },
+                    fullscreen = fullscreen
                 )
 
                 1 -> MatchPage(
                     title = "LIVE SCORES",
-                    description = "Pantau pertandingan yang sedang berlangsung.",
-                    modifier = Modifier.padding(padding)
+                    description =
+                        "Pantau pertandingan yang sedang berlangsung.",
+                    modifier = pageModifier
                 )
 
                 2 -> PublicStreamScreen(
-                    modifier = Modifier.padding(padding)
+                    modifier = pageModifier
                 )
 
                 3 -> MatchPage(
                     title = "JADWAL PERTANDINGAN",
-                    description = "Lihat pertandingan hari ini dan jadwal mendatang.",
-                    modifier = Modifier.padding(padding)
+                    description =
+                        "Lihat pertandingan hari ini dan jadwal mendatang.",
+                    modifier = pageModifier
                 )
 
                 4 -> LeaguePage(
-                    modifier = Modifier.padding(padding)
+                    modifier = pageModifier
                 )
 
                 5 -> FavoritePage(
-                    modifier = Modifier.padding(padding)
+                    modifier = pageModifier
                 )
             }
         }
@@ -154,7 +236,9 @@ fun ZoraSportsApp() {
 @Composable
 fun HomeScreen(
     modifier: Modifier = Modifier,
-    onNavigate: (Int) -> Unit
+    onNavigate: (Int) -> Unit,
+    onFullscreen: () -> Unit,
+    fullscreen: Boolean
 ) {
     LazyColumn(
         modifier = modifier
@@ -167,7 +251,10 @@ fun HomeScreen(
         verticalArrangement = Arrangement.spacedBy(20.dp)
     ) {
         item {
-            Header()
+            Header(
+                onFullscreen = onFullscreen,
+                fullscreen = fullscreen
+            )
         }
 
         item {
@@ -241,7 +328,10 @@ fun HomeScreen(
 }
 
 @Composable
-fun Header() {
+fun Header(
+    onFullscreen: () -> Unit,
+    fullscreen: Boolean
+) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
@@ -293,16 +383,53 @@ fun Header() {
             }
         }
 
-        Surface(
-            shape = RoundedCornerShape(14.dp),
-            color = Panel
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(9.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                Icons.Default.NotificationsNone,
-                contentDescription = "Notifikasi",
-                tint = White,
-                modifier = Modifier.padding(12.dp)
-            )
+            Surface(
+                modifier = Modifier.clickable {
+                    onFullscreen()
+                },
+                shape = RoundedCornerShape(14.dp),
+                color = Panel
+            ) {
+                Row(
+                    modifier = Modifier.padding(
+                        horizontal = 12.dp,
+                        vertical = 11.dp
+                    ),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        if (fullscreen) {
+                            Icons.Default.FullscreenExit
+                        } else {
+                            Icons.Default.Fullscreen
+                        },
+                        contentDescription = "Fullscreen",
+                        tint = Cyan
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Text(
+                        if (fullscreen) "Normal" else "Fullscreen",
+                        color = White,
+                        fontSize = 10.sp
+                    )
+                }
+            }
+
+            Surface(
+                shape = RoundedCornerShape(14.dp),
+                color = Panel
+            ) {
+                Icon(
+                    Icons.Default.NotificationsNone,
+                    contentDescription = "Notifikasi",
+                    tint = White,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
         }
     }
 }
