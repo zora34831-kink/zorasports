@@ -8,6 +8,7 @@ import android.content.ContextWrapper
 import android.content.pm.ActivityInfo
 import android.view.ViewGroup
 import android.webkit.WebChromeClient
+import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.foundation.background
@@ -62,10 +63,7 @@ private tailrec fun Context.findActivity(): Activity? {
 
 @Composable
 fun PublicStreamScreen(
-    modifier: Modifier = Modifier,
-    pipMode: Boolean = false,
-    onEnterPip: () -> Unit = {},
-    onPlaybackChanged: (Boolean) -> Unit = {}
+    modifier: Modifier = Modifier
 ) {
     var streams by remember {
         mutableStateOf<List<StreamLink>>(emptyList())
@@ -107,26 +105,24 @@ fun PublicStreamScreen(
             .background(StreamBackground)
             .padding(horizontal = 16.dp)
     ) {
-        if (!pipMode) {
-            Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(18.dp))
 
-            Text(
-                text = "LIVE STREAMING",
-                color = StreamWhite,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold
-            )
+        Text(
+            text = "LIVE STREAMING",
+            color = StreamWhite,
+            style = MaterialTheme.typography.headlineSmall,
+            fontWeight = FontWeight.Bold
+        )
 
-            Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(4.dp))
 
-            Text(
-                text = "Saksikan pertandingan pilihan",
-                color = StreamMuted,
-                style = MaterialTheme.typography.bodyMedium
-            )
+        Text(
+            text = "Saksikan pertandingan pilihan",
+            color = StreamMuted,
+            style = MaterialTheme.typography.bodyMedium
+        )
 
-            Spacer(Modifier.height(18.dp))
-        }
+        Spacer(Modifier.height(18.dp))
 
         when {
             loading && streams.isEmpty() -> {
@@ -188,10 +184,7 @@ fun PublicStreamScreen(
             stream = stream,
             onDismiss = {
                 selectedStream = null
-                onPlaybackChanged(false)
-            },
-            onEnterPip = onEnterPip,
-            onPlaybackChanged = onPlaybackChanged
+            }
         )
     }
 }
@@ -283,35 +276,20 @@ private fun StreamCard(
 @Composable
 private fun StreamPlayerDialog(
     stream: StreamLink,
-    onDismiss: () -> Unit,
-    onEnterPip: () -> Unit,
-    onPlaybackChanged: (Boolean) -> Unit
+    onDismiss: () -> Unit
 ) {
     val context = LocalContext.current
+
     val activity = remember(context) {
         context.findActivity()
     }
 
+    var fullScreen by remember {
+        mutableStateOf(true)
+    }
+
     var isPlaying by remember {
         mutableStateOf(false)
-    }
-
-    var fullScreen by remember {
-        mutableStateOf(false)
-    }
-
-    var landscape by remember {
-        mutableStateOf(false)
-    }
-
-    DisposableEffect(activity) {
-        val previousOrientation =
-            activity?.requestedOrientation
-                ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-
-        onDispose {
-            activity?.requestedOrientation = previousOrientation
-        }
     }
 
     val type = stream.sourceType.uppercase()
@@ -320,148 +298,154 @@ private fun StreamPlayerDialog(
         type == "WEBSITE" ||
         type == "HTML"
 
+    // Otomatis masuk landscape saat player dibuka.
+    DisposableEffect(activity) {
+        val previousOrientation =
+            activity?.requestedOrientation
+                ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+
+        activity?.requestedOrientation =
+            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+
+        onDispose {
+            activity?.requestedOrientation = previousOrientation
+        }
+    }
+
     Dialog(
-        onDismissRequest = {
-            if (landscape) {
-                landscape = false
-                fullScreen = false
-                activity?.requestedOrientation =
-                    ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-            } else if (fullScreen) {
-                fullScreen = false
-            } else {
-                onDismiss()
-            }
-        },
+        onDismissRequest = onDismiss,
         properties = DialogProperties(
-            usePlatformDefaultWidth = !fullScreen
+            usePlatformDefaultWidth = false
         )
     ) {
-        Column(
-            modifier = if (fullScreen) {
-                Modifier
+        if (fullScreen) {
+            Box(
+                modifier = Modifier
                     .fillMaxSize()
-                    .background(StreamBackground)
-                    .padding(12.dp)
-            } else {
-                Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(18.dp))
-                    .background(StreamBackground)
-                    .padding(12.dp)
-            }
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
+                    .background(Color.Black)
             ) {
-                Text(
-                    text = stream.matchName,
-                    modifier = Modifier.weight(1f),
-                    color = StreamWhite,
-                    fontWeight = FontWeight.Bold
-                )
-
-                TextButton(
-                    onClick = {
-                        landscape = !landscape
-                        fullScreen = landscape
-
-                        activity?.requestedOrientation =
-                            if (landscape) {
-                                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
-                            } else {
-                                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                            }
-                    }
-                ) {
-                    Text(
-                        text = if (landscape) {
-                            "KELUAR MIRING"
-                        } else {
-                            "MODE MIRING"
-                        },
-                        color = StreamBlue
+                if (isWebSource) {
+                    StreamWebPlayer(
+                        url = stream.url,
+                        fullScreen = true
                     )
-                }
-
-                TextButton(
-                    onClick = {
-                        fullScreen = !fullScreen
-                    }
-                ) {
-                    Text(
-                        text = if (fullScreen) {
-                            "KELUAR PENUH"
-                        } else {
-                            "PENUH"
-                        },
-                        color = StreamBlue
-                    )
-                }
-
-                IconButton(
-                    onClick = {
-                        if (landscape) {
-                            landscape = false
-                            fullScreen = false
-                            activity?.requestedOrientation =
-                                ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
-                        } else if (fullScreen) {
-                            fullScreen = false
-                        } else {
-                            onDismiss()
+                } else {
+                    StreamExoPlayer(
+                        url = stream.url,
+                        fullScreen = true,
+                        onPlaybackChanged = {
+                            isPlaying = it
                         }
-                    }
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.ArrowBack,
-                        contentDescription = "Tutup",
-                        tint = StreamWhite
                     )
                 }
-            }
 
-            Spacer(Modifier.height(8.dp))
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopCenter)
+                        .fillMaxWidth()
+                        .background(Color(0xCC071321))
+                        .padding(horizontal = 12.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stream.matchName,
+                        modifier = Modifier.weight(1f),
+                        color = StreamWhite,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
 
-            if (isWebSource) {
-                StreamWebPlayer(url = stream.url)
-            } else {
-                StreamExoPlayer(
-                    url = stream.url,
-                    sourceType = type,
-                    fullScreen = fullScreen,
-                    onPlaybackChanged = { playing ->
-                        isPlaying = playing
-                        onPlaybackChanged(playing)
-                    }
-                )
-            }
-
-            Spacer(Modifier.height(10.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = if (isPlaying) {
-                        "Sedang diputar"
-                    } else {
-                        "Pemutar siap"
-                    },
-                    modifier = Modifier.weight(1f),
-                    color = StreamMuted
-                )
-
-                if (isPlaying && !isWebSource) {
-                    TextButton(onClick = onEnterPip) {
+                    TextButton(
+                        onClick = {
+                            fullScreen = false
+                        }
+                    ) {
                         Text(
-                            text = "PiP",
+                            text = "EXIT FULL SCREEN",
                             color = StreamBlue
                         )
                     }
+
+                    IconButton(
+                        onClick = onDismiss
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Tutup player",
+                            tint = StreamWhite
+                        )
+                    }
                 }
+            }
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(StreamBackground)
+                    .padding(12.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = stream.matchName,
+                        modifier = Modifier.weight(1f),
+                        color = StreamWhite,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1
+                    )
+
+                    TextButton(
+                        onClick = {
+                            fullScreen = true
+                        }
+                    ) {
+                        Text(
+                            text = "FULL SCREEN",
+                            color = StreamBlue
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onDismiss
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.ArrowBack,
+                            contentDescription = "Tutup player",
+                            tint = StreamWhite
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                if (isWebSource) {
+                    StreamWebPlayer(
+                        url = stream.url,
+                        fullScreen = false
+                    )
+                } else {
+                    StreamExoPlayer(
+                        url = stream.url,
+                        fullScreen = false,
+                        onPlaybackChanged = {
+                            isPlaying = it
+                        }
+                    )
+                }
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    text = if (isPlaying || isWebSource) {
+                        "Streaming"
+                    } else {
+                        "Pemutar siap"
+                    },
+                    color = StreamMuted,
+                    style = MaterialTheme.typography.bodySmall
+                )
             }
         }
     }
@@ -470,7 +454,6 @@ private fun StreamPlayerDialog(
 @Composable
 private fun StreamExoPlayer(
     url: String,
-    sourceType: String,
     fullScreen: Boolean,
     onPlaybackChanged: (Boolean) -> Unit
 ) {
@@ -552,19 +535,18 @@ private fun StreamExoPlayer(
     }
 
     Column(
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier.fillMaxSize()
     ) {
         AndroidView(
             modifier = if (fullScreen) {
                 Modifier
                     .fillMaxWidth()
                     .weight(1f)
-                    .clip(RoundedCornerShape(12.dp))
             } else {
                 Modifier
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f)
-                    .clip(RoundedCornerShape(12.dp))
+                    .clip(RoundedCornerShape(10.dp))
             },
             factory = { viewContext ->
                 PlayerView(viewContext).apply {
@@ -584,49 +566,34 @@ private fun StreamExoPlayer(
             }
         )
 
-        Spacer(Modifier.height(8.dp))
+        if (!fullScreen) {
+            Spacer(Modifier.height(8.dp))
 
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            Box {
-                OutlinedButton(
-                    onClick = {
-                        qualityMenuExpanded = true
-                    },
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = StreamBlue
-                    )
-                ) {
-                    Text("AUTO")
-                }
-
-                DropdownMenu(
-                    expanded = qualityMenuExpanded,
-                    onDismissRequest = {
-                        qualityMenuExpanded = false
-                    }
-                ) {
-                    DropdownMenuItem(
-                        text = { Text("AUTO") },
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box {
+                    OutlinedButton(
                         onClick = {
-                            player.trackSelectionParameters =
-                                player.trackSelectionParameters
-                                    .buildUpon()
-                                    .clearOverridesOfType(
-                                        C.TRACK_TYPE_VIDEO
-                                    )
-                                    .build()
+                            qualityMenuExpanded = true
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = StreamBlue
+                        )
+                    ) {
+                        Text("AUTO")
+                    }
 
+                    DropdownMenu(
+                        expanded = qualityMenuExpanded,
+                        onDismissRequest = {
                             qualityMenuExpanded = false
                         }
-                    )
-
-                    qualityOptions.forEach { option ->
+                    ) {
                         DropdownMenuItem(
-                            text = { Text(option.label) },
+                            text = { Text("AUTO") },
                             onClick = {
                                 player.trackSelectionParameters =
                                     player.trackSelectionParameters
@@ -634,30 +601,47 @@ private fun StreamExoPlayer(
                                         .clearOverridesOfType(
                                             C.TRACK_TYPE_VIDEO
                                         )
-                                        .addOverride(
-                                            TrackSelectionOverride(
-                                                option.trackGroup,
-                                                listOf(option.trackIndex)
-                                            )
-                                        )
                                         .build()
 
                                 qualityMenuExpanded = false
                             }
                         )
+
+                        qualityOptions.forEach { option ->
+                            DropdownMenuItem(
+                                text = { Text(option.label) },
+                                onClick = {
+                                    player.trackSelectionParameters =
+                                        player.trackSelectionParameters
+                                            .buildUpon()
+                                            .clearOverridesOfType(
+                                                C.TRACK_TYPE_VIDEO
+                                            )
+                                            .addOverride(
+                                                TrackSelectionOverride(
+                                                    option.trackGroup,
+                                                    listOf(option.trackIndex)
+                                                )
+                                            )
+                                            .build()
+
+                                    qualityMenuExpanded = false
+                                }
+                            )
+                        }
                     }
                 }
-            }
 
-            Text(
-                text = if (qualityOptions.isEmpty()) {
-                    "Kualitas otomatis"
-                } else {
-                    "Pilih kualitas"
-                },
-                color = StreamMuted,
-                style = MaterialTheme.typography.bodySmall
-            )
+                Text(
+                    text = if (qualityOptions.isEmpty()) {
+                        "Kualitas otomatis"
+                    } else {
+                        "Pilih kualitas"
+                    },
+                    color = StreamMuted,
+                    style = MaterialTheme.typography.bodySmall
+                )
+            }
         }
     }
 }
@@ -665,21 +649,67 @@ private fun StreamExoPlayer(
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun StreamWebPlayer(
-    url: String
+    url: String,
+    fullScreen: Boolean
 ) {
     AndroidView(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(12.dp)),
+        modifier = if (fullScreen) {
+            Modifier.fillMaxSize()
+        } else {
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(10.dp))
+        },
         factory = { context ->
+            val originalHost = android.net.Uri.parse(url).host
+                ?.lowercase()
+                .orEmpty()
+
             WebView(context).apply {
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
-                settings.mediaPlaybackRequiresUserGesture = true
+
+                // Izinkan autoplay pada konten web yang mendukungnya.
+                settings.mediaPlaybackRequiresUserGesture = false
+
+                // Jangan izinkan popup atau jendela browser baru.
+                settings.javaScriptCanOpenWindowsAutomatically = false
+                settings.setSupportMultipleWindows(false)
 
                 webChromeClient = WebChromeClient()
-                webViewClient = WebViewClient()
+
+                webViewClient = object : WebViewClient() {
+
+                    override fun shouldOverrideUrlLoading(
+                        view: WebView,
+                        request: WebResourceRequest
+                    ): Boolean {
+                        // Iframe dan resource streaming tetap diizinkan.
+                        if (!request.isForMainFrame) {
+                            return false
+                        }
+
+                        val target = request.url
+                        val targetHost = target.host
+                            ?.lowercase()
+                            .orEmpty()
+
+                        // Batasi perpindahan halaman utama ke domain
+                        // sumber streaming yang sedang dibuka.
+                        val sameHost =
+                            targetHost == originalHost ||
+                            (
+                                originalHost.isNotEmpty() &&
+                                targetHost.endsWith(".$originalHost")
+                            )
+
+                        return target.scheme !in listOf("http", "https") ||
+                            !sameHost
+                    }
+                }
+
+                setBackgroundColor(android.graphics.Color.BLACK)
 
                 loadUrl(url)
             }
