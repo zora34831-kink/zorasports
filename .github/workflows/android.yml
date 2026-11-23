@@ -36,6 +36,11 @@ jobs:
           test -s app/src/main/AndroidManifest.xml
           python3 -c "import xml.etree.ElementTree as ET; ET.parse('app/src/main/AndroidManifest.xml'); print('MANIFEST XML VALID')"
 
+      # Generate SHA-1 and SHA-256
+      - name: Generate SHA Fingerprints
+        run: |
+          gradle :app:signingReport --no-daemon
+
       - name: Build APK
         env:
           FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
@@ -58,4 +63,3 @@ jobs:
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
           retention-days: 14
-          
