@@ -9,5 +9,6 @@ data class StreamLink(
     val url: String = "",
     val sourceType: String = "AUTO",
     val published: Boolean = false,
-    val updatedAt: Long = 0L
+    val updatedAt: Long = 0L,
+    val liveStartedAt: Long = 0L
 )
