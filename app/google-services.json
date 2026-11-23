@@ -13,7 +13,16 @@
           "package_name": "com.zora.admin"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "1006039613910-jmv4kmcufevudtq5okf6krjijmp0vnad.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.zora.admin",
+            "certificate_hash": "ed7e8a07913168988c7687713be4289664c6a20f"
+          }
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyCxav9ffm-PA_bslw-f-8LmR0uClC6WeIg"
