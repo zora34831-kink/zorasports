@@ -4,17 +4,17 @@
     <uses-permission android:name="android.permission.INTERNET" />
 
     <application
-        android:allowBackup="false"
-        android:label="ZORASPORTS"
+        android:allowBackup="true"
         android:icon="@drawable/ic_zorasports_logo"
+        android:label="ZORASPORTS"
         android:roundIcon="@drawable/ic_zorasports_logo"
         android:supportsRtl="true"
-        android:usesCleartextTraffic="false"
         android:theme="@android:style/Theme.Material.Light.NoActionBar">
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:configChanges="orientation|screenSize|keyboardHidden">
 
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -22,5 +22,7 @@
             </intent-filter>
 
         </activity>
+
     </application>
+
 </manifest>
