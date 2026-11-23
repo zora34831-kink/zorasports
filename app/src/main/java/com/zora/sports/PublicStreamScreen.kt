@@ -40,12 +40,20 @@ import androidx.media3.common.TrackGroup
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import kotlinx.coroutines.delay
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 private val StreamBackground = Color(0xFF071321)
 private val StreamPanel = Color(0xFF102337)
 private val StreamBlue = Color(0xFF42DDF5)
 private val StreamWhite = Color(0xFFF4FAFF)
 private val StreamMuted = Color(0xFF91A5B8)
+
+private const val LIVE_LIMIT_MS = 120L * 60L * 1000L
+private const val LIVE_WARNING_MS = 115L * 60L * 1000L
 
 private data class StreamQualityOption(
     val trackGroup: TrackGroup,
@@ -59,6 +67,35 @@ private tailrec fun Context.findActivity(): Activity? {
         is ContextWrapper -> baseContext.findActivity()
         else -> null
     }
+}
+
+private fun formatWib(timestamp: Long): String {
+    if (timestamp <= 0L) return "--:--"
+
+    val formatter = SimpleDateFormat(
+        "HH:mm",
+        Locale("id", "ID")
+    )
+
+    formatter.timeZone = TimeZone.getTimeZone("Asia/Jakarta")
+
+    return formatter.format(Date(timestamp))
+}
+
+private fun formatDuration(milliseconds: Long): String {
+    val totalSeconds = (milliseconds / 1000L).coerceAtLeast(0L)
+
+    val hours = totalSeconds / 3600L
+    val minutes = (totalSeconds % 3600L) / 60L
+    val seconds = totalSeconds % 60L
+
+    return String.format(
+        Locale.US,
+        "%02d:%02d:%02d",
+        hours,
+        minutes,
+        seconds
+    )
 }
 
 @Composable
@@ -79,6 +116,10 @@ fun PublicStreamScreen(
 
     var error by remember {
         mutableStateOf<String?>(null)
+    }
+
+    var showExpiredMessage by remember {
+        mutableStateOf(false)
     }
 
     DisposableEffect(Unit) {
@@ -184,6 +225,41 @@ fun PublicStreamScreen(
             stream = stream,
             onDismiss = {
                 selectedStream = null
+            },
+            onExpired = {
+                selectedStream = null
+                showExpiredMessage = true
+            }
+        )
+    }
+
+    if (showExpiredMessage) {
+        AlertDialog(
+            onDismissRequest = {
+                showExpiredMessage = false
+            },
+            containerColor = StreamPanel,
+            title = {
+                Text(
+                    "LIVE BERAKHIR",
+                    color = StreamBlue,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    "BATAS WAKTU 120 MENIT TERCAPAI",
+                    color = StreamWhite
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExpiredMessage = false
+                    }
+                ) {
+                    Text("MENGERTI", color = StreamBlue)
+                }
             }
         )
     }
@@ -276,7 +352,8 @@ private fun StreamCard(
 @Composable
 private fun StreamPlayerDialog(
     stream: StreamLink,
-    onDismiss: () -> Unit
+    onDismiss: () -> Unit,
+    onExpired: () -> Unit
 ) {
     val context = LocalContext.current
 
@@ -292,11 +369,64 @@ private fun StreamPlayerDialog(
         mutableStateOf(false)
     }
 
+    var currentTime by remember {
+        mutableLongStateOf(System.currentTimeMillis())
+    }
+
+    var showWarning by remember {
+        mutableStateOf(false)
+    }
+
+    var warningShown by remember {
+        mutableStateOf(false)
+    }
+
+    val startTime = stream.liveStartedAt
+
     val type = stream.sourceType.uppercase()
 
     val isWebSource = type == "YOUTUBE" ||
         type == "WEBSITE" ||
         type == "HTML"
+
+    val elapsed = if (startTime > 0L) {
+        (currentTime - startTime).coerceAtLeast(0L)
+    } else {
+        0L
+    }
+
+    val remaining = if (startTime > 0L) {
+        (LIVE_LIMIT_MS - elapsed).coerceAtLeast(0L)
+    } else {
+        LIVE_LIMIT_MS
+    }
+
+    // Timer mengikuti waktu mulai yang tersimpan di Firebase.
+    LaunchedEffect(stream.id, startTime) {
+        if (startTime > 0L) {
+            while (true) {
+                currentTime = System.currentTimeMillis()
+
+                val liveElapsed = currentTime - startTime
+
+                if (
+                    liveElapsed >= LIVE_WARNING_MS &&
+                    liveElapsed < LIVE_LIMIT_MS &&
+                    !warningShown
+                ) {
+                    warningShown = true
+                    showWarning = true
+                }
+
+                if (liveElapsed >= LIVE_LIMIT_MS) {
+                    onExpired()
+                    break
+                }
+
+                delay(1000L)
+            }
+        }
+    }
 
     // Otomatis masuk landscape saat player dibuka.
     DisposableEffect(activity) {
@@ -347,13 +477,21 @@ private fun StreamPlayerDialog(
                         .padding(horizontal = 12.dp, vertical = 4.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = stream.matchName,
-                        modifier = Modifier.weight(1f),
-                        color = StreamWhite,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = stream.matchName,
+                            color = StreamWhite,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+
+                        LiveTimerInfo(
+                            startTime = startTime,
+                            elapsed = elapsed
+                        )
+                    }
 
                     TextButton(
                         onClick = {
@@ -388,13 +526,21 @@ private fun StreamPlayerDialog(
                     modifier = Modifier.fillMaxWidth(),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = stream.matchName,
-                        modifier = Modifier.weight(1f),
-                        color = StreamWhite,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1
-                    )
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            text = stream.matchName,
+                            color = StreamWhite,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1
+                        )
+
+                        LiveTimerInfo(
+                            startTime = startTime,
+                            elapsed = elapsed
+                        )
+                    }
 
                     TextButton(
                         onClick = {
@@ -449,6 +595,62 @@ private fun StreamPlayerDialog(
             }
         }
     }
+
+    if (showWarning) {
+        AlertDialog(
+            onDismissRequest = {
+                showWarning = false
+            },
+            containerColor = StreamPanel,
+            title = {
+                Text(
+                    "PERINGATAN LIVE",
+                    color = StreamBlue,
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Text(
+                    "Live sudah berjalan 115 menit. Player akan otomatis ditutup pada menit ke-120.",
+                    color = StreamWhite
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showWarning = false
+                    }
+                ) {
+                    Text("MENGERTI", color = StreamBlue)
+                }
+            }
+        )
+    }
+}
+
+@Composable
+private fun LiveTimerInfo(
+    startTime: Long,
+    elapsed: Long
+) {
+    val startLabel = if (startTime > 0L) {
+        "${formatWib(startTime)} WIB"
+    } else {
+        "BELUM TERSEDIA"
+    }
+
+    val durationLabel = if (startTime > 0L) {
+        formatDuration(elapsed)
+    } else {
+        "--:--:--"
+    }
+
+    Text(
+        text = "MULAI $startLabel  •  DURASI $durationLabel",
+        color = StreamBlue,
+        style = MaterialTheme.typography.labelSmall,
+        maxLines = 1
+    )
 }
 
 @Composable
@@ -670,10 +872,8 @@ private fun StreamWebPlayer(
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
 
-                // Izinkan autoplay pada konten web yang mendukungnya.
                 settings.mediaPlaybackRequiresUserGesture = false
 
-                // Jangan izinkan popup atau jendela browser baru.
                 settings.javaScriptCanOpenWindowsAutomatically = false
                 settings.setSupportMultipleWindows(false)
 
@@ -685,7 +885,6 @@ private fun StreamWebPlayer(
                         view: WebView,
                         request: WebResourceRequest
                     ): Boolean {
-                        // Iframe dan resource streaming tetap diizinkan.
                         if (!request.isForMainFrame) {
                             return false
                         }
@@ -695,8 +894,6 @@ private fun StreamWebPlayer(
                             ?.lowercase()
                             .orEmpty()
 
-                        // Batasi perpindahan halaman utama ke domain
-                        // sumber streaming yang sedang dibuka.
                         val sameHost =
                             targetHost == originalHost ||
                             (
