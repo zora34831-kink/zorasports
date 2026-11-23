@@ -26,8 +26,12 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
+import androidx.media3.common.TrackSelectionOverride
+import androidx.media3.common.TrackGroup
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
@@ -37,6 +41,12 @@ private val StreamPanel = Color(0xFF102337)
 private val StreamBlue = Color(0xFF42DDF5)
 private val StreamWhite = Color(0xFFF4FAFF)
 private val StreamMuted = Color(0xFF91A5B8)
+
+private data class StreamQualityOption(
+    val trackGroup: TrackGroup,
+    val trackIndex: Int,
+    val label: String
+)
 
 @Composable
 fun PublicStreamScreen(
@@ -112,9 +122,7 @@ fun PublicStreamScreen(
                     Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(
-                        color = StreamBlue
-                    )
+                    CircularProgressIndicator(color = StreamBlue)
                 }
             }
 
@@ -145,9 +153,7 @@ fun PublicStreamScreen(
             else -> {
                 LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(
-                        bottom = 24.dp
-                    )
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
                     items(
                         items = streams,
@@ -198,10 +204,7 @@ private fun StreamCard(
                 modifier = Modifier
                     .clip(RoundedCornerShape(6.dp))
                     .background(Color(0xFFB32635))
-                    .padding(
-                        horizontal = 9.dp,
-                        vertical = 4.dp
-                    )
+                    .padding(horizontal = 9.dp, vertical = 4.dp)
             ) {
                 Text(
                     text = "LIVE",
@@ -276,6 +279,10 @@ private fun StreamPlayerDialog(
         mutableStateOf(false)
     }
 
+    var fullScreen by remember {
+        mutableStateOf(false)
+    }
+
     val type = stream.sourceType.uppercase()
 
     val isWebSource = type == "YOUTUBE" ||
@@ -283,14 +290,30 @@ private fun StreamPlayerDialog(
         type == "HTML"
 
     Dialog(
-        onDismissRequest = onDismiss
+        onDismissRequest = {
+            if (fullScreen) {
+                fullScreen = false
+            } else {
+                onDismiss()
+            }
+        },
+        properties = DialogProperties(
+            usePlatformDefaultWidth = !fullScreen
+        )
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(18.dp))
-                .background(StreamBackground)
-                .padding(12.dp)
+            modifier = if (fullScreen) {
+                Modifier
+                    .fillMaxSize()
+                    .background(StreamBackground)
+                    .padding(12.dp)
+            } else {
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(StreamBackground)
+                    .padding(12.dp)
+            }
         ) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
@@ -303,8 +326,29 @@ private fun StreamPlayerDialog(
                     fontWeight = FontWeight.Bold
                 )
 
+                TextButton(
+                    onClick = {
+                        fullScreen = !fullScreen
+                    }
+                ) {
+                    Text(
+                        text = if (fullScreen) {
+                            "KELUAR PENUH"
+                        } else {
+                            "RESOLUSI PENUH"
+                        },
+                        color = StreamBlue
+                    )
+                }
+
                 IconButton(
-                    onClick = onDismiss
+                    onClick = {
+                        if (fullScreen) {
+                            fullScreen = false
+                        } else {
+                            onDismiss()
+                        }
+                    }
                 ) {
                     Icon(
                         imageVector = Icons.Default.ArrowBack,
@@ -318,12 +362,14 @@ private fun StreamPlayerDialog(
 
             if (isWebSource) {
                 StreamWebPlayer(
-                    url = stream.url
+                    url = stream.url,
+                    fullScreen = fullScreen
                 )
             } else {
                 StreamExoPlayer(
                     url = stream.url,
                     sourceType = type,
+                    fullScreen = fullScreen,
                     onPlaybackChanged = { playing ->
                         isPlaying = playing
                         onPlaybackChanged(playing)
@@ -348,9 +394,7 @@ private fun StreamPlayerDialog(
                 )
 
                 if (isPlaying && !isWebSource) {
-                    TextButton(
-                        onClick = onEnterPip
-                    ) {
+                    TextButton(onClick = onEnterPip) {
                         Text(
                             text = "PiP",
                             color = StreamBlue
@@ -366,6 +410,7 @@ private fun StreamPlayerDialog(
 private fun StreamExoPlayer(
     url: String,
     sourceType: String,
+    fullScreen: Boolean,
     onPlaybackChanged: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -374,20 +419,31 @@ private fun StreamExoPlayer(
         ExoPlayer.Builder(context)
             .build()
             .apply {
-                val mediaItem = MediaItem.fromUri(url)
-                setMediaItem(mediaItem)
+                setMediaItem(MediaItem.fromUri(url))
                 prepare()
                 playWhenReady = true
             }
     }
 
+    var trackVersion by remember {
+        mutableIntStateOf(0)
+    }
+
+    var qualityMenuExpanded by remember {
+        mutableStateOf(false)
+    }
+
     DisposableEffect(player) {
         val listener = object : Player.Listener {
 
-            override fun onIsPlayingChanged(
-                isPlaying: Boolean
-            ) {
+            override fun onIsPlayingChanged(isPlaying: Boolean) {
                 onPlaybackChanged(isPlaying)
+            }
+
+            override fun onTracksChanged(
+                tracks: androidx.media3.common.Tracks
+            ) {
+                trackVersion++
             }
 
             override fun onPlayerError(
@@ -406,40 +462,167 @@ private fun StreamExoPlayer(
         }
     }
 
-    AndroidView(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(12.dp)),
-        factory = { viewContext ->
-            PlayerView(viewContext).apply {
-                this.player = player
-                useController = true
-                resizeMode =
-                    AspectRatioFrameLayout.RESIZE_MODE_FIT
+    val qualityOptions = remember(player, trackVersion) {
+        player.currentTracks.groups
+            .filter { it.type == C.TRACK_TYPE_VIDEO }
+            .flatMap { group ->
+                (0 until group.length).mapNotNull { index ->
+                    if (!group.isTrackSupported(index)) {
+                        null
+                    } else {
+                        val format = group.getTrackFormat(index)
 
-                layoutParams = ViewGroup.LayoutParams(
-                    ViewGroup.LayoutParams.MATCH_PARENT,
-                    ViewGroup.LayoutParams.MATCH_PARENT
-                )
+                        if (format.height <= 0) {
+                            null
+                        } else {
+                            StreamQualityOption(
+                                trackGroup = group.mediaTrackGroup,
+                                trackIndex = index,
+                                label = "${format.height}p"
+                            )
+                        }
+                    }
+                }
             }
-        },
-        update = { view ->
-            view.player = player
+            .distinctBy { it.label }
+            .sortedByDescending {
+                it.label.removeSuffix("p").toIntOrNull() ?: 0
+            }
+    }
+
+    Column(
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        AndroidView(
+            modifier = if (fullScreen) {
+                Modifier
+                    .fillMaxWidth()
+                    .weight(1f)
+                    .clip(RoundedCornerShape(12.dp))
+            } else {
+                Modifier
+                    .fillMaxWidth()
+                    .aspectRatio(16f / 9f)
+                    .clip(RoundedCornerShape(12.dp))
+            },
+            factory = { viewContext ->
+                PlayerView(viewContext).apply {
+                    this.player = player
+                    useController = true
+                    resizeMode =
+                        AspectRatioFrameLayout.RESIZE_MODE_FIT
+
+                    layoutParams = ViewGroup.LayoutParams(
+                        ViewGroup.LayoutParams.MATCH_PARENT,
+                        ViewGroup.LayoutParams.MATCH_PARENT
+                    )
+                }
+            },
+            update = { view ->
+                view.player = player
+            }
+        )
+
+        Spacer(Modifier.height(8.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box {
+                OutlinedButton(
+                    onClick = {
+                        qualityMenuExpanded = true
+                    },
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = StreamBlue
+                    )
+                ) {
+                    Text("AUTO")
+                }
+
+                DropdownMenu(
+                    expanded = qualityMenuExpanded,
+                    onDismissRequest = {
+                        qualityMenuExpanded = false
+                    }
+                ) {
+                    DropdownMenuItem(
+                        text = {
+                            Text("AUTO")
+                        },
+                        onClick = {
+                            player.trackSelectionParameters =
+                                player.trackSelectionParameters
+                                    .buildUpon()
+                                    .clearOverridesOfType(
+                                        C.TRACK_TYPE_VIDEO
+                                    )
+                                    .build()
+
+                            qualityMenuExpanded = false
+                        }
+                    )
+
+                    qualityOptions.forEach { option ->
+                        DropdownMenuItem(
+                            text = {
+                                Text(option.label)
+                            },
+                            onClick = {
+                                player.trackSelectionParameters =
+                                    player.trackSelectionParameters
+                                        .buildUpon()
+                                        .clearOverridesOfType(
+                                            C.TRACK_TYPE_VIDEO
+                                        )
+                                        .addOverride(
+                                            TrackSelectionOverride(
+                                                option.trackGroup,
+                                                listOf(option.trackIndex)
+                                            )
+                                        )
+                                        .build()
+
+                                qualityMenuExpanded = false
+                            }
+                        )
+                    }
+                }
+            }
+
+            Text(
+                text = if (qualityOptions.isEmpty()) {
+                    "Kualitas otomatis"
+                } else {
+                    "Pilih kualitas"
+                },
+                color = StreamMuted,
+                style = MaterialTheme.typography.bodySmall
+            )
         }
-    )
+    }
 }
 
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun StreamWebPlayer(
-    url: String
+    url: String,
+    fullScreen: Boolean
 ) {
     AndroidView(
-        modifier = Modifier
-            .fillMaxWidth()
-            .aspectRatio(16f / 9f)
-            .clip(RoundedCornerShape(12.dp)),
+        modifier = if (fullScreen) {
+            Modifier
+                .fillMaxWidth()
+                .weight(1f)
+                .clip(RoundedCornerShape(12.dp))
+        } else {
+            Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .clip(RoundedCornerShape(12.dp))
+        },
         factory = { context ->
             WebView(context).apply {
                 settings.javaScriptEnabled = true
