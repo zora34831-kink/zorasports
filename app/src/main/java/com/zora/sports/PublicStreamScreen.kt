@@ -3,18 +3,21 @@ package com.zora.sports
 
 import android.app.Activity
 import android.content.pm.ActivityInfo
+import android.graphics.Color as AndroidColor
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PlayCircle
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -22,7 +25,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
@@ -31,6 +33,7 @@ import androidx.compose.ui.window.DialogProperties
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 import androidx.media3.common.MediaItem
+import androidx.media3.common.MimeTypes
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.exoplayer.ExoPlayer
@@ -41,6 +44,56 @@ private val StreamNavy = Color(0xFF071321)
 private val StreamPanel = Color(0xFF102337)
 private val StreamCyan = Color(0xFF42DDF5)
 private val StreamMuted = Color(0xFF91A5B8)
+
+private enum class StreamMode {
+    VIDEO, YOUTUBE, WEBSITE
+}
+
+private fun resolveStreamMode(link: StreamLink): StreamMode {
+    val type = link.sourceType.uppercase()
+    val url = link.url.lowercase()
+
+    return when (type) {
+        "MP4", "VIDEO", "HLS", "M3U8", "DASH", "MPD" ->
+            StreamMode.VIDEO
+
+        "YOUTUBE" -> StreamMode.YOUTUBE
+
+        "WEBSITE", "HTML", "WEB" ->
+            StreamMode.WEBSITE
+
+        else -> when {
+            "youtube.com" in url || "youtu.be" in url ->
+                StreamMode.YOUTUBE
+
+            ".m3u8" in url || ".mpd" in url ||
+                ".mp4" in url || ".m4v" in url ->
+                StreamMode.VIDEO
+
+            else -> StreamMode.WEBSITE
+        }
+    }
+}
+
+private fun createMediaItem(link: StreamLink): MediaItem {
+    val type = link.sourceType.uppercase()
+
+    val mimeType = when (type) {
+        "HLS", "M3U8" -> MimeTypes.APPLICATION_M3U8
+        "DASH", "MPD" -> MimeTypes.APPLICATION_MPD
+        "MP4", "VIDEO" -> MimeTypes.VIDEO_MP4
+        else -> null
+    }
+
+    val builder = MediaItem.Builder()
+        .setUri(link.url)
+
+    if (mimeType != null) {
+        builder.setMimeType(mimeType)
+    }
+
+    return builder.build()
+}
 
 @Composable
 fun PublicStreamScreen(
@@ -111,7 +164,7 @@ fun PublicStreamScreen(
         )
 
         Text(
-            "Siaran resmi langsung di aplikasi ZORASPORTS.",
+            "Siaran pertandingan pilihan di ZORASPORTS.",
             color = StreamMuted,
             fontSize = 12.sp
         )
@@ -143,20 +196,16 @@ fun PublicStreamScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            StreamVideoPlayer(
-                url = link.url
-            )
+            StreamSourcePlayer(link)
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.height(8.dp))
 
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.End
             ) {
                 TextButton(
-                    onClick = {
-                        selectedLink = null
-                    }
+                    onClick = { selectedLink = null }
                 ) {
                     Icon(
                         Icons.Default.Close,
@@ -191,9 +240,7 @@ fun PublicStreamScreen(
                         .padding(30.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(
-                        color = StreamCyan
-                    )
+                    CircularProgressIndicator(color = StreamCyan)
                 }
             }
 
@@ -248,33 +295,26 @@ fun PublicStreamScreen(
                         key = { it.id }
                     ) { link ->
 
-                        val isSelected =
-                            selectedLink?.id == link.id
-
                         Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .background(
-                                    if (isSelected)
+                                    if (selectedLink?.id == link.id)
                                         Color(0xFF173B50)
                                     else
                                         StreamPanel,
                                     RoundedCornerShape(16.dp)
                                 )
-                                .clickable {
-                                    selectedLink = link
-                                }
                                 .padding(16.dp)
                         ) {
                             Row(
-                                verticalAlignment =
-                                    Alignment.CenterVertically
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     Icons.Default.PlayCircle,
                                     contentDescription = null,
                                     tint = StreamCyan,
-                                    modifier = Modifier.size(32.dp)
+                                    modifier = Modifier.size(34.dp)
                                 )
 
                                 Spacer(Modifier.width(12.dp))
@@ -295,20 +335,10 @@ fun PublicStreamScreen(
                                         fontSize = 11.sp
                                     )
                                 }
-
-                                Text(
-                                    if (isSelected) "DIPILIH"
-                                    else "PUTAR",
-                                    color = StreamCyan,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.sp
-                                )
                             }
 
                             HorizontalDivider(
-                                modifier = Modifier.padding(
-                                    vertical = 12.dp
-                                ),
+                                modifier = Modifier.padding(vertical = 12.dp),
                                 color = Color.White.copy(alpha = 0.1f)
                             )
 
@@ -318,13 +348,31 @@ fun PublicStreamScreen(
                                 fontSize = 11.sp
                             )
 
-                            Text(
-                                link.url,
-                                color = StreamCyan,
-                                fontSize = 10.sp,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Spacer(Modifier.height(12.dp))
+
+                            Button(
+                                onClick = {
+                                    selectedLink = link
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = StreamCyan,
+                                    contentColor = StreamNavy
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.PlayCircle,
+                                    contentDescription = null
+                                )
+
+                                Spacer(Modifier.width(8.dp))
+
+                                Text(
+                                    "TONTON SEKARANG",
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
                         }
                     }
                 }
@@ -334,32 +382,50 @@ fun PublicStreamScreen(
 }
 
 @Composable
-private fun StreamVideoPlayer(
-    url: String
-) {
+private fun StreamSourcePlayer(link: StreamLink) {
+    when (resolveStreamMode(link)) {
+        StreamMode.VIDEO -> StreamVideoPlayer(link)
+
+        StreamMode.YOUTUBE,
+        StreamMode.WEBSITE -> StreamWebPlayer(link.url)
+    }
+}
+
+@Composable
+private fun StreamVideoPlayer(link: StreamLink) {
     val context = LocalContext.current
     val activity = context as? Activity
 
-    var fullscreen by remember(url) {
+    var fullscreen by remember(link.id) {
         mutableStateOf(false)
     }
 
-    var playbackError by remember(url) {
+    var playbackError by remember(link.id) {
         mutableStateOf("")
     }
 
-    val player = remember(url) {
+    val player = remember(link.id) {
         ExoPlayer.Builder(context).build().apply {
-            setMediaItem(MediaItem.fromUri(url))
+            setMediaItem(createMediaItem(link))
             prepare()
             playWhenReady = true
 
             addListener(object : Player.Listener {
-                override fun onPlayerError(
-                    error: PlaybackException
-                ) {
-                    playbackError =
-                        error.message ?: "Video tidak dapat diputar."
+                override fun onPlayerError(error: PlaybackException) {
+                    playbackError = when (error.errorCode) {
+                        PlaybackException.ERROR_CODE_PARSING_MANIFEST_MALFORMED ->
+                            "Format streaming tidak valid."
+
+                        PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_FAILED,
+                        PlaybackException.ERROR_CODE_IO_NETWORK_CONNECTION_TIMEOUT ->
+                            "Koneksi atau server streaming bermasalah."
+
+                        PlaybackException.ERROR_CODE_BEHIND_LIVE_WINDOW ->
+                            "Siaran live perlu dimuat ulang."
+
+                        else ->
+                            error.message ?: "Sumber tidak dapat diputar."
+                    }
                 }
             })
         }
@@ -373,50 +439,38 @@ private fun StreamVideoPlayer(
 
     DisposableEffect(activity, fullscreen) {
         if (activity != null && fullscreen) {
-            val oldOrientation =
-                activity.requestedOrientation
+            val oldOrientation = activity.requestedOrientation
 
-            val controller =
-                WindowInsetsControllerCompat(
-                    activity.window,
-                    activity.window.decorView
-                )
+            val controller = WindowInsetsControllerCompat(
+                activity.window,
+                activity.window.decorView
+            )
 
             activity.requestedOrientation =
                 ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 
-            controller.hide(
-                WindowInsetsCompat.Type.systemBars()
-            )
+            controller.hide(WindowInsetsCompat.Type.systemBars())
 
             controller.systemBarsBehavior =
                 WindowInsetsControllerCompat
                     .BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
             onDispose {
-                controller.show(
-                    WindowInsetsCompat.Type.systemBars()
-                )
-
-                activity.requestedOrientation =
-                    oldOrientation
+                controller.show(WindowInsetsCompat.Type.systemBars())
+                activity.requestedOrientation = oldOrientation
             }
         } else {
             onDispose {}
         }
     }
 
-    BackHandler(
-        enabled = fullscreen
-    ) {
+    BackHandler(enabled = fullscreen) {
         fullscreen = false
     }
 
     if (fullscreen) {
         Dialog(
-            onDismissRequest = {
-                fullscreen = false
-            },
+            onDismissRequest = { fullscreen = false },
             properties = DialogProperties(
                 usePlatformDefaultWidth = false
             )
@@ -438,15 +492,11 @@ private fun StreamVideoPlayer(
                             )
                         }
                     },
-                    update = {
-                        it.player = player
-                    }
+                    update = { it.player = player }
                 )
 
                 IconButton(
-                    onClick = {
-                        fullscreen = false
-                    },
+                    onClick = { fullscreen = false },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(12.dp)
@@ -467,10 +517,7 @@ private fun StreamVideoPlayer(
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Color.Black,
-                    RoundedCornerShape(14.dp)
-                )
+                .background(Color.Black, RoundedCornerShape(14.dp))
         ) {
             AndroidView(
                 modifier = Modifier
@@ -485,15 +532,11 @@ private fun StreamVideoPlayer(
                         )
                     }
                 },
-                update = {
-                    it.player = player
-                }
+                update = { it.player = player }
             )
 
             IconButton(
-                onClick = {
-                    fullscreen = true
-                },
+                onClick = { fullscreen = true },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(7.dp)
@@ -519,5 +562,104 @@ private fun StreamVideoPlayer(
             color = Color(0xFFFF8A80),
             fontSize = 12.sp
         )
+    }
+}
+
+@Composable
+private fun StreamWebPlayer(url: String) {
+    var fullscreen by remember(url) {
+        mutableStateOf(false)
+    }
+
+    val webView = remember(url) {
+        WebView(LocalContext.current).apply {
+            setBackgroundColor(AndroidColor.BLACK)
+
+            settings.javaScriptEnabled = true
+            settings.domStorageEnabled = true
+            settings.mediaPlaybackRequiresUserGesture = false
+
+            webViewClient = WebViewClient()
+            webChromeClient = WebChromeClient()
+
+            loadUrl(url)
+        }
+    }
+
+    DisposableEffect(webView) {
+        onDispose {
+            webView.stopLoading()
+            webView.destroy()
+        }
+    }
+
+    BackHandler(enabled = fullscreen) {
+        fullscreen = false
+    }
+
+    if (fullscreen) {
+        Dialog(
+            onDismissRequest = { fullscreen = false },
+            properties = DialogProperties(
+                usePlatformDefaultWidth = false
+            )
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black)
+            ) {
+                AndroidView(
+                    modifier = Modifier.fillMaxSize(),
+                    factory = { webView }
+                )
+
+                IconButton(
+                    onClick = { fullscreen = false },
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(12.dp)
+                        .background(
+                            Color.Black.copy(alpha = 0.7f),
+                            RoundedCornerShape(50)
+                        )
+                ) {
+                    Icon(
+                        Icons.Default.FullscreenExit,
+                        contentDescription = "Keluar layar penuh",
+                        tint = Color.White
+                    )
+                }
+            }
+        }
+    } else {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .aspectRatio(16f / 9f)
+                .background(Color.Black, RoundedCornerShape(14.dp))
+        ) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { webView }
+            )
+
+            IconButton(
+                onClick = { fullscreen = true },
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(7.dp)
+                    .background(
+                        Color.Black.copy(alpha = 0.7f),
+                        RoundedCornerShape(50)
+                    )
+            ) {
+                Icon(
+                    Icons.Default.Fullscreen,
+                    contentDescription = "Layar penuh",
+                    tint = Color.White
+                )
+            }
+        }
     }
 }
