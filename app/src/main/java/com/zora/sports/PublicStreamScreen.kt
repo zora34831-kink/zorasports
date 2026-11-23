@@ -97,7 +97,9 @@ private fun createMediaItem(link: StreamLink): MediaItem {
 
 @Composable
 fun PublicStreamScreen(
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    pipMode: Boolean = false,
+    onEnterPip: () -> Unit = {}
 ) {
     var links by remember {
         mutableStateOf<List<StreamLink>>(emptyList())
@@ -144,234 +146,258 @@ fun PublicStreamScreen(
         modifier = modifier
             .fillMaxSize()
             .background(StreamNavy)
-            .padding(18.dp)
+            .then(
+                if (pipMode) Modifier
+                else Modifier.padding(18.dp)
+            )
     ) {
-        Text(
-            "LIVE STREAMING",
-            color = StreamCyan,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold,
-            letterSpacing = 2.sp
-        )
-
-        Spacer(Modifier.height(6.dp))
-
-        Text(
-            "Tonton Pertandingan",
-            color = Color.White,
-            fontSize = 25.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Text(
-            "Siaran pertandingan pilihan di ZORASPORTS.",
-            color = StreamMuted,
-            fontSize = 12.sp
-        )
-
-        Spacer(Modifier.height(18.dp))
-
-        selectedLink?.let { link ->
+        if (!pipMode) {
             Text(
-                "SEDANG DIPUTAR",
+                "LIVE STREAMING",
                 color = StreamCyan,
                 fontSize = 10.sp,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp
             )
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(6.dp))
 
             Text(
-                link.matchName,
+                "Tonton Pertandingan",
                 color = Color.White,
-                fontSize = 17.sp,
+                fontSize = 25.sp,
                 fontWeight = FontWeight.Bold
             )
 
             Text(
-                link.competition,
+                "Siaran pertandingan pilihan di ZORASPORTS.",
                 color = StreamMuted,
                 fontSize = 12.sp
             )
 
-            Spacer(Modifier.height(12.dp))
-
-            StreamSourcePlayer(link)
-
-            Spacer(Modifier.height(8.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.End
-            ) {
-                TextButton(
-                    onClick = { selectedLink = null }
-                ) {
-                    Icon(
-                        Icons.Default.Close,
-                        contentDescription = null,
-                        tint = StreamCyan
-                    )
-
-                    Spacer(Modifier.width(5.dp))
-
-                    Text(
-                        "Tutup pemutar",
-                        color = StreamCyan
-                    )
-                }
-            }
+            Spacer(Modifier.height(18.dp))
         }
 
-        Text(
-            "DAFTAR SIARAN",
-            color = Color.White,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(Modifier.height(10.dp))
-
-        when {
-            loading -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(30.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    CircularProgressIndicator(color = StreamCyan)
-                }
-            }
-
-            error.isNotBlank() -> {
+        selectedLink?.let { link ->
+            if (!pipMode) {
                 Text(
-                    "Gagal memuat streaming: $error",
-                    color = Color(0xFFFF8A80),
+                    "SEDANG DIPUTAR",
+                    color = StreamCyan,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Spacer(Modifier.height(8.dp))
+
+                Text(
+                    link.matchName,
+                    color = Color.White,
+                    fontSize = 17.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Text(
+                    link.competition,
+                    color = StreamMuted,
                     fontSize = 12.sp
                 )
+
+                Spacer(Modifier.height(12.dp))
             }
 
-            links.isEmpty() -> {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 35.dp),
-                    contentAlignment = Alignment.Center
+            StreamSourcePlayer(
+                link = link,
+                pipMode = pipMode,
+                onEnterPip = onEnterPip
+            )
+
+            if (!pipMode) {
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.End
                 ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally
+                    TextButton(
+                        onClick = {
+                            selectedLink = null
+                        }
                     ) {
                         Icon(
-                            Icons.Default.PlayCircle,
+                            Icons.Default.Close,
                             contentDescription = null,
-                            tint = StreamCyan,
-                            modifier = Modifier.size(48.dp)
+                            tint = StreamCyan
                         )
 
-                        Spacer(Modifier.height(12.dp))
+                        Spacer(Modifier.width(5.dp))
 
                         Text(
-                            "Belum ada siaran tersedia",
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold
-                        )
-
-                        Text(
-                            "Cek kembali nanti.",
-                            color = StreamMuted,
-                            fontSize = 12.sp
+                            "Tutup pemutar",
+                            color = StreamCyan
                         )
                     }
                 }
             }
+        }
 
-            else -> {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    items(
-                        links,
-                        key = { it.id }
-                    ) { link ->
+        if (!pipMode) {
+            Text(
+                "DAFTAR SIARAN",
+                color = Color.White,
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold
+            )
 
+            Spacer(Modifier.height(10.dp))
+
+            when {
+                loading -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(30.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = StreamCyan
+                        )
+                    }
+                }
+
+                error.isNotBlank() -> {
+                    Text(
+                        "Gagal memuat streaming: $error",
+                        color = Color(0xFFFF8A80),
+                        fontSize = 12.sp
+                    )
+                }
+
+                links.isEmpty() -> {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 35.dp),
+                        contentAlignment = Alignment.Center
+                    ) {
                         Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    if (selectedLink?.id == link.id)
-                                        Color(0xFF173B50)
-                                    else
-                                        StreamPanel,
-                                    RoundedCornerShape(16.dp)
-                                )
-                                .padding(16.dp)
+                            horizontalAlignment =
+                                Alignment.CenterHorizontally
                         ) {
-                            Row(
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    Icons.Default.PlayCircle,
-                                    contentDescription = null,
-                                    tint = StreamCyan,
-                                    modifier = Modifier.size(34.dp)
-                                )
-
-                                Spacer(Modifier.width(12.dp))
-
-                                Column(
-                                    modifier = Modifier.weight(1f)
-                                ) {
-                                    Text(
-                                        link.matchName,
-                                        color = Color.White,
-                                        fontWeight = FontWeight.Bold,
-                                        fontSize = 15.sp
-                                    )
-
-                                    Text(
-                                        link.competition,
-                                        color = StreamMuted,
-                                        fontSize = 11.sp
-                                    )
-                                }
-                            }
-
-                            HorizontalDivider(
-                                modifier = Modifier.padding(vertical = 12.dp),
-                                color = Color.White.copy(alpha = 0.1f)
-                            )
-
-                            Text(
-                                "Penyedia: ${link.provider}",
-                                color = StreamMuted,
-                                fontSize = 11.sp
+                            Icon(
+                                Icons.Default.PlayCircle,
+                                contentDescription = null,
+                                tint = StreamCyan,
+                                modifier = Modifier.size(48.dp)
                             )
 
                             Spacer(Modifier.height(12.dp))
 
-                            Button(
-                                onClick = {
-                                    selectedLink = link
-                                },
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = StreamCyan,
-                                    contentColor = StreamNavy
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            ) {
-                                Icon(
-                                    Icons.Default.PlayCircle,
-                                    contentDescription = null
-                                )
+                            Text(
+                                "Belum ada siaran tersedia",
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold
+                            )
 
-                                Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Cek kembali nanti.",
+                                color = StreamMuted,
+                                fontSize = 12.sp
+                            )
+                        }
+                    }
+                }
+
+                else -> {
+                    LazyColumn(
+                        verticalArrangement =
+                            Arrangement.spacedBy(12.dp)
+                    ) {
+                        items(
+                            links,
+                            key = { it.id }
+                        ) { link ->
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(
+                                        if (selectedLink?.id == link.id)
+                                            Color(0xFF173B50)
+                                        else
+                                            StreamPanel,
+                                        RoundedCornerShape(16.dp)
+                                    )
+                                    .padding(16.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment =
+                                        Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.PlayCircle,
+                                        contentDescription = null,
+                                        tint = StreamCyan,
+                                        modifier = Modifier.size(34.dp)
+                                    )
+
+                                    Spacer(Modifier.width(12.dp))
+
+                                    Column(
+                                        modifier = Modifier.weight(1f)
+                                    ) {
+                                        Text(
+                                            link.matchName,
+                                            color = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 15.sp
+                                        )
+
+                                        Text(
+                                            link.competition,
+                                            color = StreamMuted,
+                                            fontSize = 11.sp
+                                        )
+                                    }
+                                }
+
+                                HorizontalDivider(
+                                    modifier = Modifier.padding(
+                                        vertical = 12.dp
+                                    ),
+                                    color = Color.White.copy(alpha = 0.1f)
+                                )
 
                                 Text(
-                                    "TONTON SEKARANG",
-                                    fontWeight = FontWeight.Bold
+                                    "Penyedia: ${link.provider}",
+                                    color = StreamMuted,
+                                    fontSize = 11.sp
                                 )
+
+                                Spacer(Modifier.height(12.dp))
+
+                                Button(
+                                    onClick = {
+                                        selectedLink = link
+                                    },
+                                    modifier = Modifier.fillMaxWidth(),
+                                    colors = ButtonDefaults.buttonColors(
+                                        containerColor = StreamCyan,
+                                        contentColor = StreamNavy
+                                    ),
+                                    shape = RoundedCornerShape(12.dp)
+                                ) {
+                                    Icon(
+                                        Icons.Default.PlayCircle,
+                                        contentDescription = null
+                                    )
+
+                                    Spacer(Modifier.width(8.dp))
+
+                                    Text(
+                                        "TONTON SEKARANG",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
                             }
                         }
                     }
@@ -382,9 +408,17 @@ fun PublicStreamScreen(
 }
 
 @Composable
-private fun StreamSourcePlayer(link: StreamLink) {
+private fun StreamSourcePlayer(
+    link: StreamLink,
+    pipMode: Boolean,
+    onEnterPip: () -> Unit
+) {
     when (resolveStreamMode(link)) {
-        StreamMode.VIDEO -> StreamVideoPlayer(link)
+        StreamMode.VIDEO -> StreamVideoPlayer(
+            link = link,
+            pipMode = pipMode,
+            onEnterPip = onEnterPip
+        )
 
         StreamMode.YOUTUBE,
         StreamMode.WEBSITE -> StreamWebPlayer(link.url)
@@ -392,7 +426,11 @@ private fun StreamSourcePlayer(link: StreamLink) {
 }
 
 @Composable
-private fun StreamVideoPlayer(link: StreamLink) {
+private fun StreamVideoPlayer(
+    link: StreamLink,
+    pipMode: Boolean,
+    onEnterPip: () -> Unit
+) {
     val context = LocalContext.current
     val activity = context as? Activity
 
@@ -411,7 +449,9 @@ private fun StreamVideoPlayer(link: StreamLink) {
             playWhenReady = true
 
             addListener(object : Player.Listener {
-                override fun onPlayerError(error: PlaybackException) {
+                override fun onPlayerError(
+                    error: PlaybackException
+                ) {
                     playbackError = when (error.errorCode) {
                         PlaybackException.ERROR_CODE_PARSING_MANIFEST_MALFORMED ->
                             "Format streaming tidak valid."
@@ -439,7 +479,8 @@ private fun StreamVideoPlayer(link: StreamLink) {
 
     DisposableEffect(activity, fullscreen) {
         if (activity != null && fullscreen) {
-            val oldOrientation = activity.requestedOrientation
+            val oldOrientation =
+                activity.requestedOrientation
 
             val controller = WindowInsetsControllerCompat(
                 activity.window,
@@ -449,14 +490,18 @@ private fun StreamVideoPlayer(link: StreamLink) {
             activity.requestedOrientation =
                 ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
 
-            controller.hide(WindowInsetsCompat.Type.systemBars())
+            controller.hide(
+                WindowInsetsCompat.Type.systemBars()
+            )
 
             controller.systemBarsBehavior =
                 WindowInsetsControllerCompat
                     .BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
 
             onDispose {
-                controller.show(WindowInsetsCompat.Type.systemBars())
+                controller.show(
+                    WindowInsetsCompat.Type.systemBars()
+                )
                 activity.requestedOrientation = oldOrientation
             }
         } else {
@@ -470,7 +515,9 @@ private fun StreamVideoPlayer(link: StreamLink) {
 
     if (fullscreen) {
         Dialog(
-            onDismissRequest = { fullscreen = false },
+            onDismissRequest = {
+                fullscreen = false
+            },
             properties = DialogProperties(
                 usePlatformDefaultWidth = false
             )
@@ -492,11 +539,15 @@ private fun StreamVideoPlayer(link: StreamLink) {
                             )
                         }
                     },
-                    update = { it.player = player }
+                    update = {
+                        it.player = player
+                    }
                 )
 
                 IconButton(
-                    onClick = { fullscreen = false },
+                    onClick = {
+                        fullscreen = false
+                    },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(12.dp)
@@ -517,7 +568,10 @@ private fun StreamVideoPlayer(link: StreamLink) {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(Color.Black, RoundedCornerShape(14.dp))
+                .background(
+                    Color.Black,
+                    RoundedCornerShape(14.dp)
+                )
         ) {
             AndroidView(
                 modifier = Modifier
@@ -532,24 +586,49 @@ private fun StreamVideoPlayer(link: StreamLink) {
                         )
                     }
                 },
-                update = { it.player = player }
+                update = {
+                    it.player = player
+                }
             )
 
-            IconButton(
-                onClick = { fullscreen = true },
-                modifier = Modifier
-                    .align(Alignment.TopEnd)
-                    .padding(7.dp)
-                    .background(
-                        Color.Black.copy(alpha = 0.65f),
-                        RoundedCornerShape(50)
-                    )
-            ) {
-                Icon(
-                    Icons.Default.Fullscreen,
-                    contentDescription = "Layar penuh",
-                    tint = Color.White
-                )
+            if (!pipMode) {
+                Row(
+                    modifier = Modifier
+                        .align(Alignment.TopEnd)
+                        .padding(7.dp),
+                    horizontalArrangement =
+                        Arrangement.spacedBy(6.dp)
+                ) {
+                    TextButton(
+                        onClick = onEnterPip,
+                        colors = ButtonDefaults.textButtonColors(
+                            containerColor =
+                                Color.Black.copy(alpha = 0.75f),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text(
+                            "PiP",
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    IconButton(
+                        onClick = {
+                            fullscreen = true
+                        },
+                        modifier = Modifier.background(
+                            Color.Black.copy(alpha = 0.65f),
+                            RoundedCornerShape(50)
+                        )
+                    ) {
+                        Icon(
+                            Icons.Default.Fullscreen,
+                            contentDescription = "Layar penuh",
+                            tint = Color.White
+                        )
+                    }
+                }
             }
         }
     }
@@ -571,8 +650,10 @@ private fun StreamWebPlayer(url: String) {
         mutableStateOf(false)
     }
 
+    val context = LocalContext.current
+
     val webView = remember(url) {
-        WebView(LocalContext.current).apply {
+        WebView(context).apply {
             setBackgroundColor(AndroidColor.BLACK)
 
             settings.javaScriptEnabled = true
@@ -599,7 +680,9 @@ private fun StreamWebPlayer(url: String) {
 
     if (fullscreen) {
         Dialog(
-            onDismissRequest = { fullscreen = false },
+            onDismissRequest = {
+                fullscreen = false
+            },
             properties = DialogProperties(
                 usePlatformDefaultWidth = false
             )
@@ -615,7 +698,9 @@ private fun StreamWebPlayer(url: String) {
                 )
 
                 IconButton(
-                    onClick = { fullscreen = false },
+                    onClick = {
+                        fullscreen = false
+                    },
                     modifier = Modifier
                         .align(Alignment.TopEnd)
                         .padding(12.dp)
@@ -637,7 +722,10 @@ private fun StreamWebPlayer(url: String) {
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
-                .background(Color.Black, RoundedCornerShape(14.dp))
+                .background(
+                    Color.Black,
+                    RoundedCornerShape(14.dp)
+                )
         ) {
             AndroidView(
                 modifier = Modifier.fillMaxSize(),
@@ -645,7 +733,9 @@ private fun StreamWebPlayer(url: String) {
             )
 
             IconButton(
-                onClick = { fullscreen = true },
+                onClick = {
+                    fullscreen = true
+                },
                 modifier = Modifier
                     .align(Alignment.TopEnd)
                     .padding(7.dp)
