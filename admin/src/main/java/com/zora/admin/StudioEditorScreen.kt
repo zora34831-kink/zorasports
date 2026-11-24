@@ -2,10 +2,15 @@
 package com.zora.admin
 
 import android.net.Uri
+import android.view.TextureView
+import android.webkit.WebChromeClient
+import android.webkit.WebView
+import android.webkit.WebViewClient
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -16,15 +21,111 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.viewinterop.AndroidView
+import androidx.media3.common.MediaItem
+import androidx.media3.exoplayer.ExoPlayer
 import coil.compose.AsyncImage
-import kotlin.math.roundToInt
 import java.util.UUID
+import kotlin.math.roundToInt
+
+private fun studioParseColor(value: String): Color {
+    return try {
+        Color(android.graphics.Color.parseColor(value))
+    } catch (_: Exception) {
+        Color(0xFF101820)
+    }
+}
+
+@Composable
+private fun StudioVideoPreview(
+    stream: StreamLink,
+    modifier: Modifier = Modifier
+) {
+    val context = LocalContext.current
+    val sourceType = stream.sourceType.uppercase()
+    val url = stream.url.trim()
+
+    if (url.isBlank()) {
+        Box(
+            modifier = modifier.background(Color.Black),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                "URL streaming belum tersedia",
+                color = Color.White.copy(alpha = 0.7f),
+                fontSize = 12.sp
+            )
+        }
+        return
+    }
+
+    val useWebView = sourceType in setOf(
+        "YOUTUBE",
+        "WEBSITE",
+        "HTML",
+        "WEBVIEW"
+    )
+
+    if (useWebView) {
+        val webView = remember(url) {
+            WebView(context).apply {
+                settings.javaScriptEnabled = true
+                settings.domStorageEnabled = true
+                settings.mediaPlaybackRequiresUserGesture = false
+                webChromeClient = WebChromeClient()
+                webViewClient = WebViewClient()
+                loadUrl(url)
+            }
+        }
+
+        DisposableEffect(webView) {
+            onDispose {
+                webView.stopLoading()
+                webView.destroy()
+            }
+        }
+
+        AndroidView(
+            factory = { webView },
+            modifier = modifier
+        )
+    } else {
+        val player = remember(url) {
+            ExoPlayer.Builder(context).build().apply {
+                volume = 0f
+                setMediaItem(MediaItem.fromUri(Uri.parse(url)))
+                prepare()
+                playWhenReady = true
+            }
+        }
+
+        val textureView = remember(player) {
+            TextureView(context)
+        }
+
+        DisposableEffect(player, textureView) {
+            player.setVideoTextureView(textureView)
+
+            onDispose {
+                player.clearVideoTextureView(textureView)
+                player.release()
+            }
+        }
+
+        AndroidView(
+            factory = { textureView },
+            modifier = modifier
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -88,7 +189,7 @@ fun StudioEditorScreen(
 
     val imagePicker = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
-    ) { uri: Uri? ->
+    ) { uri ->
         if (uri != null && !locked) {
             uploading = true
 
@@ -99,17 +200,17 @@ fun StudioEditorScreen(
                 uploading = false
 
                 if (success) {
-                    overlays.add(
-                        StreamOverlay(
-                            id = UUID.randomUUID().toString(),
-                            type = "IMAGE",
-                            imageUrl = result,
-                            x = 0.5f,
-                            y = 0.5f,
-                            scale = 1f
-                        )
+                    val newElement = StreamOverlay(
+                        id = UUID.randomUUID().toString(),
+                        type = "IMAGE",
+                        imageUrl = result,
+                        x = 0.5f,
+                        y = 0.5f,
+                        scale = 1f
                     )
 
+                    overlays.add(newElement)
+                    selectedId = newElement.id
                     message = "Foto berhasil ditambahkan"
                 } else {
                     message = result
@@ -162,9 +263,7 @@ fun StudioEditorScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
-                        onClick = {
-                            saveDesign()
-                        },
+                        onClick = { saveDesign() },
                         modifier = Modifier.weight(1f),
                         enabled = !uploading
                     ) {
@@ -172,9 +271,7 @@ fun StudioEditorScreen(
                     }
 
                     Button(
-                        onClick = {
-                            saveDesign(lock = true)
-                        },
+                        onClick = { saveDesign(lock = true) },
                         modifier = Modifier.weight(1f),
                         enabled = !uploading
                     ) {
@@ -194,24 +291,30 @@ fun StudioEditorScreen(
             verticalArrangement = Arrangement.spacedBy(14.dp)
         ) {
 
-            Text(
-                "LIVE PREVIEW",
-                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                fontSize = 13.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Text(
+                    "LIVE PREVIEW",
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                    fontSize = 13.sp
+                )
+
+                Text(
+                    "VIDEO AKTUAL",
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 10.sp
+                )
+            }
 
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f)
-                    .background(
-                        Color(
-                            android.graphics.Color.parseColor(
-                                backgroundColor
-                            )
-                        ),
-                        RoundedCornerShape(14.dp)
-                    )
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(studioParseColor(backgroundColor))
                     .border(
                         1.dp,
                         MaterialTheme.colorScheme.outline,
@@ -221,7 +324,12 @@ fun StudioEditorScreen(
                 val canvasWidth = constraints.maxWidth
                 val canvasHeight = constraints.maxHeight
 
-                overlays.forEach { element ->
+                StudioVideoPreview(
+                    stream = stream,
+                    modifier = Modifier.fillMaxSize()
+                )
+
+                overlays.filter { it.visible }.forEach { element ->
                     key(element.id) {
                         Box(
                             modifier = Modifier
@@ -236,48 +344,48 @@ fun StudioEditorScreen(
                                     scaleY = element.scale
                                     rotationZ = element.rotation
                                 }
-                                .then(
+                                .clickable {
+                                    selectedId = element.id
+                                }
+                                .pointerInput(
+                                    element.id,
+                                    locked,
+                                    canvasWidth,
+                                    canvasHeight
+                                ) {
                                     if (!locked) {
-                                        Modifier.pointerInput(
-                                            element.id,
-                                            locked
-                                        ) {
-                                            detectDragGestures { change, drag ->
-                                                change.consume()
+                                        detectDragGestures { change, drag ->
+                                            change.consume()
 
-                                                val dx =
-                                                    drag.x / canvasWidth.toFloat()
+                                            val dx =
+                                                drag.x / canvasWidth.toFloat()
 
-                                                val dy =
-                                                    drag.y / canvasHeight.toFloat()
+                                            val dy =
+                                                drag.y / canvasHeight.toFloat()
 
-                                                val index =
-                                                    overlays.indexOfFirst {
-                                                        it.id == element.id
-                                                    }
-
-                                                if (index >= 0) {
-                                                    val old = overlays[index]
-
-                                                    overlays[index] = old.copy(
-                                                        x = (old.x + dx).coerceIn(
-                                                            0f,
-                                                            0.9f
-                                                        ),
-                                                        y = (old.y + dy).coerceIn(
-                                                            0f,
-                                                            0.9f
-                                                        )
-                                                    )
-                                                }
-
-                                                selectedId = element.id
+                                            val index = overlays.indexOfFirst {
+                                                it.id == element.id
                                             }
+
+                                            if (index >= 0) {
+                                                val old = overlays[index]
+
+                                                overlays[index] = old.copy(
+                                                    x = (old.x + dx).coerceIn(
+                                                        0f,
+                                                        0.9f
+                                                    ),
+                                                    y = (old.y + dy).coerceIn(
+                                                        0f,
+                                                        0.9f
+                                                    )
+                                                )
+                                            }
+
+                                            selectedId = element.id
                                         }
-                                    } else {
-                                        Modifier
                                     }
-                                )
+                                }
                                 .border(
                                     width = if (
                                         selectedId == element.id && !locked
@@ -287,7 +395,7 @@ fun StudioEditorScreen(
                                 )
                                 .padding(5.dp)
                         ) {
-                            when (element.type) {
+                            when (element.type.uppercase()) {
                                 "IMAGE" -> {
                                     AsyncImage(
                                         model = element.imageUrl,
@@ -317,15 +425,13 @@ fun StudioEditorScreen(
                         }
                     }
                 }
-
-                if (overlays.isEmpty()) {
-                    Text(
-                        "Preview desain streaming",
-                        color = Color.White.copy(alpha = 0.65f),
-                        modifier = Modifier.align(Alignment.Center)
-                    )
-                }
             }
+
+            Text(
+                "Geser elemen langsung di atas video untuk mengatur posisinya.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 11.sp
+            )
 
             if (uploading) {
                 LinearProgressIndicator(
@@ -511,10 +617,6 @@ fun StudioEditorScreen(
                     "#202020",
                     "#164E63"
                 ).forEach { colorHex ->
-                    val color = Color(
-                        android.graphics.Color.parseColor(colorHex)
-                    )
-
                     Surface(
                         modifier = Modifier
                             .size(42.dp)
@@ -528,7 +630,7 @@ fun StudioEditorScreen(
                                 CircleShape
                             ),
                         shape = CircleShape,
-                        color = color,
+                        color = studioParseColor(colorHex),
                         onClick = {
                             if (!locked) {
                                 backgroundColor = colorHex
