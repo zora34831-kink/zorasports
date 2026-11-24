@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.Intent
 import com.google.android.gms.auth.api.signin.GoogleSignIn
 import com.google.android.gms.auth.api.signin.GoogleSignInOptions
+import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 
@@ -18,15 +19,19 @@ object AdminAuth {
     private val auth: FirebaseAuth
         get() = FirebaseAuth.getInstance()
 
-    fun signInIntent(activity: Activity): Intent {
-        val options = GoogleSignInOptions.Builder(
-            GoogleSignInOptions.DEFAULT_SIGN_IN
+    private fun getGoogleClient(activity: Activity) =
+        GoogleSignIn.getClient(
+            activity,
+            GoogleSignInOptions.Builder(
+                GoogleSignInOptions.DEFAULT_SIGN_IN
+            )
+                .requestIdToken(WEB_CLIENT_ID)
+                .requestEmail()
+                .build()
         )
-            .requestIdToken(WEB_CLIENT_ID)
-            .requestEmail()
-            .build()
 
-        return GoogleSignIn.getClient(activity, options).signInIntent
+    fun signInIntent(activity: Activity): Intent {
+        return getGoogleClient(activity).signInIntent
     }
 
     fun signIn(
@@ -35,16 +40,17 @@ object AdminAuth {
         onResult: (Boolean, String) -> Unit
     ) {
         try {
-            val account = GoogleSignIn
-                .getSignedInAccountFromIntent(data)
-                .getResult(
-                    com.google.android.gms.common.api.ApiException::class.java
-                )
+            val task = GoogleSignIn.getSignedInAccountFromIntent(data)
+
+            val account = task.getResult(ApiException::class.java)
 
             val idToken = account.idToken
 
             if (idToken.isNullOrBlank()) {
-                onResult(false, "Google ID Token tidak tersedia")
+                onResult(
+                    false,
+                    "ID Token kosong. Periksa Web Client ID Firebase."
+                )
                 return
             }
 
@@ -54,43 +60,70 @@ object AdminAuth {
             )
 
             auth.signInWithCredential(credential)
-                .addOnSuccessListener { result ->
-                    val user = result.user
+                .addOnCompleteListener { result ->
+
+                    if (!result.isSuccessful) {
+                        onResult(
+                            false,
+                            "Firebase Auth gagal: ${
+                                result.exception?.message ?: "Unknown error"
+                            }"
+                        )
+                        return@addOnCompleteListener
+                    }
+
+                    val user = auth.currentUser
                     val email = user?.email.orEmpty()
                     val verified = user?.isEmailVerified == true
 
                     if (
-                        email.equals(ADMIN_EMAIL, ignoreCase = true) &&
-                        verified
+                        email.equals(
+                            ADMIN_EMAIL,
+                            ignoreCase = true
+                        ) && verified
                     ) {
-                        onResult(true, "Login admin berhasil")
+                        onResult(
+                            true,
+                            "Login admin berhasil"
+                        )
                     } else {
                         auth.signOut()
+
+                        getGoogleClient(activity).signOut()
+
                         onResult(
                             false,
-                            "Akun ini bukan admin ZORASPORTS"
+                            "Akun tidak memiliki akses administrator."
                         )
                     }
                 }
-                .addOnFailureListener {
-                    onResult(
-                        false,
-                        it.message ?: "Autentikasi Firebase gagal"
-                    )
-                }
+
+        } catch (e: ApiException) {
+            val errorMessage = when (e.statusCode) {
+                10 -> "DEVELOPER_ERROR (10): Periksa SHA-1, package name, dan OAuth Client ID."
+                12500 -> "SIGN_IN_FAILED (12500): Periksa konfigurasi Google Sign-In."
+                12501 -> "Login dibatalkan oleh pengguna."
+                7 -> "Tidak ada koneksi internet."
+                else -> "Google Sign-In gagal. Kode: ${e.statusCode}"
+            }
+
+            onResult(false, errorMessage)
 
         } catch (e: Exception) {
             onResult(
                 false,
-                e.message ?: "Login Google gagal"
+                "Login gagal: ${e.message ?: "Kesalahan tidak diketahui"}"
             )
         }
     }
 
     fun isAdmin(): Boolean {
         val user = auth.currentUser
-        return user?.email.equals(ADMIN_EMAIL, ignoreCase = true) &&
-            user?.isEmailVerified == true
+
+        return user?.email.equals(
+            ADMIN_EMAIL,
+            ignoreCase = true
+        ) && user?.isEmailVerified == true
     }
 
     fun signOut() {
