@@ -20,9 +20,27 @@ object FootballRepository {
         return formatter.format(Date())
     }
 
+    private fun checkApiError(errors: Any?) {
+        if (errors == null) return
+
+        val message = errors.toString()
+
+        if (
+            message != "[]" &&
+            message != "{}" &&
+            message.isNotBlank()
+        ) {
+            throw IllegalStateException(
+                "Kesalahan API: $message"
+            )
+        }
+    }
+
     private fun validMatches(
         response: FootballResponse<FixtureItem>
     ): List<FixtureItem> {
+        checkApiError(response.errors)
+
         return response.response.orEmpty().filter { match ->
             match.fixture?.status?.short != null &&
             match.league?.name != null &&
@@ -45,15 +63,18 @@ object FootballRepository {
         leagueId: Int,
         season: Int
     ): List<StandingTeam> {
+
         val result = FootballApiClient.api.getStandings(
             leagueId,
             season
         )
 
-        return result.response
-            .orEmpty()
-            .firstOrNull()
-            ?.league
+        checkApiError(result.errors)
+
+        val league = result.response.orEmpty().firstOrNull()
+            ?: return emptyList()
+
+        return league.league
             ?.standings
             ?.firstOrNull()
             .orEmpty()
@@ -64,6 +85,8 @@ object FootballRepository {
     ): List<FixtureLineup> {
         val result =
             FootballApiClient.api.getLineups(fixtureId)
+
+        checkApiError(result.errors)
 
         return result.response.orEmpty()
     }
