@@ -19,7 +19,6 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
 import org.json.JSONArray
-import org.json.JSONObject
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -63,9 +62,9 @@ private data class NinjasStandingsResult(
     val season: String
 )
 
-// API key untuk pengujian.
-// Untuk APK publik, pindahkan API key ke backend.
-private const val API_NINJAS_KEY = "MASUKKAN_API_KEY_DI_SINI"
+// Masukkan API Key API Ninjas milik lu di sini.
+// Jangan bagikan API Key ke orang lain.
+private const val API_NINJAS_KEY = "juNpvcVMKDsxtsJbOVhZLB3FVbvOdB0xXaQzhozG"
 
 @Composable
 fun StandingsSection(
@@ -73,44 +72,44 @@ fun StandingsSection(
 ) {
     val leagues = listOf(
         StandingsLeagueOption(
-            "Premier League",
+            name = "Premier League",
             apiNinjasId = "epl",
             footballId = 39
         ),
         StandingsLeagueOption(
-            "La Liga",
+            name = "La Liga",
             apiNinjasId = "laliga",
             footballId = 140
         ),
         StandingsLeagueOption(
-            "Serie A",
+            name = "Serie A",
             apiNinjasId = "seriea",
             footballId = 135
         ),
         StandingsLeagueOption(
-            "Bundesliga",
+            name = "Bundesliga",
             apiNinjasId = "bundesliga",
             footballId = 78
         ),
         StandingsLeagueOption(
-            "Ligue 1",
+            name = "Ligue 1",
             apiNinjasId = "ligue1",
             footballId = 61
         ),
         StandingsLeagueOption(
-            "Champions League",
+            name = "Champions League",
             apiNinjasId = "ucl"
         ),
         StandingsLeagueOption(
-            "Europa League",
+            name = "Europa League",
             apiNinjasId = "uel"
         ),
         StandingsLeagueOption(
-            "MLS",
+            name = "MLS",
             apiNinjasId = "mls"
         ),
         StandingsLeagueOption(
-            "Liga 1 Indonesia",
+            name = "Liga 1 Indonesia",
             footballId = 274
         )
     )
@@ -143,16 +142,25 @@ fun StandingsSection(
         mutableIntStateOf(0)
     }
 
-    LaunchedEffect(selectedLeague, refresh) {
+    // Salin delegated state ke variabel lokal.
+    // Ini memperbaiki error smart cast Kotlin.
+    val currentLeague = selectedLeague
+
+    LaunchedEffect(currentLeague, refresh) {
         loading = true
         error = null
         standings = emptyList()
 
         try {
             val result = withTimeout(25000L) {
-                if (selectedLeague.apiNinjasId != null) {
+
+                // Variabel lokal agar smart cast bisa dilakukan.
+                val apiNinjasId = currentLeague.apiNinjasId
+
+                if (apiNinjasId != null) {
+
                     val response = fetchNinjasStandings(
-                        selectedLeague.apiNinjasId
+                        apiNinjasId
                     )
 
                     seasonLabel = response.season.ifBlank {
@@ -162,7 +170,8 @@ fun StandingsSection(
                     response.teams
 
                 } else {
-                    val footballId = selectedLeague.footballId
+
+                    val footballId = currentLeague.footballId
                         ?: throw Exception("ID liga tidak tersedia.")
 
                     val response = FootballRepository.getStandings(
@@ -242,7 +251,7 @@ fun StandingsSection(
                 )
             ) {
                 Text(
-                    selectedLeague.name,
+                    currentLeague.name,
                     modifier = Modifier.weight(1f)
                 )
 
@@ -481,10 +490,12 @@ private suspend fun fetchNinjasStandings(
 
     try {
         connection.requestMethod = "GET"
+
         connection.setRequestProperty(
             "X-Api-Key",
             API_NINJAS_KEY
         )
+
         connection.connectTimeout = 15000
         connection.readTimeout = 15000
 
@@ -498,9 +509,14 @@ private suspend fun fetchNinjasStandings(
 
             throw Exception(
                 when (responseCode) {
-                    401, 403 -> "API Key tidak valid atau akses ditolak."
-                    429 -> "Batas penggunaan API tercapai."
-                    else -> "API Ninjas gagal. Kode: $responseCode $errorBody"
+                    401, 403 ->
+                        "API Key tidak valid atau akses ditolak."
+
+                    429 ->
+                        "Batas penggunaan API tercapai."
+
+                    else ->
+                        "API Ninjas gagal. Kode: $responseCode $errorBody"
                 }
             )
         }
