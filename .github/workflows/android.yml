@@ -17,70 +17,72 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Setup Java
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      # 3. Setup Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.13"
 
-      # 4. Prepare Shared Debug Keystore
-      - name: Prepare Android Debug Keystore
+      # RESTORE PERMANENT KEYSTORE
+      - name: Restore Permanent Keystore
         shell: bash
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
         run: |
           set -euo pipefail
+
+          if [ -z "$ANDROID_KEYSTORE_BASE64" ]; then
+            echo "ERROR: ANDROID_KEYSTORE_BASE64 is missing"
+            exit 1
+          fi
+
+          if [ "$ANDROID_KEY_ALIAS" != "androiddebugkey" ]; then
+            echo "ERROR: Alias must be androiddebugkey"
+            exit 1
+          fi
+
+          if [ "$ANDROID_KEYSTORE_PASSWORD" != "android" ] || \
+             [ "$ANDROID_KEY_PASSWORD" != "android" ]; then
+            echo "ERROR: Debug keystore passwords are incorrect"
+            exit 1
+          fi
 
           mkdir -p "$HOME/.config/.android"
           mkdir -p "$HOME/.android"
 
-          keytool -genkeypair \
-            -v \
-            -keystore "$HOME/.config/.android/debug.keystore" \
-            -storetype PKCS12 \
-            -storepass android \
-            -alias AndroidDebugKey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US"
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" \
+            | base64 --decode \
+            > "$HOME/.config/.android/debug.keystore"
 
           cp "$HOME/.config/.android/debug.keystore" \
              "$HOME/.android/debug.keystore"
 
-          echo "========== KEYSTORE FINGERPRINT =========="
-
           keytool -list -v \
             -keystore "$HOME/.config/.android/debug.keystore" \
-            -storetype PKCS12 \
-            -storepass android \
-            -alias AndroidDebugKey
+            -storepass "$ANDROID_KEYSTORE_PASSWORD" \
+            -alias "$ANDROID_KEY_ALIAS"
 
-          echo "SHARED KEYSTORE: OK"
+          echo "PERMANENT KEYSTORE RESTORED"
 
-      # 5. Check Manifest
       - name: Check Android Manifest
         shell: bash
         run: |
           set -euo pipefail
-
           test -f app/src/main/AndroidManifest.xml
           test -f admin/src/main/AndroidManifest.xml
+          echo "MANIFEST CHECK OK"
 
-          echo "APP MANIFEST: OK"
-          echo "ADMIN MANIFEST: OK"
-
-      # 6. Generate SHA Fingerprints
       - name: Generate SHA Fingerprints
         shell: bash
         run: |
@@ -92,7 +94,6 @@ jobs:
           echo "========== ZORAADMIN =========="
           gradle :admin:signingReport --no-daemon
 
-      # 7. Build Both APKs
       - name: Build Both APKs
         env:
           FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
@@ -105,22 +106,16 @@ jobs:
             --stacktrace \
             -PFOOTBALL_API_KEY="$FOOTBALL_API_KEY"
 
-      # 8. Verify APK Files
       - name: Verify APK Files
         shell: bash
         run: |
           set -euo pipefail
 
-          APP_APK="app/build/outputs/apk/debug/app-debug.apk"
-          ADMIN_APK="admin/build/outputs/apk/debug/admin-debug.apk"
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s admin/build/outputs/apk/debug/admin-debug.apk
 
-          test -s "$APP_APK"
-          test -s "$ADMIN_APK"
+          echo "BOTH APK FILES EXIST"
 
-          echo "ZORASPORTS APK: OK"
-          echo "ZORAADMIN APK: OK"
-
-      # 9. Verify APK Signatures and Compare SHA
       - name: Verify APK Signatures
         shell: bash
         run: |
@@ -131,71 +126,50 @@ jobs:
           APKSIGNER="$(find "$SDK_DIR/build-tools" \
             -type f -name apksigner | sort -V | tail -n 1)"
 
-          if [ -z "$APKSIGNER" ]; then
-            echo "ERROR: apksigner not found"
-            exit 1
-          fi
-
           APP_APK="app/build/outputs/apk/debug/app-debug.apk"
           ADMIN_APK="admin/build/outputs/apk/debug/admin-debug.apk"
 
-          echo "========== ZORASPORTS SIGNATURE =========="
+          APP_INFO="$("$APKSIGNER" verify --verbose --print-certs "$APP_APK")"
+          ADMIN_INFO="$("$APKSIGNER" verify --verbose --print-certs "$ADMIN_APK")"
 
-          "$APKSIGNER" verify --verbose --print-certs "$APP_APK"
+          echo "$APP_INFO"
+          echo "$ADMIN_INFO"
 
-          echo "========== ZORAADMIN SIGNATURE =========="
-
-          "$APKSIGNER" verify --verbose --print-certs "$ADMIN_APK"
-
-          APP_SHA1=$("$APKSIGNER" verify --print-certs "$APP_APK" \
+          APP_SHA1="$(printf '%s\n' "$APP_INFO" \
             | sed -n 's/.*certificate SHA-1 digest: //p' \
-            | head -n 1 | tr -d '[:space:]')
+            | head -n 1 | tr -d '[:space:]')"
 
-          ADMIN_SHA1=$("$APKSIGNER" verify --print-certs "$ADMIN_APK" \
+          ADMIN_SHA1="$(printf '%s\n' "$ADMIN_INFO" \
             | sed -n 's/.*certificate SHA-1 digest: //p' \
-            | head -n 1 | tr -d '[:space:]')
+            | head -n 1 | tr -d '[:space:]')"
 
-          APP_SHA256=$("$APKSIGNER" verify --print-certs "$APP_APK" \
+          APP_SHA256="$(printf '%s\n' "$APP_INFO" \
             | sed -n 's/.*certificate SHA-256 digest: //p' \
-            | head -n 1 | tr -d '[:space:]')
+            | head -n 1 | tr -d '[:space:]')"
 
-          ADMIN_SHA256=$("$APKSIGNER" verify --print-certs "$ADMIN_APK" \
+          ADMIN_SHA256="$(printf '%s\n' "$ADMIN_INFO" \
             | sed -n 's/.*certificate SHA-256 digest: //p' \
-            | head -n 1 | tr -d '[:space:]')
-
-          echo "========== COMPARISON =========="
+            | head -n 1 | tr -d '[:space:]')"
 
           echo "APP SHA-1: $APP_SHA1"
           echo "ADMIN SHA-1: $ADMIN_SHA1"
-
           echo "APP SHA-256: $APP_SHA256"
           echo "ADMIN SHA-256: $ADMIN_SHA256"
 
-          if [ -z "$APP_SHA1" ] || [ -z "$ADMIN_SHA1" ]; then
-            echo "ERROR: SHA-1 fingerprint missing"
+          if [ -z "$APP_SHA1" ] || [ -z "$ADMIN_SHA1" ] || \
+             [ -z "$APP_SHA256" ] || [ -z "$ADMIN_SHA256" ]; then
+            echo "ERROR: Fingerprint missing"
             exit 1
           fi
 
-          if [ -z "$APP_SHA256" ] || [ -z "$ADMIN_SHA256" ]; then
-            echo "ERROR: SHA-256 fingerprint missing"
+          if [ "$APP_SHA1" != "$ADMIN_SHA1" ] || \
+             [ "$APP_SHA256" != "$ADMIN_SHA256" ]; then
+            echo "ERROR: APK certificates do not match"
             exit 1
           fi
 
-          if [ "$APP_SHA1" != "$ADMIN_SHA1" ]; then
-            echo "ERROR: SHA-1 does not match"
-            exit 1
-          fi
+          echo "SUCCESS: PERMANENT APK SIGNATURES MATCH"
 
-          if [ "$APP_SHA256" != "$ADMIN_SHA256" ]; then
-            echo "ERROR: SHA-256 does not match"
-            exit 1
-          fi
-
-          echo "SUCCESS: SHA-1 MATCH"
-          echo "SUCCESS: SHA-256 MATCH"
-          echo "BOTH APK SIGNATURES ARE IDENTICAL"
-
-      # 10. Upload APKs
       - name: Upload APK Files
         uses: actions/upload-artifact@v4
         with:
