@@ -14,6 +14,7 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -407,7 +408,6 @@ private fun StreamPlayerDialog(
         0L
     }
 
-    // Timer mengikuti waktu mulai dari Firebase.
     LaunchedEffect(stream.id, startTime) {
         if (startTime > 0L) {
             while (true) {
@@ -434,7 +434,6 @@ private fun StreamPlayerDialog(
         }
     }
 
-    // Otomatis masuk landscape saat player dibuka.
     DisposableEffect(activity) {
         val previousOrientation =
             activity?.requestedOrientation
