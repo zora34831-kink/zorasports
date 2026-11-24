@@ -17,11 +17,23 @@ import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.withTimeout
 
-private val ExtraNavy = Color(0xFF071321)
-private val ExtraPanel = Color(0xFF102337)
-private val ExtraCyan = Color(0xFF42DDF5)
-private val ExtraWhite = Color(0xFFF4FAFF)
-private val ExtraMuted = Color(0xFF91A5B8)
+private val ExtraNavy
+    get() = ZoraThemeColors.background
+
+private val ExtraPanel
+    get() = ZoraThemeColors.panel
+
+private val ExtraCyan
+    get() = ZoraThemeColors.accent
+
+private val ExtraWhite
+    get() = ZoraThemeColors.text
+
+private val ExtraMuted
+    get() = ZoraThemeColors.muted
+
+private val ExtraBorder
+    get() = ZoraThemeColors.border
 
 private data class LeagueOption(
     val name: String,
@@ -124,6 +136,10 @@ fun StandingsSection(
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = ExtraCyan
+                ),
+                border = androidx.compose.foundation.BorderStroke(
+                    1.dp,
+                    ExtraBorder
                 )
             ) {
                 Text(
@@ -138,12 +154,16 @@ fun StandingsSection(
                 expanded = expanded,
                 onDismissRequest = {
                     expanded = false
-                }
+                },
+                containerColor = ExtraPanel
             ) {
                 leagues.forEach { league ->
                     DropdownMenuItem(
                         text = {
-                            Text(league.name)
+                            Text(
+                                league.name,
+                                color = ExtraWhite
+                            )
                         },
                         onClick = {
                             selectedLeague = league
@@ -436,11 +456,11 @@ fun LineupDialog(
                                 )
 
                                 HorizontalDivider(
-                                    color = Color.White.copy(alpha = 0.1f)
+                                    color = ExtraBorder.copy(alpha = 0.7f)
                                 )
 
                                 Text(
-                                    "STARTING XI",
+                                    "SEBELAS PEMAIN UTAMA",
                                     color = ExtraWhite,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 11.sp
@@ -451,7 +471,7 @@ fun LineupDialog(
                                 }
 
                                 HorizontalDivider(
-                                    color = Color.White.copy(alpha = 0.1f)
+                                    color = ExtraBorder.copy(alpha = 0.7f)
                                 )
 
                                 Text(
