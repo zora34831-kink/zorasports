@@ -99,6 +99,8 @@ fun AdminApp(
     var editing by remember { mutableStateOf<StreamLink?>(null) }
     var showEditor by remember { mutableStateOf(false) }
 
+    var showStandings by remember { mutableStateOf(false) }
+
     DisposableEffect(loggedIn) {
         var listener: ValueEventListener? = null
 
@@ -119,7 +121,14 @@ fun AdminApp(
         color = Color(0xFFF2F5FA)
     ) {
         if (!loggedIn) {
-            LoginScreen(message = loginMessage, onLogin = onLogin)
+            LoginScreen(
+                message = loginMessage,
+                onLogin = onLogin
+            )
+        } else if (showStandings) {
+            StandingsManagerScreen(
+                onBack = { showStandings = false }
+            )
         } else {
             Column(
                 modifier = Modifier
@@ -138,6 +147,7 @@ fun AdminApp(
                             fontWeight = FontWeight.Bold,
                             color = Color(0xFF174A91)
                         )
+
                         Text(
                             "STREAM MANAGEMENT",
                             style = MaterialTheme.typography.labelSmall,
@@ -193,6 +203,18 @@ fun AdminApp(
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text("+ Tambah streaming")
+                }
+
+                Spacer(Modifier.height(10.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        showStandings = true
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text("MANAJEMEN KLASEMEN")
                 }
 
                 if (message.isNotBlank()) {
@@ -258,7 +280,7 @@ fun AdminApp(
         }
     }
 
-    if (showEditor) {
+    if (showEditor && loggedIn && !showStandings) {
         StreamEditor(
             initial = editing,
             onDismiss = { showEditor = false },
@@ -291,7 +313,11 @@ fun LoginScreen(
         )
 
         Spacer(Modifier.height(8.dp))
-        Text("Panel pengelolaan streaming ZORASPORTS.", color = Color.Gray)
+        Text(
+            "Panel pengelolaan streaming ZORASPORTS.",
+            color = Color.Gray
+        )
+
         Spacer(Modifier.height(28.dp))
 
         Button(
@@ -304,10 +330,14 @@ fun LoginScreen(
 
         if (message.isNotBlank()) {
             Spacer(Modifier.height(12.dp))
-            Text(message, color = MaterialTheme.colorScheme.error)
+            Text(
+                message,
+                color = MaterialTheme.colorScheme.error
+            )
         }
 
         Spacer(Modifier.height(12.dp))
+
         Text(
             "Akses khusus administrator terverifikasi.",
             color = Color.Gray,
@@ -369,6 +399,7 @@ fun StreamCard(
                     if (link.published) "Dipublikasikan" else "Disembunyikan",
                     modifier = Modifier.weight(1f)
                 )
+
                 Switch(
                     checked = link.published,
                     onCheckedChange = onPublish
@@ -379,8 +410,12 @@ fun StreamCard(
                 TextButton(onClick = onEdit) {
                     Text("Edit")
                 }
+
                 TextButton(onClick = onDelete) {
-                    Text("Hapus", color = MaterialTheme.colorScheme.error)
+                    Text(
+                        "Hapus",
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
@@ -396,18 +431,23 @@ fun StreamEditor(
     var matchName by remember(initial?.id) {
         mutableStateOf(initial?.matchName ?: "")
     }
+
     var competition by remember(initial?.id) {
         mutableStateOf(initial?.competition ?: "")
     }
+
     var provider by remember(initial?.id) {
         mutableStateOf(initial?.provider ?: "")
     }
+
     var url by remember(initial?.id) {
         mutableStateOf(initial?.url ?: "")
     }
+
     var sourceType by remember(initial?.id) {
         mutableStateOf(initial?.sourceType ?: "AUTO")
     }
+
     var published by remember(initial?.id) {
         mutableStateOf(initial?.published ?: false)
     }
@@ -418,6 +458,7 @@ fun StreamEditor(
     var scheduleDate by remember(initial?.id) {
         mutableStateOf(formatScheduleTime(initialSchedule, "dd/MM/yyyy"))
     }
+
     var scheduleTime by remember(initial?.id) {
         mutableStateOf(formatScheduleTime(initialSchedule, "HH:mm"))
     }
@@ -527,7 +568,10 @@ fun StreamEditor(
                         onClick = { typeExpanded = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(sourceType, modifier = Modifier.weight(1f))
+                        Text(
+                            sourceType,
+                            modifier = Modifier.weight(1f)
+                        )
                         Text("▼")
                     }
 
@@ -550,7 +594,11 @@ fun StreamEditor(
                 Spacer(Modifier.height(8.dp))
 
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text("Publikasikan", modifier = Modifier.weight(1f))
+                    Text(
+                        "Publikasikan",
+                        modifier = Modifier.weight(1f)
+                    )
+
                     Switch(
                         checked = published,
                         onCheckedChange = { published = it }
@@ -577,6 +625,7 @@ fun StreamEditor(
                     Button(
                         onClick = {
                             val cleanUrl = url.trim()
+
                             val validUrl =
                                 cleanUrl.startsWith("https://") ||
                                 cleanUrl.startsWith("http://")
