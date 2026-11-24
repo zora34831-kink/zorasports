@@ -15,7 +15,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 import kotlinx.coroutines.withTimeout
+import org.json.JSONArray
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 
 private val ExtraNavy
     get() = ZoraThemeColors.background
@@ -35,22 +41,78 @@ private val ExtraMuted
 private val ExtraBorder
     get() = ZoraThemeColors.border
 
-private data class LeagueOption(
+private data class StandingsLeagueOption(
     val name: String,
-    val id: Int
+    val apiNinjasId: String? = null,
+    val footballId: Int? = null
 )
+
+private data class StandingsDisplayRow(
+    val rank: Int,
+    val teamName: String,
+    val played: Int,
+    val won: Int,
+    val drawn: Int,
+    val lost: Int,
+    val goalsDiff: Int,
+    val points: Int
+)
+
+private data class NinjasStandingsResult(
+    val teams: List<StandingsDisplayRow>,
+    val season: String
+)
+
+// API key untuk pengujian.
+// Untuk APK publik, pindahkan API key ke backend.
+private const val API_NINJAS_KEY = "MASUKKAN_API_KEY_DI_SINI"
 
 @Composable
 fun StandingsSection(
     modifier: Modifier = Modifier
 ) {
     val leagues = listOf(
-        LeagueOption("Premier League", 39),
-        LeagueOption("La Liga", 140),
-        LeagueOption("Serie A", 135),
-        LeagueOption("Bundesliga", 78),
-        LeagueOption("Ligue 1", 61),
-        LeagueOption("Liga 1 Indonesia", 274)
+        StandingsLeagueOption(
+            "Premier League",
+            apiNinjasId = "epl",
+            footballId = 39
+        ),
+        StandingsLeagueOption(
+            "La Liga",
+            apiNinjasId = "laliga",
+            footballId = 140
+        ),
+        StandingsLeagueOption(
+            "Serie A",
+            apiNinjasId = "seriea",
+            footballId = 135
+        ),
+        StandingsLeagueOption(
+            "Bundesliga",
+            apiNinjasId = "bundesliga",
+            footballId = 78
+        ),
+        StandingsLeagueOption(
+            "Ligue 1",
+            apiNinjasId = "ligue1",
+            footballId = 61
+        ),
+        StandingsLeagueOption(
+            "Champions League",
+            apiNinjasId = "ucl"
+        ),
+        StandingsLeagueOption(
+            "Europa League",
+            apiNinjasId = "uel"
+        ),
+        StandingsLeagueOption(
+            "MLS",
+            apiNinjasId = "mls"
+        ),
+        StandingsLeagueOption(
+            "Liga 1 Indonesia",
+            footballId = 274
+        )
     )
 
     var selectedLeague by remember {
@@ -62,7 +124,7 @@ fun StandingsSection(
     }
 
     var standings by remember {
-        mutableStateOf<List<StandingTeam>>(emptyList())
+        mutableStateOf<List<StandingsDisplayRow>>(emptyList())
     }
 
     var loading by remember {
@@ -73,6 +135,10 @@ fun StandingsSection(
         mutableStateOf<String?>(null)
     }
 
+    var seasonLabel by remember {
+        mutableStateOf("MUSIM BERJALAN")
+    }
+
     var refresh by remember {
         mutableIntStateOf(0)
     }
@@ -80,25 +146,58 @@ fun StandingsSection(
     LaunchedEffect(selectedLeague, refresh) {
         loading = true
         error = null
+        standings = emptyList()
 
         try {
-            standings = withTimeout(20000L) {
-                FootballRepository.getStandings(
-                    leagueId = selectedLeague.id,
-                    season = 2026
-                )
+            val result = withTimeout(25000L) {
+                if (selectedLeague.apiNinjasId != null) {
+                    val response = fetchNinjasStandings(
+                        selectedLeague.apiNinjasId
+                    )
+
+                    seasonLabel = response.season.ifBlank {
+                        "MUSIM BERJALAN"
+                    }
+
+                    response.teams
+
+                } else {
+                    val footballId = selectedLeague.footballId
+                        ?: throw Exception("ID liga tidak tersedia.")
+
+                    val response = FootballRepository.getStandings(
+                        leagueId = footballId,
+                        season = 2026
+                    )
+
+                    seasonLabel = "MUSIM 2026"
+
+                    response.map { item ->
+                        StandingsDisplayRow(
+                            rank = item.rank,
+                            teamName = item.team?.name ?: "Klub",
+                            played = item.all?.played ?: 0,
+                            won = item.all?.win ?: 0,
+                            drawn = item.all?.draw ?: 0,
+                            lost = item.all?.lose ?: 0,
+                            goalsDiff = item.goalsDiff,
+                            points = item.points
+                        )
+                    }
+                }
             }
 
-            if (standings.isEmpty()) {
-                error =
-                    "API berhasil merespons, tetapi data klasemen kosong untuk liga dan musim ini."
+            standings = result
+
+            if (result.isEmpty()) {
+                error = "Data klasemen belum tersedia untuk kompetisi ini."
             }
 
         } catch (e: CancellationException) {
             throw e
 
         } catch (e: Exception) {
-            error = e.message ?: "Gagal mengambil klasemen."
+            error = e.message ?: "Gagal mengambil data klasemen."
 
         } finally {
             loading = false
@@ -113,7 +212,6 @@ fun StandingsSection(
             .padding(18.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-
         Column {
             Text(
                 "KLASEMEN",
@@ -175,15 +273,31 @@ fun StandingsSection(
             }
         }
 
-        Text(
-            "MUSIM 2026",
-            color = ExtraCyan,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                seasonLabel,
+                color = ExtraCyan,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            )
+
+            TextButton(
+                onClick = { refresh++ },
+                enabled = !loading
+            ) {
+                Text(
+                    "MUAT ULANG",
+                    color = ExtraCyan,
+                    fontSize = 10.sp
+                )
+            }
+        }
 
         when {
-
             loading -> {
                 Box(
                     modifier = Modifier
@@ -191,9 +305,21 @@ fun StandingsSection(
                         .padding(35.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(
-                        color = ExtraCyan
-                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        CircularProgressIndicator(
+                            color = ExtraCyan
+                        )
+
+                        Spacer(Modifier.height(12.dp))
+
+                        Text(
+                            "Mengambil data klasemen...",
+                            color = ExtraMuted,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
             }
 
@@ -217,12 +343,10 @@ fun StandingsSection(
                     Spacer(Modifier.height(10.dp))
 
                     TextButton(
-                        onClick = {
-                            refresh++
-                        }
+                        onClick = { refresh++ }
                     ) {
                         Text(
-                            "Coba lagi",
+                            "COBA LAGI",
                             color = ExtraCyan
                         )
                     }
@@ -230,7 +354,6 @@ fun StandingsSection(
             }
 
             else -> {
-
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -278,7 +401,6 @@ fun StandingsSection(
                 }
 
                 standings.forEach { item ->
-
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -300,14 +422,14 @@ fun StandingsSection(
                         )
 
                         Text(
-                            item.team?.name ?: "Klub",
+                            item.teamName,
                             color = ExtraWhite,
                             fontSize = 11.sp,
                             modifier = Modifier.weight(1f)
                         )
 
                         Text(
-                            item.all?.played?.toString() ?: "-",
+                            item.played.toString(),
                             color = ExtraMuted,
                             modifier = Modifier.width(25.dp),
                             fontSize = 11.sp
@@ -337,6 +459,97 @@ fun StandingsSection(
                 )
             }
         }
+    }
+}
+
+private suspend fun fetchNinjasStandings(
+    leagueId: String
+): NinjasStandingsResult = withContext(Dispatchers.IO) {
+
+    if (
+        API_NINJAS_KEY.isBlank() ||
+        API_NINJAS_KEY == "juNpvcVMKDsxtsJbOVhZLB3FVbvOdB0xXaQzhozG"
+    ) {
+        throw Exception("API Key API Ninjas belum dimasukkan.")
+    }
+
+    val url = URL(
+        "https://api.api-ninjas.com/v1/soccerstandings?league=$leagueId"
+    )
+
+    val connection = url.openConnection() as HttpURLConnection
+
+    try {
+        connection.requestMethod = "GET"
+        connection.setRequestProperty(
+            "X-Api-Key",
+            API_NINJAS_KEY
+        )
+        connection.connectTimeout = 15000
+        connection.readTimeout = 15000
+
+        val responseCode = connection.responseCode
+
+        if (responseCode !in 200..299) {
+            val errorBody = connection.errorStream
+                ?.bufferedReader()
+                ?.use { it.readText() }
+                .orEmpty()
+
+            throw Exception(
+                when (responseCode) {
+                    401, 403 -> "API Key tidak valid atau akses ditolak."
+                    429 -> "Batas penggunaan API tercapai."
+                    else -> "API Ninjas gagal. Kode: $responseCode $errorBody"
+                }
+            )
+        }
+
+        val response = connection.inputStream
+            .bufferedReader()
+            .use { it.readText() }
+
+        val array = JSONArray(response)
+
+        val teams = mutableListOf<StandingsDisplayRow>()
+        var season = ""
+
+        for (i in 0 until array.length()) {
+            val item = array.optJSONObject(i) ?: continue
+
+            if (season.isBlank()) {
+                season = item.optString(
+                    "season_label",
+                    item.optString("season", "")
+                )
+            }
+
+            val teamObject = item.optJSONObject("team")
+
+            val teamName = teamObject?.optString("name")
+                ?: item.optString("team", "Klub")
+
+            teams.add(
+                StandingsDisplayRow(
+                    rank = item.optInt("league_rank", i + 1),
+                    teamName = teamName,
+                    played = item.optInt("games_played"),
+                    won = item.optInt("wins"),
+                    drawn = item.optInt("draws"),
+                    lost = item.optInt("losses"),
+                    goalsDiff = item.optInt("goal_difference"),
+                    points = item.optInt("points")
+                )
+            )
+        }
+
+        NinjasStandingsResult(
+            teams = teams.sortedBy { it.rank },
+            season = season
+        )
+
+    } finally {
+        connection.disconnect()
     }
 }
 
@@ -402,9 +615,7 @@ fun LineupDialog(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
-
                 when {
-
                     loading -> {
                         Box(
                             modifier = Modifier
@@ -428,7 +639,6 @@ fun LineupDialog(
 
                     else -> {
                         lineups.forEach { lineup ->
-
                             Column(
                                 modifier = Modifier
                                     .fillMaxWidth()
@@ -439,7 +649,6 @@ fun LineupDialog(
                                     .padding(13.dp),
                                 verticalArrangement = Arrangement.spacedBy(8.dp)
                             ) {
-
                                 Text(
                                     lineup.team?.name ?: "Tim",
                                     color = ExtraCyan,
