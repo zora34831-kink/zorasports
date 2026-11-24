@@ -90,14 +90,15 @@ fun StandingsSection(
             }
 
             if (standings.isEmpty()) {
-                error = "Klasemen belum tersedia."
+                error =
+                    "API berhasil merespons, tetapi data klasemen kosong untuk liga dan musim ini."
             }
 
         } catch (e: CancellationException) {
             throw e
 
         } catch (e: Exception) {
-            error = "Gagal mengambil klasemen. Periksa koneksi atau API Key."
+            error = e.message ?: "Gagal mengambil klasemen."
 
         } finally {
             loading = false
@@ -212,6 +213,8 @@ fun StandingsSection(
                         color = ExtraMuted,
                         fontSize = 12.sp
                     )
+
+                    Spacer(Modifier.height(10.dp))
 
                     TextButton(
                         onClick = {
@@ -371,7 +374,7 @@ fun LineupDialog(
             throw e
 
         } catch (e: Exception) {
-            error = "Gagal mengambil susunan pemain."
+            error = e.message ?: "Gagal mengambil susunan pemain."
 
         } finally {
             loading = false
