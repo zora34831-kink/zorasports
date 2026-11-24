@@ -15,11 +15,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "1006039613910-8oujrhajk1p7tqqet5t4slfl36qrp5u8.apps.googleusercontent.com",
+          "client_id": "1006039613910-3ffpbldueb3dkp1qc0p8h31903tv47is.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.zora.admin",
-            "certificate_hash": "24b29bf89b21ae38c7c2810a71008b45e674115a"
+            "certificate_hash": "788123fa5b04d536c16e918411e509c5d2b70f3e"
           }
         }
       ],
@@ -48,11 +48,11 @@
       },
       "oauth_client": [
         {
-          "client_id": "1006039613910-m3kgh0ho4uhog8dljdr5d5ks0mhj008g.apps.googleusercontent.com",
+          "client_id": "1006039613910-tavr7gfvssansvu63ja6vbchpo6r52gn.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
             "package_name": "com.zora.sports",
-            "certificate_hash": "24b29bf89b21ae38c7c2810a71008b45e674115a"
+            "certificate_hash": "788123fa5b04d536c16e918411e509c5d2b70f3e"
           }
         }
       ],
