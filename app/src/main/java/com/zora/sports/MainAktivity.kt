@@ -37,12 +37,12 @@ import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
 
-private val Navy = Color(0xFF071321)
-private val Panel = Color(0xFF102337)
-private val PanelLight = Color(0xFF18334A)
-private val Cyan = Color(0xFF42DDF5)
-private val Muted = Color(0xFF91A5B8)
-private val White = Color(0xFFF4FAFF)
+private val Navy get() = ZoraThemeColors.background
+private val Panel get() = ZoraThemeColors.panel
+private val PanelLight get() = ZoraThemeColors.panelLight
+private val Cyan get() = ZoraThemeColors.accent
+private val Muted get() = ZoraThemeColors.muted
+private val White get() = ZoraThemeColors.text
 
 private const val WHATSAPP_CHANNEL =
     "https://whatsapp.com/channel/0029Vb9PO5tEAKWNW4GCQd1b"
@@ -51,12 +51,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-
-        window.statusBarColor =
-            android.graphics.Color.rgb(7, 19, 33)
-
-        window.navigationBarColor =
-            android.graphics.Color.rgb(7, 19, 33)
 
         setContent {
             ZoraSportsApp()
@@ -72,6 +66,40 @@ data class AppTab(
 @Composable
 fun ZoraSportsApp() {
     val activity = LocalContext.current as ComponentActivity
+
+    val themePrefs = remember {
+        activity.getSharedPreferences(
+            "zora_theme_settings",
+            android.content.Context.MODE_PRIVATE
+        )
+    }
+
+    var lightMode by remember {
+        mutableStateOf(
+            themePrefs.getBoolean("light_mode", false)
+        )
+    }
+
+    SideEffect {
+        ZoraThemeColors.isLight = lightMode
+
+        val barColor = if (lightMode) {
+            android.graphics.Color.rgb(244, 247, 250)
+        } else {
+            android.graphics.Color.rgb(7, 19, 33)
+        }
+
+        activity.window.statusBarColor = barColor
+        activity.window.navigationBarColor = barColor
+
+        val bars = WindowInsetsControllerCompat(
+            activity.window,
+            activity.window.decorView
+        )
+
+        bars.isAppearanceLightStatusBars = lightMode
+        bars.isAppearanceLightNavigationBars = lightMode
+    }
 
     var selectedTab by remember { mutableIntStateOf(0) }
     var fullscreen by remember { mutableStateOf(false) }
@@ -136,29 +164,39 @@ fun ZoraSportsApp() {
     }
 
     val tabs = listOf(
-        AppTab("Home", Icons.Default.Home),
+        AppTab("Beranda", Icons.Default.Home),
         AppTab("Live", Icons.Default.SportsSoccer),
-        AppTab("Stream", Icons.Default.PlayCircle),
+        AppTab("Siaran", Icons.Default.PlayCircle),
         AppTab("Jadwal", Icons.Default.CalendarMonth),
         AppTab("Liga", Icons.Default.EmojiEvents),
         AppTab("Favorit", Icons.Default.Star)
     )
 
     MaterialTheme(
-        colorScheme = darkColorScheme(
-            primary = Cyan,
-            background = Navy,
-            surface = Panel,
-            onBackground = White,
-            onSurface = White
-        )
+        colorScheme = if (lightMode) {
+            lightColorScheme(
+                primary = Cyan,
+                background = Navy,
+                surface = Panel,
+                onBackground = White,
+                onSurface = White
+            )
+        } else {
+            darkColorScheme(
+                primary = Cyan,
+                background = Navy,
+                surface = Panel,
+                onBackground = White,
+                onSurface = White
+            )
+        }
     ) {
         Scaffold(
             containerColor = Navy,
             bottomBar = {
                 if (!fullscreen && extraPage.isEmpty()) {
                     NavigationBar(
-                        containerColor = Color(0xFF0B1B2B)
+                        containerColor = ZoraThemeColors.navigation
                     ) {
                         tabs.forEachIndexed { index, tab ->
                             NavigationBarItem(
@@ -171,7 +209,10 @@ fun ZoraSportsApp() {
                                     )
                                 },
                                 label = {
-                                    Text(tab.title, fontSize = 10.sp)
+                                    Text(
+                                        tab.title,
+                                        fontSize = 10.sp
+                                    )
                                 },
                                 colors = NavigationBarItemDefaults.colors(
                                     selectedIconColor = Cyan,
@@ -188,10 +229,12 @@ fun ZoraSportsApp() {
         ) { padding ->
 
             val pageModifier =
-                if (fullscreen || extraPage.isNotEmpty()) {
+                if (fullscreen) {
                     Modifier.fillMaxSize()
                 } else {
-                    Modifier.padding(padding)
+                    Modifier
+                        .padding(padding)
+                        .fillMaxSize()
                 }
 
             when {
@@ -220,7 +263,7 @@ fun ZoraSportsApp() {
                         )
 
                         1 -> MatchPage(
-                            title = "LIVE SCORES",
+                            title = "SKOR LANGSUNG",
                             description =
                                 "Pantau pertandingan yang sedang berlangsung.",
                             modifier = pageModifier
@@ -255,6 +298,13 @@ fun ZoraSportsApp() {
             onInfo = {
                 showHamburger = false
                 extraPage = "INFO APK"
+            },
+            lightMode = lightMode,
+            onThemeChange = {
+                lightMode = it
+                themePrefs.edit()
+                    .putBoolean("light_mode", it)
+                    .apply()
             }
         )
     }
@@ -264,14 +314,16 @@ fun ZoraSportsApp() {
 fun HamburgerMenu(
     onDismiss: () -> Unit,
     onSupport: () -> Unit,
-    onInfo: () -> Unit
+    onInfo: () -> Unit,
+    lightMode: Boolean,
+    onThemeChange: (Boolean) -> Unit
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = Panel,
         title = {
             Text(
-                "MENU",
+                "PENGATURAN",
                 color = White,
                 fontSize = 19.sp,
                 fontWeight = FontWeight.Bold,
@@ -282,6 +334,62 @@ fun HamburgerMenu(
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
+                Text(
+                    "TAMPILAN APLIKASI",
+                    color = Muted,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    FilterChip(
+                        selected = !lightMode,
+                        onClick = { onThemeChange(false) },
+                        label = { Text("Gelap") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.DarkMode,
+                                contentDescription = null
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Cyan,
+                            selectedLabelColor = Navy,
+                            selectedLeadingIconColor = Navy,
+                            labelColor = White,
+                            iconColor = Muted
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+
+                    FilterChip(
+                        selected = lightMode,
+                        onClick = { onThemeChange(true) },
+                        label = { Text("Terang") },
+                        leadingIcon = {
+                            Icon(
+                                Icons.Default.LightMode,
+                                contentDescription = null
+                            )
+                        },
+                        colors = FilterChipDefaults.filterChipColors(
+                            selectedContainerColor = Cyan,
+                            selectedLabelColor = Navy,
+                            selectedLeadingIconColor = Navy,
+                            labelColor = White,
+                            iconColor = Muted
+                        ),
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+
+                HorizontalDivider(
+                    color = ZoraThemeColors.border
+                )
+
                 MenuOption(
                     title = "DUKUNGAN",
                     subtitle = "Dukung pengembangan ZORASPORTS",
@@ -290,8 +398,8 @@ fun HamburgerMenu(
                 )
 
                 MenuOption(
-                    title = "INFO APK",
-                    subtitle = "Informasi aplikasi dan developer",
+                    title = "INFO APLIKASI",
+                    subtitle = "Informasi aplikasi dan pengembang",
                     icon = Icons.Default.Info,
                     onClick = onInfo
                 )
@@ -570,7 +678,7 @@ fun AppInfoPage(
     ) {
         item {
             PageTopBar(
-                title = "INFO APK",
+                title = "INFO APLIKASI",
                 onBack = onBack
             )
         }
@@ -592,20 +700,16 @@ fun AppInfoPage(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(9.dp)
             ) {
-                Box(
+                Image(
+                    painter = painterResource(
+                        id = R.drawable.ic_zorasports_logo
+                    ),
+                    contentDescription = "Logo ZORASPORTS",
                     modifier = Modifier
                         .size(65.dp)
-                        .clip(RoundedCornerShape(20.dp))
-                        .background(Cyan),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        "Z",
-                        color = Navy,
-                        fontSize = 39.sp,
-                        fontWeight = FontWeight.Black
-                    )
-                }
+                        .clip(RoundedCornerShape(18.dp)),
+                    contentScale = ContentScale.Fit
+                )
 
                 Text(
                     "ZORASPORTS",
@@ -616,10 +720,10 @@ fun AppInfoPage(
                 )
 
                 Text(
-                    "FOOTBALL • ALL IN ONE",
+                    "SEPAK BOLA DALAM SATU APLIKASI",
                     color = Cyan,
                     fontSize = 10.sp,
-                    letterSpacing = 1.5.sp
+                    letterSpacing = 1.2.sp
                 )
             }
         }
@@ -633,16 +737,16 @@ fun AppInfoPage(
                     .padding(17.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                InfoRow("Developer", "ZORA")
+                InfoRow("Pengembang", "ZORA")
 
                 HorizontalDivider(
-                    color = Color.White.copy(alpha = 0.08f)
+                    color = ZoraThemeColors.border
                 )
 
                 InfoRow("Versi APK", versionName)
 
                 HorizontalDivider(
-                    color = Color.White.copy(alpha = 0.08f)
+                    color = ZoraThemeColors.border
                 )
 
                 InfoRow("Package", "com.zora.sports")
@@ -677,7 +781,7 @@ fun AppInfoPage(
                         )
 
                         Text(
-                            "Pengumuman dan update ZORASPORTS.",
+                            "Pengumuman dan pembaruan ZORASPORTS.",
                             color = Muted,
                             fontSize = 10.sp
                         )
@@ -732,7 +836,11 @@ fun InfoRow(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Text(label, color = Muted, fontSize = 12.sp)
+        Text(
+            label,
+            color = Muted,
+            fontSize = 12.sp
+        )
 
         Text(
             value,
@@ -807,7 +915,7 @@ fun HomeScreen(
                 verticalArrangement = Arrangement.spacedBy(6.dp)
             ) {
                 Text(
-                    "THE WORLD OF FOOTBALL",
+                    "DUNIA SEPAK BOLA",
                     color = Cyan,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
@@ -815,7 +923,7 @@ fun HomeScreen(
                 )
 
                 Text(
-                    "Football starts here.",
+                    "Sepak bola dimulai di sini.",
                     color = White,
                     fontSize = 27.sp,
                     fontWeight = FontWeight.Bold
@@ -829,15 +937,15 @@ fun HomeScreen(
             }
         }
 
-        item { FeaturedMatch(onNavigate) }
-
         item {
             SectionHeader("Pertandingan", "Lihat semua") {
                 onNavigate(1)
             }
         }
 
-        item { LiveMatchSection() }
+        item {
+            LiveMatchSection()
+        }
 
         item {
             SectionHeader("Jelajahi", "Lihat liga") {
@@ -845,14 +953,16 @@ fun HomeScreen(
             }
         }
 
-        item { ExploreGrid(onNavigate) }
+        item {
+            ExploreGrid(onNavigate)
+        }
 
         item {
             Text(
-                "ZORASPORTS • FOOTBALL, ALL IN ONE",
+                "ZORASPORTS • SEPAK BOLA DALAM SATU APLIKASI",
                 color = Muted,
                 fontSize = 10.sp,
-                letterSpacing = 1.5.sp,
+                letterSpacing = 1.2.sp,
                 modifier = Modifier.fillMaxWidth(),
                 textAlign = TextAlign.Center
             )
@@ -872,24 +982,16 @@ fun Header(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
+            Image(
+                painter = painterResource(
+                    id = R.drawable.ic_zorasports_logo
+                ),
+                contentDescription = "Logo ZORASPORTS",
                 modifier = Modifier
                     .size(43.dp)
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(Cyan, Color(0xFF1679A5))
-                        )
-                    ),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    "Z",
-                    color = Navy,
-                    fontSize = 27.sp,
-                    fontWeight = FontWeight.Black
-                )
-            }
+                    .clip(RoundedCornerShape(12.dp)),
+                contentScale = ContentScale.Fit
+            )
 
             Spacer(Modifier.width(11.dp))
 
@@ -924,9 +1026,12 @@ fun Header(
                 color = Panel
             ) {
                 Icon(
-                    if (fullscreen) Icons.Default.FullscreenExit
-                    else Icons.Default.Fullscreen,
-                    contentDescription = "Fullscreen",
+                    if (fullscreen) {
+                        Icons.Default.FullscreenExit
+                    } else {
+                        Icons.Default.Fullscreen
+                    },
+                    contentDescription = "Layar penuh",
                     tint = Cyan,
                     modifier = Modifier.padding(11.dp)
                 )
@@ -947,125 +1052,6 @@ fun Header(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun FeaturedMatch(onNavigate: (Int) -> Unit) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(23.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(
-                        Color(0xFF153C55),
-                        Color(0xFF102438),
-                        Color(0xFF0C1C2B)
-                    )
-                )
-            )
-            .border(
-                1.dp,
-                Cyan.copy(alpha = 0.2f),
-                RoundedCornerShape(23.dp)
-            )
-            .clickable { onNavigate(1) }
-            .padding(19.dp)
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            Text(
-                "MATCH CENTER",
-                color = Cyan,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.5.sp
-            )
-
-            Icon(
-                Icons.Default.ArrowOutward,
-                contentDescription = null,
-                tint = Cyan
-            )
-        }
-
-        Spacer(Modifier.height(22.dp))
-
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            TeamPlaceholder("HOME", "H")
-
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    "VS",
-                    color = White,
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Black
-                )
-
-                Text(
-                    "MATCH CENTER",
-                    color = Muted,
-                    fontSize = 8.sp
-                )
-            }
-
-            TeamPlaceholder("AWAY", "A")
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        HorizontalDivider(
-            color = Color.White.copy(alpha = 0.12f)
-        )
-
-        Spacer(Modifier.height(12.dp))
-
-        Text(
-            "Buka pusat pertandingan",
-            color = Cyan,
-            fontSize = 11.sp
-        )
-    }
-}
-
-@Composable
-fun TeamPlaceholder(name: String, letter: String) {
-    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-        Box(
-            modifier = Modifier
-                .size(54.dp)
-                .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.08f))
-                .border(
-                    1.dp,
-                    Cyan.copy(alpha = 0.3f),
-                    CircleShape
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Text(
-                letter,
-                color = Cyan,
-                fontSize = 23.sp,
-                fontWeight = FontWeight.Bold
-            )
-        }
-
-        Spacer(Modifier.height(8.dp))
-
-        Text(
-            name,
-            color = White,
-            fontSize = 10.sp,
-            fontWeight = FontWeight.Bold
-        )
     }
 }
 
@@ -1109,37 +1095,51 @@ fun SectionHeader(
 
 @Composable
 fun ExploreGrid(onNavigate: (Int) -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(
+        verticalArrangement = Arrangement.spacedBy(10.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             ExploreCard(
                 "KLASEMEN",
                 "Posisi setiap tim",
                 Icons.Default.EmojiEvents,
                 Modifier.weight(1f)
-            ) { onNavigate(4) }
+            ) {
+                onNavigate(4)
+            }
 
             ExploreCard(
                 "STATISTIK",
                 "Analisis pertandingan",
                 Icons.Default.BarChart,
                 Modifier.weight(1f)
-            ) { onNavigate(1) }
+            ) {
+                onNavigate(1)
+            }
         }
 
-        Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
             ExploreCard(
                 "HASIL",
                 "Pertandingan selesai",
                 Icons.Default.Scoreboard,
                 Modifier.weight(1f)
-            ) { onNavigate(1) }
+            ) {
+                onNavigate(1)
+            }
 
             ExploreCard(
                 "FAVORIT",
                 "Tim pilihanmu",
                 Icons.Default.Star,
                 Modifier.weight(1f)
-            ) { onNavigate(5) }
+            ) {
+                onNavigate(5)
+            }
         }
     }
 }
@@ -1158,7 +1158,7 @@ fun ExploreCard(
             .background(Panel)
             .border(
                 1.dp,
-                Color.White.copy(alpha = 0.06f),
+                ZoraThemeColors.border.copy(alpha = 0.5f),
                 RoundedCornerShape(18.dp)
             )
             .clickable { onClick() }
@@ -1220,7 +1220,9 @@ fun MatchPage(
             )
         }
 
-        item { LiveMatchSection() }
+        item {
+            LiveMatchSection()
+        }
     }
 }
 
@@ -1267,7 +1269,10 @@ fun FavoritePage(modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun InfoCard(title: String, description: String) {
+fun InfoCard(
+    title: String,
+    description: String
+) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -1275,7 +1280,7 @@ fun InfoCard(title: String, description: String) {
             .background(Panel)
             .border(
                 1.dp,
-                Color.White.copy(alpha = 0.06f),
+                ZoraThemeColors.border.copy(alpha = 0.5f),
                 RoundedCornerShape(17.dp)
             )
             .padding(16.dp)
