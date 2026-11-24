@@ -18,8 +18,11 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
@@ -68,6 +71,8 @@ private data class NinjasStandingsResult(
     val season: String
 )
 
+// Masukkan API key BARU milik lu di sini.
+// Jangan gunakan key lama yang sudah terlanjur terekspos.
 private const val API_NINJAS_KEY = "juNpvcVMKDsxtsJbOVhZLB3FVbvOdB0xXaQzhozG"
 
 // ======================================================
@@ -118,16 +123,14 @@ fun StandingsSection(
         mutableIntStateOf(0)
     }
 
-    val currentLeague = selectedLeague
-
-    LaunchedEffect(currentLeague, refresh) {
+    LaunchedEffect(selectedLeague, refresh) {
         loading = true
         error = null
         standings = emptyList()
 
         try {
             val result = withTimeout(25000L) {
-                val apiNinjasId = currentLeague.apiNinjasId
+                val apiNinjasId = selectedLeague.apiNinjasId
 
                 if (apiNinjasId != null) {
                     val response = fetchNinjasStandings(apiNinjasId)
@@ -138,7 +141,7 @@ fun StandingsSection(
 
                     response.teams
                 } else {
-                    val footballId = currentLeague.footballId
+                    val footballId = selectedLeague.footballId
                         ?: throw Exception("ID liga tidak tersedia.")
 
                     val response = FootballRepository.getStandings(
@@ -214,7 +217,7 @@ fun StandingsSection(
                 )
             ) {
                 Text(
-                    currentLeague.name,
+                    selectedLeague.name,
                     modifier = Modifier.weight(1f)
                 )
                 Text("⌄")
@@ -304,7 +307,8 @@ fun StandingsSection(
                     Text(
                         error ?: "Terjadi kesalahan",
                         color = ExtraMuted,
-                        fontSize = 12.sp
+                        fontSize = 12.sp,
+                        textAlign = TextAlign.Center
                     )
 
                     TextButton(onClick = { refresh++ }) {
@@ -385,7 +389,8 @@ fun StandingsSection(
                             item.teamName,
                             color = ExtraWhite,
                             fontSize = 11.sp,
-                            modifier = Modifier.weight(1f)
+                            modifier = Modifier.weight(1f),
+                            maxLines = 1
                         )
 
                         Text(
@@ -509,13 +514,14 @@ private suspend fun fetchNinjasStandings(
             teams = teams.sortedBy { it.rank },
             season = season
         )
+
     } finally {
         connection.disconnect()
     }
 }
 
 // ======================================================
-// LINEUP DUA TIM
+// POSISI PEMAIN DI LAPANGAN VERTIKAL
 // ======================================================
 
 private data class PitchPlayerPosition(
@@ -546,13 +552,15 @@ private fun createPitchPositions(
     val rows = players.mapIndexed { index, player ->
         parsed[index]?.get(0)
             ?: when (player.pos?.uppercase()) {
-                "G" -> 1
+                "G", "GK" -> 1
                 "D" -> 2
                 "M" -> 3
                 "F" -> 4
                 else -> 3
             }
     }
+
+    val maxRow = maxOf(rows.maxOrNull() ?: 4, 4)
 
     return players.indices.map { index ->
         val row = rows[index]
@@ -564,27 +572,32 @@ private fun createPitchPositions(
         val positionInRow = sameRow.indexOf(index)
         val countInRow = sameRow.size
 
-        val y = (positionInRow + 1).toFloat() /
+        // Posisi horizontal dalam satu baris.
+        val x = (positionInRow + 1).toFloat() /
             (countInRow + 1).toFloat()
 
-        val maxRow = maxOf(rows.maxOrNull() ?: 4, 4)
-
+        // Progres dari gawang sendiri menuju tengah lapangan.
         val progress = (row - 1).toFloat() /
             (maxRow - 1).coerceAtLeast(1)
 
-        val x = if (teamIndex == 0) {
-            0.07f + progress * 0.37f
+        // Tim pertama di atas, tim kedua di bawah.
+        val y = if (teamIndex == 0) {
+            0.06f + progress * 0.40f
         } else {
-            0.93f - progress * 0.37f
+            0.94f - progress * 0.40f
         }
 
         PitchPlayerPosition(
             player = players[index],
-            x = x.coerceIn(0.06f, 0.94f),
-            y = (0.08f + y * 0.84f).coerceIn(0.06f, 0.94f)
+            x = x.coerceIn(0.08f, 0.92f),
+            y = y.coerceIn(0.05f, 0.95f)
         )
     }
 }
+
+// ======================================================
+// LINEUP FULL SCREEN
+// ======================================================
 
 @Composable
 fun LineupDialog(
@@ -595,11 +608,11 @@ fun LineupDialog(
         mutableStateOf<List<FixtureLineup>>(emptyList())
     }
 
-    var loading by remember {
+    var loading by remember(fixtureId) {
         mutableStateOf(true)
     }
 
-    var error by remember {
+    var error by remember(fixtureId) {
         mutableStateOf<String?>(null)
     }
 
@@ -615,6 +628,7 @@ fun LineupDialog(
             if (lineups.isEmpty()) {
                 error = "Susunan pemain belum tersedia."
             }
+
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
@@ -624,132 +638,140 @@ fun LineupDialog(
         }
     }
 
-    AlertDialog(
+    Dialog(
         onDismissRequest = onDismiss,
-        containerColor = ExtraNavy,
-        modifier = Modifier.fillMaxWidth(),
-
-        title = {
-            Text(
-                "SUSUNAN PEMAIN",
-                color = ExtraWhite,
-                fontWeight = FontWeight.Bold,
-                fontSize = 18.sp
-            )
-        },
-
-        text = {
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false
+        )
+    ) {
+        Surface(
+            modifier = Modifier.fillMaxSize(),
+            color = ExtraNavy
+        ) {
             Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(max = 590.dp)
-                    .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+                    .padding(
+                        horizontal = 14.dp,
+                        vertical = 18.dp
+                    ),
+                verticalArrangement = Arrangement.spacedBy(14.dp)
             ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column {
+                        Text(
+                            "SUSUNAN PEMAIN",
+                            color = ExtraWhite,
+                            fontSize = 21.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            "Formasi dan posisi pemain kedua tim",
+                            color = ExtraMuted,
+                            fontSize = 11.sp
+                        )
+                    }
+
+                    TextButton(onClick = onDismiss) {
+                        Text(
+                            "TUTUP",
+                            color = ExtraCyan,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
                 when {
                     loading -> {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(35.dp),
+                                .height(350.dp),
                             contentAlignment = Alignment.Center
                         ) {
-                            CircularProgressIndicator(
-                                color = ExtraCyan
-                            )
+                            Column(
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                CircularProgressIndicator(
+                                    color = ExtraCyan
+                                )
+
+                                Spacer(Modifier.height(12.dp))
+
+                                Text(
+                                    "Mengambil susunan pemain...",
+                                    color = ExtraMuted,
+                                    fontSize = 12.sp
+                                )
+                            }
                         }
                     }
 
                     error != null -> {
-                        Text(
-                            error ?: "Data tidak tersedia",
-                            color = ExtraMuted,
-                            fontSize = 12.sp
-                        )
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    ExtraPanel,
+                                    RoundedCornerShape(14.dp)
+                                )
+                                .padding(20.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally
+                        ) {
+                            Text(
+                                error ?: "Data tidak tersedia",
+                                color = ExtraMuted,
+                                textAlign = TextAlign.Center
+                            )
+
+                            TextButton(onClick = onDismiss) {
+                                Text(
+                                    "TUTUP",
+                                    color = ExtraCyan
+                                )
+                            }
+                        }
                     }
 
                     else -> {
                         val first = lineups.getOrNull(0)
                         val second = lineups.getOrNull(1)
 
-                        Row(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    ExtraPanel,
-                                    RoundedCornerShape(13.dp)
-                                )
-                                .padding(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    first?.team?.name ?: "Tim 1",
-                                    color = ExtraWhite,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    textAlign = TextAlign.Center
-                                )
-
-                                Text(
-                                    first?.formation ?: "-",
-                                    color = Color(0xFF35B9FF),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
-
-                            Text(
-                                "VS",
-                                color = ExtraMuted,
-                                fontWeight = FontWeight.Black,
-                                fontSize = 15.sp
-                            )
-
-                            Column(
-                                modifier = Modifier.weight(1f),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    second?.team?.name ?: "Tim 2",
-                                    color = ExtraWhite,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp,
-                                    textAlign = TextAlign.Center
-                                )
-
-                                Text(
-                                    second?.formation ?: "-",
-                                    color = Color(0xFFFF5555),
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 12.sp
-                                )
-                            }
-                        }
+                        MatchLineupHeader(
+                            first = first,
+                            second = second
+                        )
 
                         SharedFootballPitch(
                             lineups = lineups.take(2)
                         )
 
-                        if (lineups.size == 2) {
+                        if (lineups.size >= 2) {
                             Row(
                                 modifier = Modifier.fillMaxWidth(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(9.dp)
                             ) {
-                                lineups.forEachIndexed { index, lineup ->
-                                    CoachAndSubsCard(
-                                        lineup = lineup,
-                                        teamIndex = index,
-                                        modifier = Modifier.weight(1f)
-                                    )
-                                }
+                                CoachAndSubsCard(
+                                    lineup = lineups[0],
+                                    teamIndex = 0,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                CoachAndSubsCard(
+                                    lineup = lineups[1],
+                                    teamIndex = 1,
+                                    modifier = Modifier.weight(1f)
+                                )
                             }
                         } else {
                             Text(
-                                "Data susunan pemain tim lawan belum tersedia.",
+                                "Data susunan pemain tim kedua belum tersedia.",
                                 color = ExtraMuted,
                                 fontSize = 11.sp
                             )
@@ -762,25 +784,110 @@ fun LineupDialog(
                                 )
                             }
                         }
+
+                        Text(
+                            "Data susunan pemain disediakan oleh penyedia data pertandingan.",
+                            color = ExtraMuted,
+                            fontSize = 10.sp,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+
+                        OutlinedButton(
+                            onClick = onDismiss,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = ExtraCyan
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp,
+                                ExtraBorder
+                            )
+                        ) {
+                            Text("TUTUP SUSUNAN PEMAIN")
+                        }
                     }
                 }
             }
-        },
-
-        confirmButton = {
-            TextButton(onClick = onDismiss) {
-                Text(
-                    "TUTUP",
-                    color = ExtraCyan,
-                    fontWeight = FontWeight.Bold
-                )
-            }
         }
-    )
+    }
 }
 
 // ======================================================
-// LAPANGAN BERSAMA
+// HEADER KEDUA TIM
+// ======================================================
+
+@Composable
+private fun MatchLineupHeader(
+    first: FixtureLineup?,
+    second: FixtureLineup?
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(
+                ExtraPanel,
+                RoundedCornerShape(14.dp)
+            )
+            .padding(13.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                first?.team?.name ?: "Tim 1",
+                color = ExtraWhite,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Text(
+                first?.formation ?: "-",
+                color = Color(0xFF35B9FF),
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp
+            )
+        }
+
+        Text(
+            "VS",
+            color = ExtraMuted,
+            fontWeight = FontWeight.Black,
+            fontSize = 16.sp,
+            modifier = Modifier.padding(horizontal = 8.dp)
+        )
+
+        Column(
+            modifier = Modifier.weight(1f),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                second?.team?.name ?: "Tim 2",
+                color = ExtraWhite,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                textAlign = TextAlign.Center,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
+
+            Text(
+                second?.formation ?: "-",
+                color = Color(0xFFFF5555),
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp
+            )
+        }
+    }
+}
+
+// ======================================================
+// LAPANGAN VERTIKAL DUA TIM
 // ======================================================
 
 @Composable
@@ -794,10 +901,10 @@ private fun SharedFootballPitch(
     BoxWithConstraints(
         modifier = Modifier
             .fillMaxWidth()
-            .height(360.dp)
+            .height(560.dp)
             .background(
                 Color(0xFF237B32),
-                RoundedCornerShape(14.dp)
+                RoundedCornerShape(13.dp)
             )
     ) {
         val pitchWidth = maxWidth
@@ -808,38 +915,42 @@ private fun SharedFootballPitch(
         ) {
             val w = size.width
             val h = size.height
-            val lineColor = Color.White.copy(alpha = 0.85f)
+            val lineColor = Color.White.copy(alpha = 0.88f)
             val stroke = 2.dp.toPx()
 
-            for (i in 0 until 8) {
+            // Garis warna rumput.
+            for (i in 0 until 10) {
                 drawRect(
                     color = if (i % 2 == 0) {
                         Color(0xFF287F35)
                     } else {
                         Color(0xFF348C3B)
                     },
-                    topLeft = Offset(0f, h * i / 8f),
-                    size = Size(w, h / 8f)
+                    topLeft = Offset(0f, h * i / 10f),
+                    size = Size(w, h / 10f)
                 )
             }
 
+            // Garis luar lapangan.
             drawRect(
                 color = lineColor,
-                topLeft = Offset(5f, 5f),
-                size = Size(w - 10f, h - 10f),
+                topLeft = Offset(4f, 4f),
+                size = Size(w - 8f, h - 8f),
                 style = Stroke(stroke)
             )
 
+            // Garis tengah horizontal.
             drawLine(
                 color = lineColor,
-                start = Offset(w / 2f, 5f),
-                end = Offset(w / 2f, h - 5f),
+                start = Offset(4f, h / 2f),
+                end = Offset(w - 4f, h / 2f),
                 strokeWidth = stroke
             )
 
+            // Lingkaran tengah.
             drawCircle(
                 color = lineColor,
-                radius = h * 0.12f,
+                radius = w * 0.14f,
                 center = Offset(w / 2f, h / 2f),
                 style = Stroke(stroke)
             )
@@ -850,37 +961,51 @@ private fun SharedFootballPitch(
                 center = Offset(w / 2f, h / 2f)
             )
 
-            // Kotak penalti kiri
+            // Kotak penalti atas.
             drawRect(
                 color = lineColor,
-                topLeft = Offset(5f, h * 0.34f),
-                size = Size(w * 0.13f, h * 0.32f),
+                topLeft = Offset(w * 0.19f, 4f),
+                size = Size(w * 0.62f, h * 0.14f),
                 style = Stroke(stroke)
             )
 
             drawRect(
                 color = lineColor,
-                topLeft = Offset(5f, h * 0.42f),
-                size = Size(w * 0.055f, h * 0.16f),
+                topLeft = Offset(w * 0.34f, 4f),
+                size = Size(w * 0.32f, h * 0.07f),
                 style = Stroke(stroke)
             )
 
-            // Kotak penalti kanan
+            // Kotak penalti bawah.
             drawRect(
                 color = lineColor,
-                topLeft = Offset(w * 0.87f, h * 0.34f),
-                size = Size(w * 0.13f - 5f, h * 0.32f),
+                topLeft = Offset(w * 0.19f, h * 0.86f),
+                size = Size(w * 0.62f, h * 0.14f - 4f),
                 style = Stroke(stroke)
             )
 
             drawRect(
                 color = lineColor,
-                topLeft = Offset(w * 0.945f, h * 0.42f),
-                size = Size(w * 0.055f - 5f, h * 0.16f),
+                topLeft = Offset(w * 0.34f, h * 0.93f),
+                size = Size(w * 0.32f, h * 0.07f - 4f),
                 style = Stroke(stroke)
+            )
+
+            // Titik penalti atas dan bawah.
+            drawCircle(
+                color = lineColor,
+                radius = 2.5.dp.toPx(),
+                center = Offset(w / 2f, h * 0.105f)
+            )
+
+            drawCircle(
+                color = lineColor,
+                radius = 2.5.dp.toPx(),
+                center = Offset(w / 2f, h * 0.895f)
             )
         }
 
+        // Pemain tim pertama di atas dan tim kedua di bawah.
         lineups.forEachIndexed { teamIndex, lineup ->
             val positions = createPitchPositions(
                 lineup = lineup,
@@ -905,11 +1030,11 @@ private fun SharedFootballPitch(
                 Box(
                     modifier = Modifier
                         .offset(
-                            x = pitchWidth * position.x - 30.dp,
-                            y = pitchHeight * position.y - 22.dp
+                            x = pitchWidth * position.x - 36.dp,
+                            y = pitchHeight * position.y - 25.dp
                         )
-                        .width(60.dp),
-                    contentAlignment = Alignment.Center
+                        .width(72.dp),
+                    contentAlignment = Alignment.TopCenter
                 ) {
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -917,7 +1042,7 @@ private fun SharedFootballPitch(
                     ) {
                         Box(
                             modifier = Modifier
-                                .size(32.dp)
+                                .size(34.dp)
                                 .background(
                                     Color.White,
                                     CircleShape
@@ -944,10 +1069,13 @@ private fun SharedFootballPitch(
                         Text(
                             player.name ?: "Pemain",
                             color = Color.White,
-                            fontSize = 9.sp,
+                            fontSize = 8.sp,
                             fontWeight = FontWeight.Bold,
                             textAlign = TextAlign.Center,
-                            maxLines = 1
+                            maxLines = 1,
+                            softWrap = false,
+                            overflow = TextOverflow.Ellipsis,
+                            modifier = Modifier.fillMaxWidth()
                         )
                     }
                 }
@@ -981,7 +1109,7 @@ private fun CoachAndSubsCard(
                 ExtraPanel,
                 RoundedCornerShape(12.dp)
             )
-            .padding(9.dp),
+            .padding(10.dp),
         verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         Text(
@@ -995,12 +1123,12 @@ private fun CoachAndSubsCard(
             lineup.coach?.name ?: "Belum tersedia",
             color = ExtraWhite,
             fontSize = 12.sp,
-            fontWeight = FontWeight.Bold
+            fontWeight = FontWeight.Bold,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis
         )
 
-        HorizontalDivider(
-            color = ExtraBorder
-        )
+        HorizontalDivider(color = ExtraBorder)
 
         Text(
             "PEMAIN CADANGAN",
@@ -1036,7 +1164,8 @@ private fun CoachAndSubsCard(
                             player.name ?: "Pemain",
                             color = ExtraWhite,
                             fontSize = 9.sp,
-                            maxLines = 2
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis
                         )
 
                         Text(
