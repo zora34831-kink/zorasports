@@ -17,24 +17,24 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # 1. Checkout
+      # 1. Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      # 2. Java
+      # 2. Setup Java
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
-      # 3. Gradle
+      # 3. Setup Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.13"
 
-      # 4. Create shared debug keystore
+      # 4. Prepare Shared Debug Keystore
       - name: Prepare Android Debug Keystore
         shell: bash
         run: |
@@ -58,7 +58,7 @@ jobs:
           cp "$HOME/.config/.android/debug.keystore" \
              "$HOME/.android/debug.keystore"
 
-          echo "========== SHARED KEYSTORE =========="
+          echo "========== KEYSTORE FINGERPRINT =========="
 
           keytool -list -v \
             -keystore "$HOME/.config/.android/debug.keystore" \
@@ -66,9 +66,9 @@ jobs:
             -storepass android \
             -alias AndroidDebugKey
 
-          echo "KEYSTORE: OK"
+          echo "SHARED KEYSTORE: OK"
 
-      # 5. Check manifests
+      # 5. Check Manifest
       - name: Check Android Manifest
         shell: bash
         run: |
@@ -80,7 +80,7 @@ jobs:
           echo "APP MANIFEST: OK"
           echo "ADMIN MANIFEST: OK"
 
-      # 6. Generate fingerprints
+      # 6. Generate SHA Fingerprints
       - name: Generate SHA Fingerprints
         shell: bash
         run: |
@@ -92,7 +92,7 @@ jobs:
           echo "========== ZORAADMIN =========="
           gradle :admin:signingReport --no-daemon
 
-      # 7. Build both APKs
+      # 7. Build Both APKs
       - name: Build Both APKs
         env:
           FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
@@ -105,19 +105,22 @@ jobs:
             --stacktrace \
             -PFOOTBALL_API_KEY="$FOOTBALL_API_KEY"
 
-      # 8. Verify APK files
+      # 8. Verify APK Files
       - name: Verify APK Files
         shell: bash
         run: |
           set -euo pipefail
 
-          test -s app/build/outputs/apk/debug/app-debug.apk
-          test -s admin/build/outputs/apk/debug/admin-debug.apk
+          APP_APK="app/build/outputs/apk/debug/app-debug.apk"
+          ADMIN_APK="admin/build/outputs/apk/debug/admin-debug.apk"
+
+          test -s "$APP_APK"
+          test -s "$ADMIN_APK"
 
           echo "ZORASPORTS APK: OK"
           echo "ZORAADMIN APK: OK"
 
-      # 9. Verify signatures and compare certificates
+      # 9. Verify APK Signatures and Compare SHA
       - name: Verify APK Signatures
         shell: bash
         run: |
@@ -136,26 +139,61 @@ jobs:
           APP_APK="app/build/outputs/apk/debug/app-debug.apk"
           ADMIN_APK="admin/build/outputs/apk/debug/admin-debug.apk"
 
+          echo "========== ZORASPORTS SIGNATURE =========="
+
           "$APKSIGNER" verify --verbose --print-certs "$APP_APK"
+
+          echo "========== ZORAADMIN SIGNATURE =========="
+
           "$APKSIGNER" verify --verbose --print-certs "$ADMIN_APK"
 
-          APP_CERT="$( "$APKSIGNER" verify --print-certs "$APP_APK" \
-            | grep 'Signer #1 certificate SHA-256 digest:' \
-            | head -n 1 | awk '{print $NF}')"
+          APP_SHA1=$("$APKSIGNER" verify --print-certs "$APP_APK" \
+            | sed -n 's/.*certificate SHA-1 digest: //p' \
+            | head -n 1 | tr -d '[:space:]')
 
-          ADMIN_CERT="$( "$APKSIGNER" verify --print-certs "$ADMIN_APK" \
-            | grep 'Signer #1 certificate SHA-256 digest:' \
-            | head -n 1 | awk '{print $NF}')"
+          ADMIN_SHA1=$("$APKSIGNER" verify --print-certs "$ADMIN_APK" \
+            | sed -n 's/.*certificate SHA-1 digest: //p' \
+            | head -n 1 | tr -d '[:space:]')
 
-          echo "APP SHA-256: $APP_CERT"
-          echo "ADMIN SHA-256: $ADMIN_CERT"
+          APP_SHA256=$("$APKSIGNER" verify --print-certs "$APP_APK" \
+            | sed -n 's/.*certificate SHA-256 digest: //p' \
+            | head -n 1 | tr -d '[:space:]')
 
-          if [ "$APP_CERT" != "$ADMIN_CERT" ]; then
-            echo "ERROR: APK certificates are different!"
+          ADMIN_SHA256=$("$APKSIGNER" verify --print-certs "$ADMIN_APK" \
+            | sed -n 's/.*certificate SHA-256 digest: //p' \
+            | head -n 1 | tr -d '[:space:]')
+
+          echo "========== COMPARISON =========="
+
+          echo "APP SHA-1: $APP_SHA1"
+          echo "ADMIN SHA-1: $ADMIN_SHA1"
+
+          echo "APP SHA-256: $APP_SHA256"
+          echo "ADMIN SHA-256: $ADMIN_SHA256"
+
+          if [ -z "$APP_SHA1" ] || [ -z "$ADMIN_SHA1" ]; then
+            echo "ERROR: SHA-1 fingerprint missing"
             exit 1
           fi
 
-          echo "SUCCESS: BOTH APK CERTIFICATES MATCH"
+          if [ -z "$APP_SHA256" ] || [ -z "$ADMIN_SHA256" ]; then
+            echo "ERROR: SHA-256 fingerprint missing"
+            exit 1
+          fi
+
+          if [ "$APP_SHA1" != "$ADMIN_SHA1" ]; then
+            echo "ERROR: SHA-1 does not match"
+            exit 1
+          fi
+
+          if [ "$APP_SHA256" != "$ADMIN_SHA256" ]; then
+            echo "ERROR: SHA-256 does not match"
+            exit 1
+          fi
+
+          echo "SUCCESS: SHA-1 MATCH"
+          echo "SUCCESS: SHA-256 MATCH"
+          echo "BOTH APK SIGNATURES ARE IDENTICAL"
 
       # 10. Upload APKs
       - name: Upload APK Files
