@@ -9,6 +9,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.gestures.detectDragGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
@@ -18,8 +19,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -59,8 +58,6 @@ fun StudioEditorScreen(
         mutableStateOf(false)
     }
 
-    val density = LocalDensity.current
-
     fun currentDesign(lock: Boolean = locked): StreamDesign {
         return StreamDesign(
             backgroundColor = backgroundColor,
@@ -82,6 +79,7 @@ fun StudioEditorScreen(
             design = currentDesign(lock)
         ) { success, result ->
             message = result
+
             if (success) {
                 locked = lock
             }
@@ -111,6 +109,7 @@ fun StudioEditorScreen(
                             scale = 1f
                         )
                     )
+
                     message = "Foto berhasil ditambahkan"
                 } else {
                     message = result
@@ -126,8 +125,9 @@ fun StudioEditorScreen(
                     Column {
                         Text(
                             "ZORA STUDIO",
-                            fontWeight = FontWeight.Bold
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                         )
+
                         Text(
                             stream.matchName,
                             fontSize = 11.sp,
@@ -145,7 +145,7 @@ fun StudioEditorScreen(
                         Text(
                             "TERKUNCI",
                             color = Color(0xFFE0A33B),
-                            fontWeight = FontWeight.Bold,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                             modifier = Modifier.padding(end = 12.dp)
                         )
                     }
@@ -162,7 +162,9 @@ fun StudioEditorScreen(
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     OutlinedButton(
-                        onClick = { saveDesign() },
+                        onClick = {
+                            saveDesign()
+                        },
                         modifier = Modifier.weight(1f),
                         enabled = !uploading
                     ) {
@@ -194,7 +196,7 @@ fun StudioEditorScreen(
 
             Text(
                 "LIVE PREVIEW",
-                fontWeight = FontWeight.Bold,
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                 fontSize = 13.sp
             )
 
@@ -220,7 +222,6 @@ fun StudioEditorScreen(
                 val canvasHeight = constraints.maxHeight
 
                 overlays.forEach { element ->
-
                     key(element.id) {
                         Box(
                             modifier = Modifier
@@ -250,12 +251,14 @@ fun StudioEditorScreen(
                                                 val dy =
                                                     drag.y / canvasHeight.toFloat()
 
-                                                val index = overlays.indexOfFirst {
-                                                    it.id == element.id
-                                                }
+                                                val index =
+                                                    overlays.indexOfFirst {
+                                                        it.id == element.id
+                                                    }
 
                                                 if (index >= 0) {
                                                     val old = overlays[index]
+
                                                     overlays[index] = old.copy(
                                                         x = (old.x + dx).coerceIn(
                                                             0f,
@@ -267,10 +270,13 @@ fun StudioEditorScreen(
                                                         )
                                                     )
                                                 }
+
                                                 selectedId = element.id
                                             }
                                         }
-                                    } else Modifier
+                                    } else {
+                                        Modifier
+                                    }
                                 )
                                 .border(
                                     width = if (
@@ -286,8 +292,7 @@ fun StudioEditorScreen(
                                     AsyncImage(
                                         model = element.imageUrl,
                                         contentDescription = "Overlay image",
-                                        modifier = Modifier
-                                            .size(90.dp)
+                                        modifier = Modifier.size(90.dp)
                                     )
                                 }
 
@@ -296,7 +301,7 @@ fun StudioEditorScreen(
                                         element.content,
                                         color = Color.White,
                                         fontSize = 24.sp,
-                                        fontWeight = FontWeight.Bold
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                                     )
                                 }
 
@@ -304,7 +309,7 @@ fun StudioEditorScreen(
                                     Text(
                                         element.content,
                                         color = Color.White,
-                                        fontWeight = FontWeight.Bold,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                                         fontSize = 16.sp
                                     )
                                 }
@@ -326,6 +331,7 @@ fun StudioEditorScreen(
                 LinearProgressIndicator(
                     modifier = Modifier.fillMaxWidth()
                 )
+
                 Text("Mengunggah gambar...")
             }
 
@@ -341,7 +347,7 @@ fun StudioEditorScreen(
 
             Text(
                 "STUDIO TOOLS",
-                fontWeight = FontWeight.Bold
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
             )
 
             Row(
@@ -356,6 +362,7 @@ fun StudioEditorScreen(
                                 type = "TEXT",
                                 content = "TEKS BARU"
                             )
+
                             overlays.add(newElement)
                             selectedId = newElement.id
                         }
@@ -374,6 +381,7 @@ fun StudioEditorScreen(
                                 type = "STICKER",
                                 content = "LIVE"
                             )
+
                             overlays.add(newElement)
                             selectedId = newElement.id
                         }
@@ -401,7 +409,7 @@ fun StudioEditorScreen(
 
             Text(
                 "PENGATURAN ELEMEN",
-                fontWeight = FontWeight.Bold
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
             )
 
             val selected = overlays.find {
@@ -409,7 +417,6 @@ fun StudioEditorScreen(
             }
 
             if (selected != null) {
-
                 Text(
                     "Elemen dipilih: ${selected.type}",
                     fontSize = 13.sp
@@ -423,6 +430,7 @@ fun StudioEditorScreen(
                         val index = overlays.indexOfFirst {
                             it.id == selected.id
                         }
+
                         if (index >= 0 && !locked) {
                             overlays[index] = overlays[index].copy(
                                 scale = value
@@ -433,7 +441,8 @@ fun StudioEditorScreen(
                     enabled = !locked
                 )
 
-                if (selected.type == "TEXT" ||
+                if (
+                    selected.type == "TEXT" ||
                     selected.type == "STICKER"
                 ) {
                     var textValue by remember(selected.id) {
@@ -444,9 +453,11 @@ fun StudioEditorScreen(
                         value = textValue,
                         onValueChange = { value ->
                             textValue = value
+
                             val index = overlays.indexOfFirst {
                                 it.id == selected.id
                             }
+
                             if (index >= 0 && !locked) {
                                 overlays[index] = overlays[index].copy(
                                     content = value
@@ -454,7 +465,9 @@ fun StudioEditorScreen(
                             }
                         },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Isi teks") },
+                        label = {
+                            Text("Isi teks")
+                        },
                         enabled = !locked
                     )
                 }
@@ -465,6 +478,7 @@ fun StudioEditorScreen(
                             overlays.removeAll {
                                 it.id == selected.id
                             }
+
                             selectedId = ""
                         }
                     },
@@ -473,7 +487,6 @@ fun StudioEditorScreen(
                 ) {
                     Text("Hapus Elemen")
                 }
-
             } else {
                 Text(
                     "Pilih elemen pada preview untuk mengatur ukurannya.",
@@ -486,7 +499,7 @@ fun StudioEditorScreen(
 
             Text(
                 "BACKGROUND",
-                fontWeight = FontWeight.Bold
+                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
             )
 
             Row(
