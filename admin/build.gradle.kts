@@ -12,7 +12,6 @@ android {
 
     defaultConfig {
         applicationId = "com.zora.admin"
-
         minSdk = 24
         targetSdk = 35
 
@@ -58,6 +57,9 @@ dependencies {
 
     // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.4.0")
+
+    // Coil - image loading
+    implementation("io.coil-kt:coil-compose:2.7.0")
 
     // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
