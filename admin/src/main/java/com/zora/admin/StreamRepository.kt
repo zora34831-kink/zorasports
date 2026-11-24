@@ -17,19 +17,24 @@ object StreamRepository {
         )
         .getReference("streamLinks")
 
-    private val storage = FirebaseStorage.getInstance()
+    // Menggunakan bucket Firebase Storage ZORASPORTS
+    private val storage = FirebaseStorage.getInstance(
+        "gs://zorasports-cf452.firebasestorage.app"
+    )
 
     fun listen(
         onData: (List<StreamLink>) -> Unit,
         onError: (String) -> Unit
     ): ValueEventListener {
         val listener = object : ValueEventListener {
+
             override fun onDataChange(snapshot: DataSnapshot) {
                 val links = snapshot.children.mapNotNull { child ->
                     child.getValue(StreamLink::class.java)?.copy(
                         id = child.key ?: ""
                     )
                 }
+
                 onData(links.sortedByDescending { it.updatedAt })
             }
 
@@ -61,6 +66,7 @@ object StreamRepository {
 
         reference.child(key).get()
             .addOnSuccessListener { snapshot ->
+
                 val previous = snapshot.getValue(StreamLink::class.java)
                 val now = System.currentTimeMillis()
 
@@ -89,7 +95,10 @@ object StreamRepository {
 
                 reference.child(key).setValue(data)
                     .addOnSuccessListener {
-                        onResult(true, "Streaming berhasil disimpan")
+                        onResult(
+                            true,
+                            "Streaming berhasil disimpan"
+                        )
                     }
                     .addOnFailureListener {
                         onResult(
@@ -120,13 +129,17 @@ object StreamRepository {
             designUpdatedAt = System.currentTimeMillis()
         )
 
-        reference.child(streamId).child("design")
+        reference.child(streamId)
+            .child("design")
             .setValue(updatedDesign)
             .addOnSuccessListener {
                 onResult(true, "Desain berhasil disimpan")
             }
             .addOnFailureListener {
-                onResult(false, it.message ?: "Gagal menyimpan desain")
+                onResult(
+                    false,
+                    it.message ?: "Gagal menyimpan desain"
+                )
             }
     }
 
@@ -136,11 +149,15 @@ object StreamRepository {
         onResult: (Boolean, String) -> Unit
     ) {
         if (streamId.isBlank()) {
-            onResult(false, "Simpan data streaming terlebih dahulu")
+            onResult(
+                false,
+                "Simpan data streaming terlebih dahulu"
+            )
             return
         }
 
         val fileName = "${UUID.randomUUID()}.jpg"
+
         val imageRef = storage.reference
             .child("streamOverlays/$streamId/$fileName")
 
@@ -150,13 +167,18 @@ object StreamRepository {
                     throw task.exception
                         ?: Exception("Upload gambar gagal")
                 }
+
                 imageRef.downloadUrl
             }
             .addOnSuccessListener { downloadUri ->
                 onResult(true, downloadUri.toString())
             }
-            .addOnFailureListener {
-                onResult(false, it.message ?: "Upload gambar gagal")
+            .addOnFailureListener { error ->
+                onResult(
+                    false,
+                    error.localizedMessage
+                        ?: "Upload gambar gagal"
+                )
             }
     }
 
@@ -169,12 +191,16 @@ object StreamRepository {
             return
         }
 
-        reference.child(id).removeValue()
+        reference.child(id)
+            .removeValue()
             .addOnSuccessListener {
                 onResult(true, "Link berhasil dihapus")
             }
             .addOnFailureListener {
-                onResult(false, it.message ?: "Gagal menghapus link")
+                onResult(
+                    false,
+                    it.message ?: "Gagal menghapus link"
+                )
             }
     }
 }
