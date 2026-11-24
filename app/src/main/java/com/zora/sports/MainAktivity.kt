@@ -107,6 +107,7 @@ fun ZoraSportsApp() {
     var selectedTab by remember { mutableIntStateOf(0) }
     var fullscreen by remember { mutableStateOf(false) }
     var showHamburger by remember { mutableStateOf(false) }
+    var showNotifications by remember { mutableStateOf(false) }
     var extraPage by remember { mutableStateOf("") }
 
     fun toggleFullscreen() {
@@ -140,10 +141,14 @@ fun ZoraSportsApp() {
     }
 
     BackHandler(
-        enabled = showHamburger || extraPage.isNotEmpty() || fullscreen
+        enabled = showHamburger ||
+            showNotifications ||
+            extraPage.isNotEmpty() ||
+            fullscreen
     ) {
         when {
             showHamburger -> showHamburger = false
+            showNotifications -> showNotifications = false
             extraPage.isNotEmpty() -> extraPage = ""
             fullscreen -> toggleFullscreen()
         }
@@ -197,7 +202,11 @@ fun ZoraSportsApp() {
         Scaffold(
             containerColor = Navy,
             bottomBar = {
-                if (!fullscreen && extraPage.isEmpty()) {
+                if (
+                    !fullscreen &&
+                    extraPage.isEmpty() &&
+                    !showNotifications
+                ) {
                     NavigationBar(
                         containerColor = ZoraThemeColors.navigation
                     ) {
@@ -255,6 +264,15 @@ fun ZoraSportsApp() {
                     )
                 }
 
+                showNotifications -> {
+                    NotificationsScreen(
+                        modifier = pageModifier,
+                        onBack = {
+                            showNotifications = false
+                        }
+                    )
+                }
+
                 else -> {
                     when (selectedTab) {
                         0 -> HomeScreen(
@@ -262,7 +280,12 @@ fun ZoraSportsApp() {
                             onNavigate = { selectedTab = it },
                             onFullscreen = { toggleFullscreen() },
                             fullscreen = fullscreen,
-                            onMenuClick = { showHamburger = true }
+                            onMenuClick = {
+                                showHamburger = true
+                            },
+                            onNotificationsClick = {
+                                showNotifications = true
+                            }
                         )
 
                         1 -> MatchPage(
@@ -893,7 +916,8 @@ fun HomeScreen(
     onNavigate: (Int) -> Unit,
     onFullscreen: () -> Unit,
     fullscreen: Boolean,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    onNotificationsClick: () -> Unit
 ) {
     LazyColumn(
         modifier = modifier
@@ -909,7 +933,8 @@ fun HomeScreen(
             Header(
                 onFullscreen = onFullscreen,
                 fullscreen = fullscreen,
-                onMenuClick = onMenuClick
+                onMenuClick = onMenuClick,
+                onNotificationsClick = onNotificationsClick
             )
         }
 
@@ -977,7 +1002,8 @@ fun HomeScreen(
 fun Header(
     onFullscreen: () -> Unit,
     fullscreen: Boolean,
-    onMenuClick: () -> Unit
+    onMenuClick: () -> Unit,
+    onNotificationsClick: () -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -1021,6 +1047,7 @@ fun Header(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Tombol Landscape
             Surface(
                 modifier = Modifier.clickable {
                     onFullscreen()
@@ -1040,6 +1067,23 @@ fun Header(
                 )
             }
 
+            // Tombol Notifikasi
+            Surface(
+                modifier = Modifier.clickable {
+                    onNotificationsClick()
+                },
+                shape = RoundedCornerShape(14.dp),
+                color = Panel
+            ) {
+                Icon(
+                    Icons.Default.Notifications,
+                    contentDescription = "Notifikasi",
+                    tint = Cyan,
+                    modifier = Modifier.padding(11.dp)
+                )
+            }
+
+            // Tombol Menu
             Surface(
                 modifier = Modifier.clickable {
                     onMenuClick()
