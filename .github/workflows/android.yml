@@ -17,26 +17,31 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout Repository
       - name: Checkout Repository
         uses: actions/checkout@v4
 
+      # 2. Setup Java 17
       - name: Setup Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
 
+      # 3. Setup Gradle
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.13"
 
-      # Restore the same keystore on every build
+      # 4. Restore Permanent Debug Keystore
       - name: Restore Permanent Debug Keystore
         env:
           DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         shell: bash
         run: |
+          set -euo pipefail
+
           if [ -z "$DEBUG_KEYSTORE_BASE64" ]; then
             echo "ERROR: DEBUG_KEYSTORE_BASE64 secret belum dibuat."
             exit 1
@@ -44,25 +49,38 @@ jobs:
 
           mkdir -p "$HOME/.android"
 
-          echo "$DEBUG_KEYSTORE_BASE64" \
+          printf '%s' "$DEBUG_KEYSTORE_BASE64" \
+            | tr -d ' \n\r\t' \
             | base64 --decode \
             > "$HOME/.android/debug.keystore"
 
-          test -s "$HOME/.android/debug.keystore"
+          if [ ! -s "$HOME/.android/debug.keystore" ]; then
+            echo "ERROR: Keystore kosong atau gagal dipulihkan."
+            exit 1
+          fi
+
+          echo "Memeriksa keystore..."
 
           keytool -list \
             -keystore "$HOME/.android/debug.keystore" \
             -storepass android \
             -alias androiddebugkey
 
-          echo "Permanent debug keystore berhasil dipasang."
+          echo "Keystore berhasil dipulihkan."
 
+      # 5. Check Android Manifest
       - name: Check Android Manifest
         shell: bash
         run: |
+          set -e
+
           test -f app/src/main/AndroidManifest.xml
           test -f admin/src/main/AndroidManifest.xml
 
+          echo "APP MANIFEST: OK"
+          echo "ADMIN MANIFEST: OK"
+
+      # 6. Generate SHA Fingerprints
       - name: Generate SHA Fingerprints
         shell: bash
         run: |
@@ -72,6 +90,7 @@ jobs:
           echo "========== ADMIN SIGNING REPORT =========="
           gradle :admin:signingReport --no-daemon
 
+      # 7. Build Both APKs
       - name: Build Both APKs
         env:
           FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
@@ -82,15 +101,33 @@ jobs:
             --stacktrace \
             -PFOOTBALL_API_KEY="$FOOTBALL_API_KEY"
 
+      # 8. Verify APK Files
       - name: Verify APK Files
         shell: bash
         run: |
-          test -f app/build/outputs/apk/debug/app-debug.apk
-          test -f admin/build/outputs/apk/debug/admin-debug.apk
+          set -e
+
+          test -s app/build/outputs/apk/debug/app-debug.apk
+          test -s admin/build/outputs/apk/debug/admin-debug.apk
 
           echo "ZORASPORTS APK: OK"
           echo "ZORAADMIN APK: OK"
 
+      # 9. Verify APK Signatures
+      - name: Verify APK Signatures
+        shell: bash
+        run: |
+          set -e
+
+          apksigner verify --verbose \
+            app/build/outputs/apk/debug/app-debug.apk
+
+          apksigner verify --verbose \
+            admin/build/outputs/apk/debug/admin-debug.apk
+
+          echo "APK SIGNATURES: OK"
+
+      # 10. Upload APK Files
       - name: Upload APK Files
         uses: actions/upload-artifact@v4
         with:
