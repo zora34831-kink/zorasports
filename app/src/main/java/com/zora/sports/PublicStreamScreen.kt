@@ -14,12 +14,12 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Fullscreen
+import androidx.compose.material.icons.filled.FullscreenExit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -46,11 +46,23 @@ import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
 
-private val StreamBackground = Color(0xFF071321)
-private val StreamPanel = Color(0xFF102337)
-private val StreamBlue = Color(0xFF42DDF5)
-private val StreamWhite = Color(0xFFF4FAFF)
-private val StreamMuted = Color(0xFF91A5B8)
+private val StreamBackground
+    get() = ZoraThemeColors.background
+
+private val StreamPanel
+    get() = ZoraThemeColors.panel
+
+private val StreamBlue
+    get() = ZoraThemeColors.accent
+
+private val StreamWhite
+    get() = ZoraThemeColors.text
+
+private val StreamMuted
+    get() = ZoraThemeColors.muted
+
+private val StreamBorder
+    get() = ZoraThemeColors.border
 
 private const val LIVE_LIMIT_MS = 120L * 60L * 1000L
 private const val LIVE_WARNING_MS = 115L * 60L * 1000L
@@ -149,7 +161,7 @@ fun PublicStreamScreen(
         Spacer(Modifier.height(18.dp))
 
         Text(
-            text = "LIVE STREAMING",
+            text = "SIARAN LANGSUNG",
             color = StreamWhite,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold
@@ -200,7 +212,7 @@ fun PublicStreamScreen(
             }
 
             else -> {
-                LazyColumn(
+                androidx.compose.foundation.lazy.LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
@@ -241,14 +253,14 @@ fun PublicStreamScreen(
             containerColor = StreamPanel,
             title = {
                 Text(
-                    "LIVE BERAKHIR",
+                    "SIARAN BERAKHIR",
                     color = StreamBlue,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    "BATAS WAKTU 120 MENIT TERCAPAI",
+                    "Batas waktu 120 menit telah tercapai.",
                     color = StreamWhite
                 )
             },
@@ -288,7 +300,7 @@ private fun StreamCard(
                     .padding(horizontal = 9.dp, vertical = 4.dp)
             ) {
                 Text(
-                    text = "LIVE",
+                    text = "LANGSUNG",
                     color = Color.White,
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.Bold
@@ -395,13 +407,7 @@ private fun StreamPlayerDialog(
         0L
     }
 
-    val remaining = if (startTime > 0L) {
-        (LIVE_LIMIT_MS - elapsed).coerceAtLeast(0L)
-    } else {
-        LIVE_LIMIT_MS
-    }
-
-    // Timer mengikuti waktu mulai yang tersimpan di Firebase.
+    // Timer mengikuti waktu mulai dari Firebase.
     LaunchedEffect(stream.id, startTime) {
         if (startTime > 0L) {
             while (true) {
@@ -482,7 +488,7 @@ private fun StreamPlayerDialog(
                     ) {
                         Text(
                             text = stream.matchName,
-                            color = StreamWhite,
+                            color = Color.White,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1
                         )
@@ -493,14 +499,15 @@ private fun StreamPlayerDialog(
                         )
                     }
 
-                    TextButton(
+                    IconButton(
                         onClick = {
                             fullScreen = false
                         }
                     ) {
-                        Text(
-                            text = "EXIT FULL SCREEN",
-                            color = StreamBlue
+                        Icon(
+                            imageVector = Icons.Default.FullscreenExit,
+                            contentDescription = "Keluar dari layar penuh",
+                            tint = Color.White
                         )
                     }
 
@@ -509,8 +516,8 @@ private fun StreamPlayerDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Tutup player",
-                            tint = StreamWhite
+                            contentDescription = "Tutup pemutar",
+                            tint = Color.White
                         )
                     }
                 }
@@ -542,14 +549,15 @@ private fun StreamPlayerDialog(
                         )
                     }
 
-                    TextButton(
+                    IconButton(
                         onClick = {
                             fullScreen = true
                         }
                     ) {
-                        Text(
-                            text = "FULL SCREEN",
-                            color = StreamBlue
+                        Icon(
+                            imageVector = Icons.Default.Fullscreen,
+                            contentDescription = "Layar penuh",
+                            tint = StreamBlue
                         )
                     }
 
@@ -558,7 +566,7 @@ private fun StreamPlayerDialog(
                     ) {
                         Icon(
                             imageVector = Icons.Default.ArrowBack,
-                            contentDescription = "Tutup player",
+                            contentDescription = "Tutup pemutar",
                             tint = StreamWhite
                         )
                     }
@@ -585,7 +593,7 @@ private fun StreamPlayerDialog(
 
                 Text(
                     text = if (isPlaying || isWebSource) {
-                        "Streaming"
+                        "Siaran sedang diputar"
                     } else {
                         "Pemutar siap"
                     },
@@ -604,14 +612,14 @@ private fun StreamPlayerDialog(
             containerColor = StreamPanel,
             title = {
                 Text(
-                    "PERINGATAN LIVE",
+                    "PERINGATAN SIARAN",
                     color = StreamBlue,
                     fontWeight = FontWeight.Bold
                 )
             },
             text = {
                 Text(
-                    "Live sudah berjalan 115 menit. Player akan otomatis ditutup pada menit ke-120.",
+                    "Siaran sudah berjalan 115 menit. Pemutar akan otomatis ditutup pada menit ke-120.",
                     color = StreamWhite
                 )
             },
@@ -785,17 +793,20 @@ private fun StreamExoPlayer(
                             contentColor = StreamBlue
                         )
                     ) {
-                        Text("AUTO")
+                        Text("OTOMATIS")
                     }
 
                     DropdownMenu(
                         expanded = qualityMenuExpanded,
                         onDismissRequest = {
                             qualityMenuExpanded = false
-                        }
+                        },
+                        containerColor = StreamPanel
                     ) {
                         DropdownMenuItem(
-                            text = { Text("AUTO") },
+                            text = {
+                                Text("OTOMATIS", color = StreamWhite)
+                            },
                             onClick = {
                                 player.trackSelectionParameters =
                                     player.trackSelectionParameters
@@ -811,7 +822,9 @@ private fun StreamExoPlayer(
 
                         qualityOptions.forEach { option ->
                             DropdownMenuItem(
-                                text = { Text(option.label) },
+                                text = {
+                                    Text(option.label, color = StreamWhite)
+                                },
                                 onClick = {
                                     player.trackSelectionParameters =
                                         player.trackSelectionParameters
@@ -838,7 +851,7 @@ private fun StreamExoPlayer(
                     text = if (qualityOptions.isEmpty()) {
                         "Kualitas otomatis"
                     } else {
-                        "Pilih kualitas"
+                        "Pilih kualitas video"
                     },
                     color = StreamMuted,
                     style = MaterialTheme.typography.bodySmall
