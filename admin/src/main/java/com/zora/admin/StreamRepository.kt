@@ -1,10 +1,13 @@
 
 package com.zora.admin
 
+import android.net.Uri
 import com.google.firebase.database.DataSnapshot
 import com.google.firebase.database.DatabaseError
 import com.google.firebase.database.FirebaseDatabase
 import com.google.firebase.database.ValueEventListener
+import com.google.firebase.storage.FirebaseStorage
+import java.util.UUID
 
 object StreamRepository {
 
@@ -13,6 +16,8 @@ object StreamRepository {
             "https://zorasports-cf452-default-rtdb.asia-southeast1.firebasedatabase.app/"
         )
         .getReference("streamLinks")
+
+    private val storage = FirebaseStorage.getInstance()
 
     fun listen(
         onData: (List<StreamLink>) -> Unit,
@@ -25,7 +30,6 @@ object StreamRepository {
                         id = child.key ?: ""
                     )
                 }
-
                 onData(links.sortedByDescending { it.updatedAt })
             }
 
@@ -57,7 +61,6 @@ object StreamRepository {
 
         reference.child(key).get()
             .addOnSuccessListener { snapshot ->
-
                 val previous = snapshot.getValue(StreamLink::class.java)
                 val now = System.currentTimeMillis()
 
@@ -70,33 +73,90 @@ object StreamRepository {
                             ?: now
 
                     else ->
-                        link.scheduledStartAt.takeIf { it > 0L }
-                            ?: now
+                        link.scheduledStartAt.takeIf { it > 0L } ?: now
                 }
+
+                val finalDesign = link.design.copy(
+                    designUpdatedAt = now
+                )
 
                 val data = link.copy(
                     id = key,
                     updatedAt = now,
-                    liveStartedAt = liveStartedAt
+                    liveStartedAt = liveStartedAt,
+                    design = finalDesign
                 )
 
-                reference.child(key)
-                    .setValue(data)
+                reference.child(key).setValue(data)
                     .addOnSuccessListener {
-                        onResult(true, "Link berhasil disimpan")
+                        onResult(true, "Streaming berhasil disimpan")
                     }
                     .addOnFailureListener {
                         onResult(
                             false,
-                            it.message ?: "Gagal menyimpan link"
+                            it.message ?: "Gagal menyimpan streaming"
                         )
                     }
             }
             .addOnFailureListener {
                 onResult(
                     false,
-                    it.message ?: "Gagal membaca data live"
+                    it.message ?: "Gagal membaca data streaming"
                 )
+            }
+    }
+
+    fun saveDesign(
+        streamId: String,
+        design: StreamDesign,
+        onResult: (Boolean, String) -> Unit
+    ) {
+        if (streamId.isBlank()) {
+            onResult(false, "ID streaming tidak valid")
+            return
+        }
+
+        val updatedDesign = design.copy(
+            designUpdatedAt = System.currentTimeMillis()
+        )
+
+        reference.child(streamId).child("design")
+            .setValue(updatedDesign)
+            .addOnSuccessListener {
+                onResult(true, "Desain berhasil disimpan")
+            }
+            .addOnFailureListener {
+                onResult(false, it.message ?: "Gagal menyimpan desain")
+            }
+    }
+
+    fun uploadOverlayImage(
+        streamId: String,
+        imageUri: Uri,
+        onResult: (Boolean, String) -> Unit
+    ) {
+        if (streamId.isBlank()) {
+            onResult(false, "Simpan data streaming terlebih dahulu")
+            return
+        }
+
+        val fileName = "${UUID.randomUUID()}.jpg"
+        val imageRef = storage.reference
+            .child("streamOverlays/$streamId/$fileName")
+
+        imageRef.putFile(imageUri)
+            .continueWithTask { task ->
+                if (!task.isSuccessful) {
+                    throw task.exception
+                        ?: Exception("Upload gambar gagal")
+                }
+                imageRef.downloadUrl
+            }
+            .addOnSuccessListener { downloadUri ->
+                onResult(true, downloadUri.toString())
+            }
+            .addOnFailureListener {
+                onResult(false, it.message ?: "Upload gambar gagal")
             }
     }
 
@@ -109,8 +169,7 @@ object StreamRepository {
             return
         }
 
-        reference.child(id)
-            .removeValue()
+        reference.child(id).removeValue()
             .addOnSuccessListener {
                 onResult(true, "Link berhasil dihapus")
             }
