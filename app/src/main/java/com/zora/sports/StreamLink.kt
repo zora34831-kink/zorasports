@@ -1,4 +1,25 @@
+
 package com.zora.sports
+
+data class StreamOverlay(
+    val id: String = "",
+    val type: String = "TEXT",
+    val content: String = "",
+    val imageUrl: String = "",
+    val x: Float = 0.5f,
+    val y: Float = 0.5f,
+    val scale: Float = 1f,
+    val rotation: Float = 0f,
+    val visible: Boolean = true
+)
+
+data class StreamDesign(
+    val backgroundColor: String = "#101820",
+    val titleColor: String = "#FFFFFF",
+    val overlays: List<StreamOverlay> = emptyList(),
+    val designLocked: Boolean = false,
+    val designUpdatedAt: Long = 0L
+)
 
 data class StreamLink(
     val id: String = "",
@@ -10,5 +31,6 @@ data class StreamLink(
     val published: Boolean = false,
     val updatedAt: Long = 0L,
     val scheduledStartAt: Long = 0L,
-    val liveStartedAt: Long = 0L
+    val liveStartedAt: Long = 0L,
+    val design: StreamDesign = StreamDesign()
 )
