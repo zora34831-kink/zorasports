@@ -29,15 +29,24 @@ private val sourceTypes = listOf(
     "AUTO", "MP4", "HLS", "DASH", "YOUTUBE", "WEBSITE"
 )
 
-private fun formatScheduleTime(timestamp: Long, pattern: String): String {
+private fun formatScheduleTime(
+    timestamp: Long,
+    pattern: String
+): String {
     val formatter = SimpleDateFormat(pattern, Locale.US)
     formatter.timeZone = TimeZone.getTimeZone("Asia/Jakarta")
     return formatter.format(Date(timestamp))
 }
 
-private fun parseScheduleTime(date: String, time: String): Long? {
+private fun parseScheduleTime(
+    date: String,
+    time: String
+): Long? {
     return try {
-        val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.US)
+        val formatter = SimpleDateFormat(
+            "dd/MM/yyyy HH:mm",
+            Locale.US
+        )
         formatter.isLenient = false
         formatter.timeZone = TimeZone.getTimeZone("Asia/Jakarta")
         formatter.parse("$date $time")?.time
@@ -73,7 +82,9 @@ class MainActivity : ComponentActivity() {
                     loggedIn = loggedIn,
                     loginMessage = loginMessage,
                     onLogin = {
-                        loginLauncher.launch(AdminAuth.signInIntent(this))
+                        loginLauncher.launch(
+                            AdminAuth.signInIntent(this)
+                        )
                     },
                     onLogout = {
                         AdminAuth.signOut()
@@ -93,13 +104,28 @@ fun AdminApp(
     onLogin: () -> Unit,
     onLogout: () -> Unit
 ) {
-    var links by remember { mutableStateOf(emptyList<StreamLink>()) }
+    var links by remember {
+        mutableStateOf(emptyList<StreamLink>())
+    }
+
     var error by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
-    var editing by remember { mutableStateOf<StreamLink?>(null) }
-    var showEditor by remember { mutableStateOf(false) }
 
-    var showStandings by remember { mutableStateOf(false) }
+    var editing by remember {
+        mutableStateOf<StreamLink?>(null)
+    }
+
+    var showEditor by remember {
+        mutableStateOf(false)
+    }
+
+    var showStandings by remember {
+        mutableStateOf(false)
+    }
+
+    var studioStream by remember {
+        mutableStateOf<StreamLink?>(null)
+    }
 
     DisposableEffect(loggedIn) {
         var listener: ValueEventListener? = null
@@ -112,7 +138,9 @@ fun AdminApp(
         }
 
         onDispose {
-            listener?.let { StreamRepository.removeListener(it) }
+            listener?.let {
+                StreamRepository.removeListener(it)
+            }
         }
     }
 
@@ -120,159 +148,187 @@ fun AdminApp(
         modifier = Modifier.fillMaxSize(),
         color = Color(0xFFF2F5FA)
     ) {
-        if (!loggedIn) {
-            LoginScreen(
-                message = loginMessage,
-                onLogin = onLogin
-            )
-        } else if (showStandings) {
-            StandingsManagerScreen(
-                onBack = { showStandings = false }
-            )
-        } else {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(20.dp)
-            ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Column {
-                        Text(
-                            "ZORAADMIN",
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = Color(0xFF174A91)
-                        )
+        when {
+            !loggedIn -> {
+                LoginScreen(
+                    message = loginMessage,
+                    onLogin = onLogin
+                )
+            }
 
-                        Text(
-                            "STREAM MANAGEMENT",
-                            style = MaterialTheme.typography.labelSmall,
-                            color = Color.Gray
-                        )
+            studioStream != null -> {
+                StudioEditorScreen(
+                    stream = studioStream!!,
+                    onBack = {
+                        studioStream = null
                     }
+                )
+            }
 
-                    TextButton(onClick = onLogout) {
-                        Text("Keluar")
+            showStandings -> {
+                StandingsManagerScreen(
+                    onBack = {
+                        showStandings = false
                     }
-                }
+                )
+            }
 
-                Spacer(Modifier.height(20.dp))
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(18.dp)
+            else -> {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(20.dp)
                 ) {
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(18.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column {
-                            Text("Total streaming")
                             Text(
-                                links.size.toString(),
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
+                                "ZORAADMIN",
+                                style = MaterialTheme.typography.headlineSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color(0xFF174A91)
+                            )
+
+                            Text(
+                                "STREAM MANAGEMENT",
+                                style = MaterialTheme.typography.labelSmall,
+                                color = Color.Gray
                             )
                         }
 
-                        Column {
-                            Text("Dipublikasikan")
-                            Text(
-                                links.count { it.published }.toString(),
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold
-                            )
+                        TextButton(onClick = onLogout) {
+                            Text("Keluar")
                         }
                     }
-                }
 
-                Spacer(Modifier.height(16.dp))
+                    Spacer(Modifier.height(20.dp))
 
-                Button(
-                    onClick = {
-                        editing = null
-                        showEditor = true
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("+ Tambah streaming")
-                }
-
-                Spacer(Modifier.height(10.dp))
-
-                OutlinedButton(
-                    onClick = {
-                        showStandings = true
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Text("MANAJEMEN KLASEMEN")
-                }
-
-                if (message.isNotBlank()) {
-                    Text(
-                        message,
-                        color = Color(0xFF16834A),
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-
-                if (error.isNotBlank()) {
-                    Text(
-                        "Firebase: $error",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(vertical = 8.dp)
-                    )
-                }
-
-                Spacer(Modifier.height(12.dp))
-
-                Text(
-                    "DAFTAR STREAMING",
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold
-                )
-
-                Spacer(Modifier.height(8.dp))
-
-                if (links.isEmpty()) {
-                    Text(
-                        "Belum ada link streaming.",
-                        color = Color.Gray,
-                        modifier = Modifier.padding(16.dp)
-                    )
-                } else {
-                    LazyColumn(
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp)
                     ) {
-                        items(links, key = { it.id }) { link ->
-                            StreamCard(
-                                link = link,
-                                onEdit = {
-                                    editing = link
-                                    showEditor = true
-                                },
-                                onDelete = {
-                                    StreamRepository.delete(link.id) { _, msg ->
-                                        message = msg
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(18.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Column {
+                                Text("Total streaming")
+                                Text(
+                                    links.size.toString(),
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            Column {
+                                Text("Dipublikasikan")
+                                Text(
+                                    links.count { it.published }.toString(),
+                                    style = MaterialTheme.typography.headlineMedium,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(Modifier.height(16.dp))
+
+                    Button(
+                        onClick = {
+                            editing = null
+                            showEditor = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("+ Tambah streaming")
+                    }
+
+                    Spacer(Modifier.height(10.dp))
+
+                    OutlinedButton(
+                        onClick = {
+                            showStandings = true
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("MANAJEMEN KLASEMEN")
+                    }
+
+                    if (message.isNotBlank()) {
+                        Text(
+                            message,
+                            color = Color(0xFF16834A),
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+
+                    if (error.isNotBlank()) {
+                        Text(
+                            "Firebase: $error",
+                            color = MaterialTheme.colorScheme.error,
+                            modifier = Modifier.padding(vertical = 8.dp)
+                        )
+                    }
+
+                    Spacer(Modifier.height(12.dp))
+
+                    Text(
+                        "DAFTAR STREAMING",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+
+                    Spacer(Modifier.height(8.dp))
+
+                    if (links.isEmpty()) {
+                        Text(
+                            "Belum ada link streaming.",
+                            color = Color.Gray,
+                            modifier = Modifier.padding(16.dp)
+                        )
+                    } else {
+                        LazyColumn(
+                            verticalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            items(
+                                links,
+                                key = { it.id }
+                            ) { link ->
+
+                                StreamCard(
+                                    link = link,
+
+                                    onEdit = {
+                                        editing = link
+                                        showEditor = true
+                                    },
+
+                                    onStudio = {
+                                        studioStream = link
+                                    },
+
+                                    onDelete = {
+                                        StreamRepository.delete(link.id) { _, msg ->
+                                            message = msg
+                                        }
+                                    },
+
+                                    onPublish = { value ->
+                                        StreamRepository.save(
+                                            link.copy(published = value)
+                                        ) { _, msg ->
+                                            message = msg
+                                        }
                                     }
-                                },
-                                onPublish = { value ->
-                                    StreamRepository.save(
-                                        link.copy(published = value)
-                                    ) { _, msg ->
-                                        message = msg
-                                    }
-                                }
-                            )
+                                )
+                            }
                         }
                     }
                 }
@@ -280,12 +336,14 @@ fun AdminApp(
         }
     }
 
-    if (showEditor && loggedIn && !showStandings) {
+    if (showEditor && loggedIn && !showStandings && studioStream == null) {
         StreamEditor(
             initial = editing,
-            onDismiss = { showEditor = false },
+            onDismiss = {
+                showEditor = false
+            },
             onSave = { link ->
-                StreamRepository.save(link) { _, msg ->
+                StreamRepository.save(link) { success, msg ->
                     message = msg
                 }
                 showEditor = false
@@ -313,6 +371,7 @@ fun LoginScreen(
         )
 
         Spacer(Modifier.height(8.dp))
+
         Text(
             "Panel pengelolaan streaming ZORASPORTS.",
             color = Color.Gray
@@ -350,6 +409,7 @@ fun LoginScreen(
 fun StreamCard(
     link: StreamLink,
     onEdit: () -> Unit,
+    onStudio: () -> Unit,
     onDelete: () -> Unit,
     onPublish: (Boolean) -> Unit
 ) {
@@ -358,6 +418,7 @@ fun StreamCard(
         shape = RoundedCornerShape(16.dp)
     ) {
         Column(Modifier.padding(16.dp)) {
+
             Text(
                 link.matchName,
                 fontWeight = FontWeight.Bold,
@@ -379,7 +440,12 @@ fun StreamCard(
 
             if (link.scheduledStartAt > 0L) {
                 Text(
-                    "Mulai: ${formatScheduleTime(link.scheduledStartAt, "dd/MM/yyyy HH:mm")} WIB",
+                    "Mulai: ${
+                        formatScheduleTime(
+                            link.scheduledStartAt,
+                            "dd/MM/yyyy HH:mm"
+                        )
+                    } WIB",
                     color = Color(0xFF16834A),
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(top = 6.dp)
@@ -394,9 +460,15 @@ fun StreamCard(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
-            Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Text(
-                    if (link.published) "Dipublikasikan" else "Disembunyikan",
+                    if (link.published) {
+                        "Dipublikasikan"
+                    } else {
+                        "Disembunyikan"
+                    },
                     modifier = Modifier.weight(1f)
                 )
 
@@ -411,12 +483,34 @@ fun StreamCard(
                     Text("Edit")
                 }
 
+                TextButton(onClick = onStudio) {
+                    Text(
+                        "Studio Editor",
+                        color = Color(0xFF174A91)
+                    )
+                }
+
                 TextButton(onClick = onDelete) {
                     Text(
                         "Hapus",
                         color = MaterialTheme.colorScheme.error
                     )
                 }
+            }
+
+            if (link.design.designLocked) {
+                Text(
+                    "DESAIN TERKUNCI",
+                    color = Color(0xFF16834A),
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.Bold
+                )
+            } else if (link.design.overlays.isNotEmpty()) {
+                Text(
+                    "DESAIN DRAFT",
+                    color = Color(0xFFB7791F),
+                    style = MaterialTheme.typography.labelSmall
+                )
             }
         }
     }
@@ -452,19 +546,29 @@ fun StreamEditor(
         mutableStateOf(initial?.published ?: false)
     }
 
-    val initialSchedule = initial?.scheduledStartAt?.takeIf { it > 0L }
-        ?: System.currentTimeMillis()
+    val initialSchedule =
+        initial?.scheduledStartAt?.takeIf { it > 0L }
+            ?: System.currentTimeMillis()
 
     var scheduleDate by remember(initial?.id) {
-        mutableStateOf(formatScheduleTime(initialSchedule, "dd/MM/yyyy"))
+        mutableStateOf(
+            formatScheduleTime(initialSchedule, "dd/MM/yyyy")
+        )
     }
 
     var scheduleTime by remember(initial?.id) {
-        mutableStateOf(formatScheduleTime(initialSchedule, "HH:mm"))
+        mutableStateOf(
+            formatScheduleTime(initialSchedule, "HH:mm")
+        )
     }
 
-    var error by remember { mutableStateOf("") }
-    var typeExpanded by remember { mutableStateOf(false) }
+    var error by remember {
+        mutableStateOf("")
+    }
+
+    var typeExpanded by remember {
+        mutableStateOf(false)
+    }
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -477,7 +581,11 @@ fun StreamEditor(
                     .padding(20.dp)
             ) {
                 Text(
-                    if (initial == null) "Tambah streaming" else "Edit streaming",
+                    if (initial == null) {
+                        "Tambah streaming"
+                    } else {
+                        "Edit streaming"
+                    },
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
@@ -565,7 +673,9 @@ fun StreamEditor(
 
                 Box {
                     OutlinedButton(
-                        onClick = { typeExpanded = true },
+                        onClick = {
+                            typeExpanded = true
+                        },
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
@@ -577,7 +687,9 @@ fun StreamEditor(
 
                     DropdownMenu(
                         expanded = typeExpanded,
-                        onDismissRequest = { typeExpanded = false }
+                        onDismissRequest = {
+                            typeExpanded = false
+                        }
                     ) {
                         sourceTypes.forEach { type ->
                             DropdownMenuItem(
@@ -593,7 +705,9 @@ fun StreamEditor(
 
                 Spacer(Modifier.height(8.dp))
 
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
                     Text(
                         "Publikasikan",
                         modifier = Modifier.weight(1f)
@@ -601,7 +715,9 @@ fun StreamEditor(
 
                     Switch(
                         checked = published,
-                        onCheckedChange = { published = it }
+                        onCheckedChange = {
+                            published = it
+                        }
                     )
                 }
 
@@ -642,7 +758,8 @@ fun StreamEditor(
                                 !validUrl ||
                                 scheduleTimestamp == null
                             ) {
-                                error = "Lengkapi data, URL, tanggal, dan jam mulai live."
+                                error =
+                                    "Lengkapi data, URL, tanggal, dan jam mulai live."
                             } else {
                                 onSave(
                                     StreamLink(
@@ -655,7 +772,10 @@ fun StreamEditor(
                                         published = published,
                                         updatedAt = System.currentTimeMillis(),
                                         scheduledStartAt = scheduleTimestamp,
-                                        liveStartedAt = initial?.liveStartedAt ?: 0L
+                                        liveStartedAt =
+                                            initial?.liveStartedAt ?: 0L,
+                                        design =
+                                            initial?.design ?: StreamDesign()
                                     )
                                 )
                             }
