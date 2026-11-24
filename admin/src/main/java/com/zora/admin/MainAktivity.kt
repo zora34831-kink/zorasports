@@ -20,15 +20,31 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.window.Dialog
 import com.google.firebase.database.ValueEventListener
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+import java.util.TimeZone
 
 private val sourceTypes = listOf(
-    "AUTO",
-    "MP4",
-    "HLS",
-    "DASH",
-    "YOUTUBE",
-    "WEBSITE"
+    "AUTO", "MP4", "HLS", "DASH", "YOUTUBE", "WEBSITE"
 )
+
+private fun formatScheduleTime(timestamp: Long, pattern: String): String {
+    val formatter = SimpleDateFormat(pattern, Locale.US)
+    formatter.timeZone = TimeZone.getTimeZone("Asia/Jakarta")
+    return formatter.format(Date(timestamp))
+}
+
+private fun parseScheduleTime(date: String, time: String): Long? {
+    return try {
+        val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.US)
+        formatter.isLenient = false
+        formatter.timeZone = TimeZone.getTimeZone("Asia/Jakarta")
+        formatter.parse("$date $time")?.time
+    } catch (_: Exception) {
+        null
+    }
+}
 
 class MainActivity : ComponentActivity() {
 
@@ -103,10 +119,7 @@ fun AdminApp(
         color = Color(0xFFF2F5FA)
     ) {
         if (!loggedIn) {
-            LoginScreen(
-                message = loginMessage,
-                onLogin = onLogin
-            )
+            LoginScreen(message = loginMessage, onLogin = onLogin)
         } else {
             Column(
                 modifier = Modifier
@@ -278,12 +291,7 @@ fun LoginScreen(
         )
 
         Spacer(Modifier.height(8.dp))
-
-        Text(
-            "Panel pengelolaan streaming ZORASPORTS.",
-            color = Color.Gray
-        )
-
+        Text("Panel pengelolaan streaming ZORASPORTS.", color = Color.Gray)
         Spacer(Modifier.height(28.dp))
 
         Button(
@@ -300,7 +308,6 @@ fun LoginScreen(
         }
 
         Spacer(Modifier.height(12.dp))
-
         Text(
             "Akses khusus administrator terverifikasi.",
             color = Color.Gray,
@@ -340,6 +347,15 @@ fun StreamCard(
                 modifier = Modifier.padding(top = 6.dp)
             )
 
+            if (link.scheduledStartAt > 0L) {
+                Text(
+                    "Mulai: ${formatScheduleTime(link.scheduledStartAt, "dd/MM/yyyy HH:mm")} WIB",
+                    color = Color(0xFF16834A),
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(top = 6.dp)
+                )
+            }
+
             Text(
                 link.url,
                 maxLines = 1,
@@ -348,9 +364,7 @@ fun StreamCard(
                 modifier = Modifier.padding(vertical = 8.dp)
             )
 
-            Row(
-                verticalAlignment = Alignment.CenterVertically
-            ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     if (link.published) "Dipublikasikan" else "Disembunyikan",
                     modifier = Modifier.weight(1f)
@@ -397,6 +411,17 @@ fun StreamEditor(
     var published by remember(initial?.id) {
         mutableStateOf(initial?.published ?: false)
     }
+
+    val initialSchedule = initial?.scheduledStartAt?.takeIf { it > 0L }
+        ?: System.currentTimeMillis()
+
+    var scheduleDate by remember(initial?.id) {
+        mutableStateOf(formatScheduleTime(initialSchedule, "dd/MM/yyyy"))
+    }
+    var scheduleTime by remember(initial?.id) {
+        mutableStateOf(formatScheduleTime(initialSchedule, "HH:mm"))
+    }
+
     var error by remember { mutableStateOf("") }
     var typeExpanded by remember { mutableStateOf(false) }
 
@@ -453,6 +478,42 @@ fun StreamEditor(
                     )
                 )
 
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    "JADWAL MULAI LIVE",
+                    style = MaterialTheme.typography.labelMedium,
+                    color = Color.Gray
+                )
+
+                OutlinedTextField(
+                    value = scheduleDate,
+                    onValueChange = { scheduleDate = it },
+                    label = { Text("Tanggal (DD/MM/YYYY)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Number
+                    )
+                )
+
+                OutlinedTextField(
+                    value = scheduleTime,
+                    onValueChange = { scheduleTime = it },
+                    label = { Text("Jam mulai (HH:mm)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Ascii
+                    )
+                )
+
+                Text(
+                    "Zona waktu: WIB (Asia/Jakarta)",
+                    color = Color.Gray,
+                    style = MaterialTheme.typography.bodySmall
+                )
+
                 Spacer(Modifier.height(10.dp))
 
                 Text(
@@ -466,10 +527,7 @@ fun StreamEditor(
                         onClick = { typeExpanded = true },
                         modifier = Modifier.fillMaxWidth()
                     ) {
-                        Text(
-                            sourceType,
-                            modifier = Modifier.weight(1f)
-                        )
+                        Text(sourceType, modifier = Modifier.weight(1f))
                         Text("▼")
                     }
 
@@ -491,13 +549,8 @@ fun StreamEditor(
 
                 Spacer(Modifier.height(8.dp))
 
-                Row(
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        "Publikasikan",
-                        modifier = Modifier.weight(1f)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text("Publikasikan", modifier = Modifier.weight(1f))
                     Switch(
                         checked = published,
                         onCheckedChange = { published = it }
@@ -524,16 +577,23 @@ fun StreamEditor(
                     Button(
                         onClick = {
                             val cleanUrl = url.trim()
-                            val validUrl = cleanUrl.startsWith("https://") ||
+                            val validUrl =
+                                cleanUrl.startsWith("https://") ||
                                 cleanUrl.startsWith("http://")
+
+                            val scheduleTimestamp = parseScheduleTime(
+                                scheduleDate.trim(),
+                                scheduleTime.trim()
+                            )
 
                             if (
                                 matchName.isBlank() ||
                                 competition.isBlank() ||
                                 provider.isBlank() ||
-                                !validUrl
+                                !validUrl ||
+                                scheduleTimestamp == null
                             ) {
-                                error = "Lengkapi data dan gunakan URL streaming yang valid."
+                                error = "Lengkapi data, URL, tanggal, dan jam mulai live."
                             } else {
                                 onSave(
                                     StreamLink(
@@ -544,7 +604,9 @@ fun StreamEditor(
                                         url = cleanUrl,
                                         sourceType = sourceType,
                                         published = published,
-                                        updatedAt = System.currentTimeMillis()
+                                        updatedAt = System.currentTimeMillis(),
+                                        scheduledStartAt = scheduleTimestamp,
+                                        liveStartedAt = initial?.liveStartedAt ?: 0L
                                     )
                                 )
                             }
