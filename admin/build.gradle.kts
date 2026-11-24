@@ -20,22 +20,6 @@ android {
         versionName = "1.0.1"
     }
 
-    signingConfigs {
-        getByName("debug") {
-            storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
-            storeType = "PKCS12"
-        }
-    }
-
-    buildTypes {
-        getByName("debug") {
-            signingConfig = signingConfigs.getByName("debug")
-        }
-    }
-
     buildFeatures {
         compose = true
     }
@@ -53,12 +37,10 @@ kotlin {
 }
 
 dependencies {
-    // Android Core
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.activity:activity-compose:1.12.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.9.4")
 
-    // Jetpack Compose
     implementation(platform("androidx.compose:compose-bom:2025.10.00"))
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-graphics")
@@ -67,23 +49,18 @@ dependencies {
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
 
-    // Firebase
     implementation(platform("com.google.firebase:firebase-bom:34.5.0"))
     implementation("com.google.firebase:firebase-auth")
     implementation("com.google.firebase:firebase-database")
     implementation("com.google.firebase:firebase-storage")
 
-    // Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.4.0")
 
-    // Image Loading
     implementation("io.coil-kt:coil-compose:2.7.0")
 
-    // Media3 Player
     implementation("androidx.media3:media3-exoplayer:1.6.1")
     implementation("androidx.media3:media3-exoplayer-hls:1.6.1")
     implementation("androidx.media3:media3-exoplayer-dash:1.6.1")
 
-    // Debug
     debugImplementation("androidx.compose.ui:ui-tooling")
 }
