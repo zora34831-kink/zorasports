@@ -30,40 +30,25 @@ jobs:
         with:
           gradle-version: "8.13"
 
-      # Restore keystore permanen dari GitHub Secret
-      - name: Restore Permanent Debug Keystore
-        env:
-          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
+      # Buat debug keystore bawaan Android
+      - name: Prepare Android Debug Keystore
         shell: bash
         run: |
           set -euo pipefail
 
-          if [ -z "$DEBUG_KEYSTORE_BASE64" ]; then
-            echo "ERROR: Secret DEBUG_KEYSTORE_BASE64 kosong."
-            exit 1
-          fi
-
           mkdir -p "$HOME/.android"
 
-          printf '%s' "$DEBUG_KEYSTORE_BASE64" \
-            | tr -d ' \n\r\t' \
-            | base64 --decode \
-            > "$HOME/.android/debug.keystore"
-
-          if [ ! -s "$HOME/.android/debug.keystore" ]; then
-            echo "ERROR: Keystore kosong."
-            exit 1
-          fi
-
-          echo "Memverifikasi keystore..."
-
-          keytool -list -v \
-            -storetype PKCS12 \
+          keytool -genkeypair \
             -keystore "$HOME/.android/debug.keystore" \
             -storepass android \
-            -alias androiddebugkey
+            -alias androiddebugkey \
+            -keypass android \
+            -keyalg RSA \
+            -keysize 2048 \
+            -validity 10000 \
+            -dname "CN=Android Debug,O=Android,C=US"
 
-          echo "PERMANENT KEYSTORE: OK"
+          echo "DEBUG KEYSTORE: OK"
 
       - name: Check Android Manifest
         shell: bash
@@ -76,7 +61,7 @@ jobs:
           echo "APP MANIFEST: OK"
           echo "ADMIN MANIFEST: OK"
 
-      # Tampilkan fingerprint kedua aplikasi
+      # Tampilkan SHA-1 dan SHA-256
       - name: Generate SHA Fingerprints
         shell: bash
         run: |
@@ -101,7 +86,7 @@ jobs:
             --stacktrace \
             -PFOOTBALL_API_KEY="$FOOTBALL_API_KEY"
 
-      # Pastikan kedua APK tersedia
+      # Periksa APK
       - name: Verify APK Files
         shell: bash
         run: |
@@ -113,7 +98,7 @@ jobs:
           echo "ZORASPORTS APK: OK"
           echo "ZORAADMIN APK: OK"
 
-      # Verifikasi tanda tangan APK
+      # Verifikasi tanda tangan
       - name: Verify APK Signatures
         shell: bash
         run: |
@@ -121,18 +106,10 @@ jobs:
 
           SDK_DIR="${ANDROID_SDK_ROOT:-${ANDROID_HOME:-}}"
 
-          if [ -z "$SDK_DIR" ]; then
-            echo "ERROR: Android SDK tidak ditemukan."
-            exit 1
-          fi
-
           APKSIGNER="$(find "$SDK_DIR/build-tools" \
             -type f -name apksigner | sort -V | tail -n 1)"
 
-          if [ -z "$APKSIGNER" ]; then
-            echo "ERROR: apksigner tidak ditemukan."
-            exit 1
-          fi
+          test -n "$APKSIGNER"
 
           "$APKSIGNER" verify --verbose --print-certs \
             app/build/outputs/apk/debug/app-debug.apk
@@ -142,7 +119,7 @@ jobs:
 
           echo "APK SIGNATURES: OK"
 
-      # Upload hasil build
+      # Upload APK
       - name: Upload APK Files
         uses: actions/upload-artifact@v4
         with:
