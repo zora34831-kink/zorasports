@@ -1,17 +1,23 @@
 
 package com.zora.sports
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.CancellationException
@@ -62,56 +68,26 @@ private data class NinjasStandingsResult(
     val season: String
 )
 
-// Masukkan API Key API Ninjas milik lu di sini.
-// Jangan bagikan API Key ke orang lain.
 private const val API_NINJAS_KEY = "juNpvcVMKDsxtsJbOVhZLB3FVbvOdB0xXaQzhozG"
+
+// ======================================================
+// KLASEMEN
+// ======================================================
 
 @Composable
 fun StandingsSection(
     modifier: Modifier = Modifier
 ) {
     val leagues = listOf(
-        StandingsLeagueOption(
-            name = "Premier League",
-            apiNinjasId = "epl",
-            footballId = 39
-        ),
-        StandingsLeagueOption(
-            name = "La Liga",
-            apiNinjasId = "laliga",
-            footballId = 140
-        ),
-        StandingsLeagueOption(
-            name = "Serie A",
-            apiNinjasId = "seriea",
-            footballId = 135
-        ),
-        StandingsLeagueOption(
-            name = "Bundesliga",
-            apiNinjasId = "bundesliga",
-            footballId = 78
-        ),
-        StandingsLeagueOption(
-            name = "Ligue 1",
-            apiNinjasId = "ligue1",
-            footballId = 61
-        ),
-        StandingsLeagueOption(
-            name = "Champions League",
-            apiNinjasId = "ucl"
-        ),
-        StandingsLeagueOption(
-            name = "Europa League",
-            apiNinjasId = "uel"
-        ),
-        StandingsLeagueOption(
-            name = "MLS",
-            apiNinjasId = "mls"
-        ),
-        StandingsLeagueOption(
-            name = "Liga 1 Indonesia",
-            footballId = 274
-        )
+        StandingsLeagueOption("Premier League", "epl", 39),
+        StandingsLeagueOption("La Liga", "laliga", 140),
+        StandingsLeagueOption("Serie A", "seriea", 135),
+        StandingsLeagueOption("Bundesliga", "bundesliga", 78),
+        StandingsLeagueOption("Ligue 1", "ligue1", 61),
+        StandingsLeagueOption("Champions League", "ucl"),
+        StandingsLeagueOption("Europa League", "uel"),
+        StandingsLeagueOption("MLS", "mls"),
+        StandingsLeagueOption("Liga 1 Indonesia", footballId = 274)
     )
 
     var selectedLeague by remember {
@@ -142,8 +118,6 @@ fun StandingsSection(
         mutableIntStateOf(0)
     }
 
-    // Salin delegated state ke variabel lokal.
-    // Ini memperbaiki error smart cast Kotlin.
     val currentLeague = selectedLeague
 
     LaunchedEffect(currentLeague, refresh) {
@@ -153,24 +127,17 @@ fun StandingsSection(
 
         try {
             val result = withTimeout(25000L) {
-
-                // Variabel lokal agar smart cast bisa dilakukan.
                 val apiNinjasId = currentLeague.apiNinjasId
 
                 if (apiNinjasId != null) {
-
-                    val response = fetchNinjasStandings(
-                        apiNinjasId
-                    )
+                    val response = fetchNinjasStandings(apiNinjasId)
 
                     seasonLabel = response.season.ifBlank {
                         "MUSIM BERJALAN"
                     }
 
                     response.teams
-
                 } else {
-
                     val footballId = currentLeague.footballId
                         ?: throw Exception("ID liga tidak tersedia.")
 
@@ -204,10 +171,8 @@ fun StandingsSection(
 
         } catch (e: CancellationException) {
             throw e
-
         } catch (e: Exception) {
             error = e.message ?: "Gagal mengambil data klasemen."
-
         } finally {
             loading = false
         }
@@ -238,9 +203,7 @@ fun StandingsSection(
 
         Box {
             OutlinedButton(
-                onClick = {
-                    expanded = true
-                },
+                onClick = { expanded = true },
                 modifier = Modifier.fillMaxWidth(),
                 colors = ButtonDefaults.outlinedButtonColors(
                     contentColor = ExtraCyan
@@ -254,15 +217,12 @@ fun StandingsSection(
                     currentLeague.name,
                     modifier = Modifier.weight(1f)
                 )
-
                 Text("⌄")
             }
 
             DropdownMenu(
                 expanded = expanded,
-                onDismissRequest = {
-                    expanded = false
-                },
+                onDismissRequest = { expanded = false },
                 containerColor = ExtraPanel
             ) {
                 leagues.forEach { league ->
@@ -317,9 +277,7 @@ fun StandingsSection(
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        CircularProgressIndicator(
-                            color = ExtraCyan
-                        )
+                        CircularProgressIndicator(color = ExtraCyan)
 
                         Spacer(Modifier.height(12.dp))
 
@@ -349,15 +307,8 @@ fun StandingsSection(
                         fontSize = 12.sp
                     )
 
-                    Spacer(Modifier.height(10.dp))
-
-                    TextButton(
-                        onClick = { refresh++ }
-                    ) {
-                        Text(
-                            "COBA LAGI",
-                            color = ExtraCyan
-                        )
+                    TextButton(onClick = { refresh++ }) {
+                        Text("COBA LAGI", color = ExtraCyan)
                     }
                 }
             }
@@ -490,12 +441,10 @@ private suspend fun fetchNinjasStandings(
 
     try {
         connection.requestMethod = "GET"
-
         connection.setRequestProperty(
             "X-Api-Key",
             API_NINJAS_KEY
         )
-
         connection.connectTimeout = 15000
         connection.readTimeout = 15000
 
@@ -511,10 +460,8 @@ private suspend fun fetchNinjasStandings(
                 when (responseCode) {
                     401, 403 ->
                         "API Key tidak valid atau akses ditolak."
-
                     429 ->
                         "Batas penggunaan API tercapai."
-
                     else ->
                         "API Ninjas gagal. Kode: $responseCode $errorBody"
                 }
@@ -526,7 +473,6 @@ private suspend fun fetchNinjasStandings(
             .use { it.readText() }
 
         val array = JSONArray(response)
-
         val teams = mutableListOf<StandingsDisplayRow>()
         var season = ""
 
@@ -563,9 +509,80 @@ private suspend fun fetchNinjasStandings(
             teams = teams.sortedBy { it.rank },
             season = season
         )
-
     } finally {
         connection.disconnect()
+    }
+}
+
+// ======================================================
+// LINEUP DUA TIM
+// ======================================================
+
+private data class PitchPlayerPosition(
+    val player: LineupPlayer,
+    val x: Float,
+    val y: Float
+)
+
+private fun createPitchPositions(
+    lineup: FixtureLineup,
+    teamIndex: Int
+): List<PitchPlayerPosition> {
+
+    val players = lineup.startXI.orEmpty()
+        .mapNotNull { it.player }
+
+    if (players.isEmpty()) return emptyList()
+
+    val parsed = players.map { player ->
+        player.grid
+            ?.split(":")
+            ?.mapNotNull { it.toIntOrNull() }
+            ?.takeIf {
+                it.size >= 2 && it[0] > 0 && it[1] > 0
+            }
+    }
+
+    val rows = players.mapIndexed { index, player ->
+        parsed[index]?.get(0)
+            ?: when (player.pos?.uppercase()) {
+                "G" -> 1
+                "D" -> 2
+                "M" -> 3
+                "F" -> 4
+                else -> 3
+            }
+    }
+
+    return players.indices.map { index ->
+        val row = rows[index]
+
+        val sameRow = players.indices
+            .filter { rows[it] == row }
+            .sortedBy { parsed[it]?.get(1) ?: it }
+
+        val positionInRow = sameRow.indexOf(index)
+        val countInRow = sameRow.size
+
+        val y = (positionInRow + 1).toFloat() /
+            (countInRow + 1).toFloat()
+
+        val maxRow = maxOf(rows.maxOrNull() ?: 4, 4)
+
+        val progress = (row - 1).toFloat() /
+            (maxRow - 1).coerceAtLeast(1)
+
+        val x = if (teamIndex == 0) {
+            0.07f + progress * 0.37f
+        } else {
+            0.93f - progress * 0.37f
+        }
+
+        PitchPlayerPosition(
+            player = players[index],
+            x = x.coerceIn(0.06f, 0.94f),
+            y = (0.08f + y * 0.84f).coerceIn(0.06f, 0.94f)
+        )
     }
 }
 
@@ -598,13 +615,10 @@ fun LineupDialog(
             if (lineups.isEmpty()) {
                 error = "Susunan pemain belum tersedia."
             }
-
         } catch (e: CancellationException) {
             throw e
-
         } catch (e: Exception) {
             error = e.message ?: "Gagal mengambil susunan pemain."
-
         } finally {
             loading = false
         }
@@ -613,13 +627,14 @@ fun LineupDialog(
     AlertDialog(
         onDismissRequest = onDismiss,
         containerColor = ExtraNavy,
+        modifier = Modifier.fillMaxWidth(),
 
         title = {
             Text(
                 "SUSUNAN PEMAIN",
                 color = ExtraWhite,
                 fontWeight = FontWeight.Bold,
-                fontSize = 17.sp
+                fontSize = 18.sp
             )
         },
 
@@ -627,16 +642,16 @@ fun LineupDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(max = 480.dp)
+                    .heightIn(max = 590.dp)
                     .verticalScroll(rememberScrollState()),
-                verticalArrangement = Arrangement.spacedBy(14.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 when {
                     loading -> {
                         Box(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(25.dp),
+                                .padding(35.dp),
                             contentAlignment = Alignment.Center
                         ) {
                             CircularProgressIndicator(
@@ -654,64 +669,97 @@ fun LineupDialog(
                     }
 
                     else -> {
-                        lineups.forEach { lineup ->
+                        val first = lineups.getOrNull(0)
+                        val second = lineups.getOrNull(1)
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    ExtraPanel,
+                                    RoundedCornerShape(13.dp)
+                                )
+                                .padding(10.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
                             Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .background(
-                                        ExtraPanel,
-                                        RoundedCornerShape(14.dp)
-                                    )
-                                    .padding(13.dp),
-                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                                modifier = Modifier.weight(1f),
+                                horizontalAlignment = Alignment.CenterHorizontally
                             ) {
                                 Text(
-                                    lineup.team?.name ?: "Tim",
-                                    color = ExtraCyan,
-                                    fontWeight = FontWeight.Bold
-                                )
-
-                                Text(
-                                    "Formasi: ${lineup.formation ?: "-"}",
-                                    color = ExtraMuted,
-                                    fontSize = 11.sp
-                                )
-
-                                Text(
-                                    "Pelatih: ${lineup.coach?.name ?: "-"}",
-                                    color = ExtraMuted,
-                                    fontSize = 11.sp
-                                )
-
-                                HorizontalDivider(
-                                    color = ExtraBorder.copy(alpha = 0.7f)
-                                )
-
-                                Text(
-                                    "SEBELAS PEMAIN UTAMA",
+                                    first?.team?.name ?: "Tim 1",
                                     color = ExtraWhite,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp
-                                )
-
-                                lineup.startXI.orEmpty().forEach {
-                                    PlayerLine(it.player)
-                                }
-
-                                HorizontalDivider(
-                                    color = ExtraBorder.copy(alpha = 0.7f)
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
                                 )
 
                                 Text(
-                                    "PEMAIN CADANGAN",
+                                    first?.formation ?: "-",
+                                    color = Color(0xFF35B9FF),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+
+                            Text(
+                                "VS",
+                                color = ExtraMuted,
+                                fontWeight = FontWeight.Black,
+                                fontSize = 15.sp
+                            )
+
+                            Column(
+                                modifier = Modifier.weight(1f),
+                                horizontalAlignment = Alignment.CenterHorizontally
+                            ) {
+                                Text(
+                                    second?.team?.name ?: "Tim 2",
                                     color = ExtraWhite,
                                     fontWeight = FontWeight.Bold,
-                                    fontSize = 11.sp
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
                                 )
 
-                                lineup.substitutes.orEmpty().forEach {
-                                    PlayerLine(it.player)
+                                Text(
+                                    second?.formation ?: "-",
+                                    color = Color(0xFFFF5555),
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 12.sp
+                                )
+                            }
+                        }
+
+                        SharedFootballPitch(
+                            lineups = lineups.take(2)
+                        )
+
+                        if (lineups.size == 2) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                lineups.forEachIndexed { index, lineup ->
+                                    CoachAndSubsCard(
+                                        lineup = lineup,
+                                        teamIndex = index,
+                                        modifier = Modifier.weight(1f)
+                                    )
                                 }
+                            }
+                        } else {
+                            Text(
+                                "Data susunan pemain tim lawan belum tersedia.",
+                                color = ExtraMuted,
+                                fontSize = 11.sp
+                            )
+
+                            lineups.forEachIndexed { index, lineup ->
+                                CoachAndSubsCard(
+                                    lineup = lineup,
+                                    teamIndex = index,
+                                    modifier = Modifier.fillMaxWidth()
+                                )
                             }
                         }
                     }
@@ -723,32 +771,282 @@ fun LineupDialog(
             TextButton(onClick = onDismiss) {
                 Text(
                     "TUTUP",
-                    color = ExtraCyan
+                    color = ExtraCyan,
+                    fontWeight = FontWeight.Bold
                 )
             }
         }
     )
 }
 
+// ======================================================
+// LAPANGAN BERSAMA
+// ======================================================
+
 @Composable
-private fun PlayerLine(
-    player: LineupPlayer?
+private fun SharedFootballPitch(
+    lineups: List<FixtureLineup>
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween
+    val blue = Color(0xFF168BFF)
+    val red = Color(0xFFEF4444)
+    val yellow = Color(0xFFFFD21C)
+
+    BoxWithConstraints(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(360.dp)
+            .background(
+                Color(0xFF237B32),
+                RoundedCornerShape(14.dp)
+            )
+    ) {
+        val pitchWidth = maxWidth
+        val pitchHeight = maxHeight
+
+        Canvas(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            val w = size.width
+            val h = size.height
+            val lineColor = Color.White.copy(alpha = 0.85f)
+            val stroke = 2.dp.toPx()
+
+            for (i in 0 until 8) {
+                drawRect(
+                    color = if (i % 2 == 0) {
+                        Color(0xFF287F35)
+                    } else {
+                        Color(0xFF348C3B)
+                    },
+                    topLeft = Offset(0f, h * i / 8f),
+                    size = Size(w, h / 8f)
+                )
+            }
+
+            drawRect(
+                color = lineColor,
+                topLeft = Offset(5f, 5f),
+                size = Size(w - 10f, h - 10f),
+                style = Stroke(stroke)
+            )
+
+            drawLine(
+                color = lineColor,
+                start = Offset(w / 2f, 5f),
+                end = Offset(w / 2f, h - 5f),
+                strokeWidth = stroke
+            )
+
+            drawCircle(
+                color = lineColor,
+                radius = h * 0.12f,
+                center = Offset(w / 2f, h / 2f),
+                style = Stroke(stroke)
+            )
+
+            drawCircle(
+                color = Color.White,
+                radius = 3.dp.toPx(),
+                center = Offset(w / 2f, h / 2f)
+            )
+
+            // Kotak penalti kiri
+            drawRect(
+                color = lineColor,
+                topLeft = Offset(5f, h * 0.34f),
+                size = Size(w * 0.13f, h * 0.32f),
+                style = Stroke(stroke)
+            )
+
+            drawRect(
+                color = lineColor,
+                topLeft = Offset(5f, h * 0.42f),
+                size = Size(w * 0.055f, h * 0.16f),
+                style = Stroke(stroke)
+            )
+
+            // Kotak penalti kanan
+            drawRect(
+                color = lineColor,
+                topLeft = Offset(w * 0.87f, h * 0.34f),
+                size = Size(w * 0.13f - 5f, h * 0.32f),
+                style = Stroke(stroke)
+            )
+
+            drawRect(
+                color = lineColor,
+                topLeft = Offset(w * 0.945f, h * 0.42f),
+                size = Size(w * 0.055f - 5f, h * 0.16f),
+                style = Stroke(stroke)
+            )
+        }
+
+        lineups.forEachIndexed { teamIndex, lineup ->
+            val positions = createPitchPositions(
+                lineup = lineup,
+                teamIndex = teamIndex
+            )
+
+            val teamColor = if (teamIndex == 0) blue else red
+
+            positions.forEach { position ->
+                val player = position.player
+
+                val isGoalkeeper =
+                    player.pos?.uppercase() == "G" ||
+                    player.pos?.uppercase() == "GK"
+
+                val playerColor = if (isGoalkeeper) {
+                    yellow
+                } else {
+                    teamColor
+                }
+
+                Box(
+                    modifier = Modifier
+                        .offset(
+                            x = pitchWidth * position.x - 30.dp,
+                            y = pitchHeight * position.y - 22.dp
+                        )
+                        .width(60.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(2.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(32.dp)
+                                .background(
+                                    Color.White,
+                                    CircleShape
+                                )
+                                .padding(2.dp)
+                                .background(
+                                    playerColor,
+                                    CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                player.number?.toString() ?: "-",
+                                color = if (isGoalkeeper) {
+                                    Color.Black
+                                } else {
+                                    Color.White
+                                },
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 12.sp
+                            )
+                        }
+
+                        Text(
+                            player.name ?: "Pemain",
+                            color = Color.White,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            textAlign = TextAlign.Center,
+                            maxLines = 1
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+// ======================================================
+// PELATIH DAN PEMAIN CADANGAN
+// ======================================================
+
+@Composable
+private fun CoachAndSubsCard(
+    lineup: FixtureLineup,
+    teamIndex: Int,
+    modifier: Modifier = Modifier
+) {
+    val teamColor = if (teamIndex == 0) {
+        Color(0xFF35B9FF)
+    } else {
+        Color(0xFFFF5555)
+    }
+
+    val substitutes = lineup.substitutes.orEmpty()
+        .mapNotNull { it.player }
+
+    Column(
+        modifier = modifier
+            .background(
+                ExtraPanel,
+                RoundedCornerShape(12.dp)
+            )
+            .padding(9.dp),
+        verticalArrangement = Arrangement.spacedBy(9.dp)
     ) {
         Text(
-            "${player?.number ?: "-"}  ${player?.name ?: "Pemain"}",
-            color = ExtraWhite,
-            fontSize = 11.sp,
-            modifier = Modifier.weight(1f)
+            "PELATIH KEPALA",
+            color = teamColor,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
         )
 
         Text(
-            player?.pos ?: "-",
-            color = ExtraMuted,
-            fontSize = 10.sp
+            lineup.coach?.name ?: "Belum tersedia",
+            color = ExtraWhite,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
         )
+
+        HorizontalDivider(
+            color = ExtraBorder
+        )
+
+        Text(
+            "PEMAIN CADANGAN",
+            color = ExtraWhite,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold
+        )
+
+        if (substitutes.isEmpty()) {
+            Text(
+                "Belum tersedia",
+                color = ExtraMuted,
+                fontSize = 10.sp
+            )
+        } else {
+            substitutes.forEach { player ->
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        player.number?.toString() ?: "-",
+                        color = teamColor,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 10.sp,
+                        modifier = Modifier.width(23.dp)
+                    )
+
+                    Column(
+                        modifier = Modifier.weight(1f)
+                    ) {
+                        Text(
+                            player.name ?: "Pemain",
+                            color = ExtraWhite,
+                            fontSize = 9.sp,
+                            maxLines = 2
+                        )
+
+                        Text(
+                            player.pos ?: "-",
+                            color = ExtraMuted,
+                            fontSize = 8.sp
+                        )
+                    }
+                }
+            }
+        }
     }
 }
