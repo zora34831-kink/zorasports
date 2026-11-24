@@ -67,6 +67,9 @@ data class AppTab(
 fun ZoraSportsApp() {
     val activity = LocalContext.current as ComponentActivity
 
+    // Sinkronisasi jadwal Firebase untuk pengingat lokal.
+    NotificationScheduleSync()
+
     val themePrefs = remember {
         activity.getSharedPreferences(
             "zora_theme_settings",
