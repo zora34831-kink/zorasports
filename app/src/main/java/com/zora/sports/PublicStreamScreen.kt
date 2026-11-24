@@ -14,6 +14,7 @@ import android.webkit.WebViewClient
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -27,9 +28,12 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
@@ -41,11 +45,13 @@ import androidx.media3.common.TrackGroup
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.ui.AspectRatioFrameLayout
 import androidx.media3.ui.PlayerView
+import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 import java.util.TimeZone
+import kotlin.math.roundToInt
 
 private val StreamBackground
     get() = ZoraThemeColors.background
@@ -61,9 +67,6 @@ private val StreamWhite
 
 private val StreamMuted
     get() = ZoraThemeColors.muted
-
-private val StreamBorder
-    get() = ZoraThemeColors.border
 
 private const val LIVE_LIMIT_MS = 120L * 60L * 1000L
 private const val LIVE_WARNING_MS = 115L * 60L * 1000L
@@ -91,7 +94,6 @@ private fun formatWib(timestamp: Long): String {
     )
 
     formatter.timeZone = TimeZone.getTimeZone("Asia/Jakarta")
-
     return formatter.format(Date(timestamp))
 }
 
@@ -110,6 +112,77 @@ private fun formatDuration(milliseconds: Long): String {
         seconds
     )
 }
+
+// =====================================================
+// OVERLAY LAYER
+// =====================================================
+
+@Composable
+private fun StreamOverlayLayer(
+    design: StreamDesign
+) {
+    BoxWithConstraints(
+        modifier = Modifier.fillMaxSize()
+    ) {
+        val canvasWidth = constraints.maxWidth
+        val canvasHeight = constraints.maxHeight
+
+        design.overlays
+            .filter { it.visible }
+            .forEach { element ->
+                key(element.id) {
+                    Box(
+                        modifier = Modifier
+                            .offset {
+                                IntOffset(
+                                    (element.x * canvasWidth).roundToInt(),
+                                    (element.y * canvasHeight).roundToInt()
+                                )
+                            }
+                            .graphicsLayer {
+                                scaleX = element.scale
+                                scaleY = element.scale
+                                rotationZ = element.rotation
+                            }
+                    ) {
+                        when (element.type.uppercase()) {
+                            "IMAGE" -> {
+                                if (element.imageUrl.isNotBlank()) {
+                                    AsyncImage(
+                                        model = element.imageUrl,
+                                        contentDescription = "Logo streaming",
+                                        modifier = Modifier.size(90.dp)
+                                    )
+                                }
+                            }
+
+                            "STICKER" -> {
+                                Text(
+                                    text = element.content,
+                                    color = Color.White,
+                                    fontSize = 24.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+
+                            "TEXT" -> {
+                                Text(
+                                    text = element.content,
+                                    color = Color.White,
+                                    fontSize = 16.sp,
+                                    fontWeight = FontWeight.Bold
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+    }
+}
+
+// =====================================================
+// PUBLIC STREAM SCREEN
+// =====================================================
 
 @Composable
 fun PublicStreamScreen(
@@ -213,7 +286,7 @@ fun PublicStreamScreen(
             }
 
             else -> {
-                androidx.compose.foundation.lazy.LazyColumn(
+                LazyColumn(
                     verticalArrangement = Arrangement.spacedBy(12.dp),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
@@ -277,6 +350,10 @@ fun PublicStreamScreen(
         )
     }
 }
+
+// =====================================================
+// STREAM CARD
+// =====================================================
 
 @Composable
 private fun StreamCard(
@@ -362,6 +439,10 @@ private fun StreamCard(
     }
 }
 
+// =====================================================
+// STREAM PLAYER DIALOG
+// =====================================================
+
 @Composable
 private fun StreamPlayerDialog(
     stream: StreamLink,
@@ -395,7 +476,6 @@ private fun StreamPlayerDialog(
     }
 
     val startTime = stream.liveStartedAt
-
     val type = stream.sourceType.uppercase()
 
     val isWebSource = type == "YOUTUBE" ||
@@ -462,12 +542,14 @@ private fun StreamPlayerDialog(
                 if (isWebSource) {
                     StreamWebPlayer(
                         url = stream.url,
-                        fullScreen = true
+                        fullScreen = true,
+                        design = stream.design
                     )
                 } else {
                     StreamExoPlayer(
                         url = stream.url,
                         fullScreen = true,
+                        design = stream.design,
                         onPlaybackChanged = {
                             isPlaying = it
                         }
@@ -576,12 +658,14 @@ private fun StreamPlayerDialog(
                 if (isWebSource) {
                     StreamWebPlayer(
                         url = stream.url,
-                        fullScreen = false
+                        fullScreen = false,
+                        design = stream.design
                     )
                 } else {
                     StreamExoPlayer(
                         url = stream.url,
                         fullScreen = false,
+                        design = stream.design,
                         onPlaybackChanged = {
                             isPlaying = it
                         }
@@ -635,6 +719,10 @@ private fun StreamPlayerDialog(
     }
 }
 
+// =====================================================
+// TIMER
+// =====================================================
+
 @Composable
 private fun LiveTimerInfo(
     startTime: Long,
@@ -660,10 +748,15 @@ private fun LiveTimerInfo(
     )
 }
 
+// =====================================================
+// EXOPLAYER + OVERLAY
+// =====================================================
+
 @Composable
 private fun StreamExoPlayer(
     url: String,
     fullScreen: Boolean,
+    design: StreamDesign,
     onPlaybackChanged: (Boolean) -> Unit
 ) {
     val context = LocalContext.current
@@ -746,7 +839,7 @@ private fun StreamExoPlayer(
     Column(
         modifier = Modifier.fillMaxSize()
     ) {
-        AndroidView(
+        Box(
             modifier = if (fullScreen) {
                 Modifier
                     .fillMaxWidth()
@@ -756,24 +849,32 @@ private fun StreamExoPlayer(
                     .fillMaxWidth()
                     .aspectRatio(16f / 9f)
                     .clip(RoundedCornerShape(10.dp))
-            },
-            factory = { viewContext ->
-                PlayerView(viewContext).apply {
-                    this.player = player
-                    useController = true
-                    resizeMode =
-                        AspectRatioFrameLayout.RESIZE_MODE_FIT
-
-                    layoutParams = ViewGroup.LayoutParams(
-                        ViewGroup.LayoutParams.MATCH_PARENT,
-                        ViewGroup.LayoutParams.MATCH_PARENT
-                    )
-                }
-            },
-            update = { view ->
-                view.player = player
             }
-        )
+        ) {
+            AndroidView(
+                modifier = Modifier.fillMaxSize(),
+                factory = { viewContext ->
+                    PlayerView(viewContext).apply {
+                        this.player = player
+                        useController = true
+                        resizeMode =
+                            AspectRatioFrameLayout.RESIZE_MODE_FIT
+
+                        layoutParams = ViewGroup.LayoutParams(
+                            ViewGroup.LayoutParams.MATCH_PARENT,
+                            ViewGroup.LayoutParams.MATCH_PARENT
+                        )
+                    }
+                },
+                update = { view ->
+                    view.player = player
+                }
+            )
+
+            StreamOverlayLayer(
+                design = design
+            )
+        }
 
         if (!fullScreen) {
             Spacer(Modifier.height(8.dp))
@@ -860,13 +961,18 @@ private fun StreamExoPlayer(
     }
 }
 
+// =====================================================
+// WEBVIEW + OVERLAY
+// =====================================================
+
 @SuppressLint("SetJavaScriptEnabled")
 @Composable
 private fun StreamWebPlayer(
     url: String,
-    fullScreen: Boolean
+    fullScreen: Boolean,
+    design: StreamDesign
 ) {
-    AndroidView(
+    Box(
         modifier = if (fullScreen) {
             Modifier.fillMaxSize()
         } else {
@@ -874,59 +980,68 @@ private fun StreamWebPlayer(
                 .fillMaxWidth()
                 .aspectRatio(16f / 9f)
                 .clip(RoundedCornerShape(10.dp))
-        },
-        factory = { context ->
-            val originalHost = android.net.Uri.parse(url).host
-                ?.lowercase()
-                .orEmpty()
-
-            WebView(context).apply {
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-
-                settings.mediaPlaybackRequiresUserGesture = false
-
-                settings.javaScriptCanOpenWindowsAutomatically = false
-                settings.setSupportMultipleWindows(false)
-
-                webChromeClient = WebChromeClient()
-
-                webViewClient = object : WebViewClient() {
-
-                    override fun shouldOverrideUrlLoading(
-                        view: WebView,
-                        request: WebResourceRequest
-                    ): Boolean {
-                        if (!request.isForMainFrame) {
-                            return false
-                        }
-
-                        val target = request.url
-                        val targetHost = target.host
-                            ?.lowercase()
-                            .orEmpty()
-
-                        val sameHost =
-                            targetHost == originalHost ||
-                            (
-                                originalHost.isNotEmpty() &&
-                                targetHost.endsWith(".$originalHost")
-                            )
-
-                        return target.scheme !in listOf("http", "https") ||
-                            !sameHost
-                    }
-                }
-
-                setBackgroundColor(android.graphics.Color.BLACK)
-
-                loadUrl(url)
-            }
-        },
-        update = { view ->
-            if (view.url != url) {
-                view.loadUrl(url)
-            }
         }
-    )
+    ) {
+        AndroidView(
+            modifier = Modifier.fillMaxSize(),
+            factory = { context ->
+                val originalHost = android.net.Uri.parse(url)
+                    .host
+                    ?.lowercase()
+                    .orEmpty()
+
+                WebView(context).apply {
+                    settings.javaScriptEnabled = true
+                    settings.domStorageEnabled = true
+                    settings.mediaPlaybackRequiresUserGesture = false
+                    settings.javaScriptCanOpenWindowsAutomatically = false
+                    settings.setSupportMultipleWindows(false)
+
+                    webChromeClient = WebChromeClient()
+
+                    webViewClient = object : WebViewClient() {
+
+                        override fun shouldOverrideUrlLoading(
+                            view: WebView,
+                            request: WebResourceRequest
+                        ): Boolean {
+                            if (!request.isForMainFrame) {
+                                return false
+                            }
+
+                            val target = request.url
+                            val targetHost = target.host
+                                ?.lowercase()
+                                .orEmpty()
+
+                            val sameHost =
+                                targetHost == originalHost ||
+                                (
+                                    originalHost.isNotEmpty() &&
+                                    targetHost.endsWith(".$originalHost")
+                                )
+
+                            return target.scheme !in listOf("http", "https") ||
+                                !sameHost
+                        }
+                    }
+
+                    setBackgroundColor(
+                        android.graphics.Color.BLACK
+                    )
+
+                    loadUrl(url)
+                }
+            },
+            update = { view ->
+                if (view.url != url) {
+                    view.loadUrl(url)
+                }
+            }
+        )
+
+        StreamOverlayLayer(
+            design = design
+        )
+    }
 }
