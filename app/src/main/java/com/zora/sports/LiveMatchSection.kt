@@ -57,7 +57,7 @@ fun LiveMatchSection() {
             matches = result
 
         } catch (e: TimeoutCancellationException) {
-            error = "Koneksi terlalu lama. Coba refresh."
+            error = "Koneksi terlalu lama. Coba muat ulang."
 
         } catch (e: CancellationException) {
             throw e
@@ -87,7 +87,7 @@ fun LiveMatchSection() {
         ) {
             Text(
                 "PERTANDINGAN",
-                color = Color.White,
+                color = ZoraThemeColors.text,
                 fontSize = 13.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -98,8 +98,8 @@ fun LiveMatchSection() {
                 }
             ) {
                 Text(
-                    "Refresh",
-                    color = Color(0xFF42DDF5)
+                    "Muat ulang",
+                    color = ZoraThemeColors.accent
                 )
             }
         }
@@ -114,7 +114,12 @@ fun LiveMatchSection() {
                 },
                 label = {
                     Text("Hari ini")
-                }
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = ZoraThemeColors.accent.copy(alpha = 0.16f),
+                    selectedLabelColor = ZoraThemeColors.accent,
+                    labelColor = ZoraThemeColors.text
+                )
             )
 
             FilterChip(
@@ -123,8 +128,13 @@ fun LiveMatchSection() {
                     liveOnly = true
                 },
                 label = {
-                    Text("Live")
-                }
+                    Text("Sedang berlangsung")
+                },
+                colors = FilterChipDefaults.filterChipColors(
+                    selectedContainerColor = ZoraThemeColors.accent.copy(alpha = 0.16f),
+                    selectedLabelColor = ZoraThemeColors.accent,
+                    labelColor = ZoraThemeColors.text
+                )
             )
         }
 
@@ -138,7 +148,7 @@ fun LiveMatchSection() {
                     contentAlignment = Alignment.Center
                 ) {
                     CircularProgressIndicator(
-                        color = Color(0xFF42DDF5),
+                        color = ZoraThemeColors.accent,
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -149,7 +159,7 @@ fun LiveMatchSection() {
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            Color(0xFF102337),
+                            ZoraThemeColors.panel,
                             RoundedCornerShape(15.dp)
                         )
                         .padding(16.dp),
@@ -168,7 +178,7 @@ fun LiveMatchSection() {
                     ) {
                         Text(
                             "Coba lagi",
-                            color = Color(0xFF42DDF5)
+                            color = ZoraThemeColors.accent
                         )
                     }
                 }
@@ -177,7 +187,7 @@ fun LiveMatchSection() {
             matches.isEmpty() -> {
                 Text(
                     "Belum ada pertandingan untuk ditampilkan.",
-                    color = Color.LightGray,
+                    color = ZoraThemeColors.muted,
                     fontSize = 12.sp
                 )
             }
@@ -200,8 +210,8 @@ fun ApiMatchCard(
     val league = match.league ?: return
     val teams = match.teams ?: return
 
-    val home = teams.home?.name ?: "Home"
-    val away = teams.away?.name ?: "Away"
+    val home = teams.home?.name ?: "Kandang"
+    val away = teams.away?.name ?: "Tandang"
     val goals = match.goals
 
     val status = fixture.status?.short ?: "NS"
@@ -215,11 +225,27 @@ fun ApiMatchCard(
         "1H", "HT", "2H", "ET", "BT", "P", "LIVE"
     )
 
+    val statusLabel = when (status) {
+        "NS" -> "Belum dimulai"
+        "FT" -> "Selesai"
+        "HT" -> "Jeda"
+        "1H" -> "Babak pertama"
+        "2H" -> "Babak kedua"
+        "ET" -> "Perpanjangan waktu"
+        "BT" -> "Jeda perpanjangan"
+        "P" -> "Adu penalti"
+        "PST" -> "Ditunda"
+        "CANC" -> "Dibatalkan"
+        "SUSP" -> "Dihentikan"
+        "ABD" -> "Dihentikan"
+        else -> status
+    }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                Color(0xFF102337),
+                ZoraThemeColors.panel,
                 RoundedCornerShape(17.dp)
             )
             .padding(15.dp)
@@ -231,14 +257,14 @@ fun ApiMatchCard(
         ) {
             Text(
                 league.name ?: "Kompetisi",
-                color = Color(0xFF91A5B8),
+                color = ZoraThemeColors.muted,
                 fontSize = 10.sp
             )
 
             Text(
-                if (isLive) "LIVE" else status,
-                color = if (isLive) Color(0xFF42DDF5)
-                else Color(0xFF91A5B8),
+                if (isLive) "LANGSUNG" else statusLabel,
+                color = if (isLive) Color(0xFFE45C65)
+                else ZoraThemeColors.muted,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -252,19 +278,23 @@ fun ApiMatchCard(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
 
-            Column {
+            Column(
+                modifier = Modifier.weight(1f)
+            ) {
                 Text(
                     home,
-                    color = Color.White,
-                    fontSize = 12.sp
+                    color = ZoraThemeColors.text,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
 
                 Spacer(Modifier.height(12.dp))
 
                 Text(
                     away,
-                    color = Color.White,
-                    fontSize = 12.sp
+                    color = ZoraThemeColors.text,
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Medium
                 )
             }
 
@@ -273,14 +303,14 @@ fun ApiMatchCard(
             ) {
                 Text(
                     "${goals?.home ?: "-"} : ${goals?.away ?: "-"}",
-                    color = Color(0xFF42DDF5),
+                    color = ZoraThemeColors.accent,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Bold
                 )
 
                 Text(
-                    elapsed?.let { "$it'" } ?: status,
-                    color = Color(0xFF91A5B8),
+                    elapsed?.let { "$it menit" } ?: statusLabel,
+                    color = ZoraThemeColors.muted,
                     fontSize = 10.sp
                 )
             }
@@ -288,7 +318,7 @@ fun ApiMatchCard(
 
         HorizontalDivider(
             modifier = Modifier.padding(vertical = 10.dp),
-            color = Color.White.copy(alpha = 0.1f)
+            color = ZoraThemeColors.border.copy(alpha = 0.7f)
         )
 
         TextButton(
@@ -299,7 +329,7 @@ fun ApiMatchCard(
         ) {
             Text(
                 "LIHAT SUSUNAN PEMAIN",
-                color = Color(0xFF42DDF5),
+                color = ZoraThemeColors.accent,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold
             )
