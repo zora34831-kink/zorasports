@@ -449,11 +449,11 @@ private suspend fun fetchApiNinjasStandings(
 ): Pair<List<StandingTeam>, String> {
 
     // Untuk pengujian saja. Jangan simpan API key produksi di APK.
-    val apiKey = "MASUKKAN_API_KEY_DI_SINI"
+    val apiKey = "juNpvcVMKDsxtsJbOVhZLB3FVbvOdB0xXaQzhozG"
 
     if (
         apiKey.isBlank() ||
-        apiKey == "MASUKKAN_API_KEY_DI_SINI"
+        apiKey == "juNpvcVMKDsxtsJbOVhZLB3FVbvOdB0xXaQzhozG"
     ) {
         throw Exception("API Key belum diatur.")
     }
