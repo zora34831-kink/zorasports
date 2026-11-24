@@ -31,25 +31,31 @@ jobs:
         with:
           gradle-version: "8.13"
 
-      - name: Prepare Android Debug Keystore
+      # Restore the same keystore on every build
+      - name: Restore Permanent Debug Keystore
+        env:
+          DEBUG_KEYSTORE_BASE64: ${{ secrets.DEBUG_KEYSTORE_BASE64 }}
         shell: bash
         run: |
-          mkdir -p "$HOME/.config/.android"
+          if [ -z "$DEBUG_KEYSTORE_BASE64" ]; then
+            echo "ERROR: DEBUG_KEYSTORE_BASE64 secret belum dibuat."
+            exit 1
+          fi
+
           mkdir -p "$HOME/.android"
 
-          keytool -genkeypair \
-            -v \
-            -keystore "$HOME/.config/.android/debug.keystore" \
-            -storepass android \
-            -alias androiddebugkey \
-            -keypass android \
-            -keyalg RSA \
-            -keysize 2048 \
-            -validity 10000 \
-            -dname "CN=Android Debug,O=Android,C=US"
+          echo "$DEBUG_KEYSTORE_BASE64" \
+            | base64 --decode \
+            > "$HOME/.android/debug.keystore"
 
-          cp "$HOME/.config/.android/debug.keystore" \
-             "$HOME/.android/debug.keystore"
+          test -s "$HOME/.android/debug.keystore"
+
+          keytool -list \
+            -keystore "$HOME/.android/debug.keystore" \
+            -storepass android \
+            -alias androiddebugkey
+
+          echo "Permanent debug keystore berhasil dipasang."
 
       - name: Check Android Manifest
         shell: bash
@@ -69,6 +75,7 @@ jobs:
       - name: Build Both APKs
         env:
           FOOTBALL_API_KEY: ${{ secrets.FOOTBALL_API_KEY }}
+        shell: bash
         run: |
           gradle :app:assembleDebug :admin:assembleDebug \
             --no-daemon \
