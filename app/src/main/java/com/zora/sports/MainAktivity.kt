@@ -1015,14 +1015,9 @@ fun HomeScreen(
     onNotificationsClick: () -> Unit
 ) {
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Navy),
-        contentPadding = PaddingValues(
-            horizontal = 18.dp,
-            vertical = 18.dp
-        ),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        modifier = modifier.fillMaxSize().background(Navy),
+        contentPadding = PaddingValues(horizontal = 17.dp, vertical = 15.dp),
+        verticalArrangement = Arrangement.spacedBy(19.dp)
     ) {
         item {
             Header(
@@ -1034,61 +1029,178 @@ fun HomeScreen(
         }
 
         item {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(6.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(29.dp))
+                    .background(
+                        Brush.linearGradient(
+                            colors = listOf(
+                                Color(0xFF164D69),
+                                Color(0xFF102D47),
+                                Color(0xFF101E34)
+                            )
+                        )
+                    )
+                    .border(
+                        1.dp,
+                        Brush.linearGradient(
+                            listOf(Cyan.copy(alpha = 0.65f), Color.White.copy(alpha = 0.08f))
+                        ),
+                        RoundedCornerShape(29.dp)
+                    )
+                    .clickable { onNavigate(1) }
+                    .padding(21.dp)
             ) {
-                Text(
-                    "DUNIA SEPAK BOLA",
-                    color = Cyan,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 2.sp
+                Box(
+                    modifier = Modifier
+                        .size(142.dp)
+                        .align(Alignment.CenterEnd)
+                        .offset(x = 37.dp, y = 27.dp)
+                        .border(1.dp, Color.White.copy(alpha = 0.10f), CircleShape)
+                        .clip(CircleShape)
+                        .background(Cyan.copy(alpha = 0.07f))
                 )
-
-                Text(
-                    "Sepak bola dimulai di sini.",
-                    color = White,
-                    fontSize = 27.sp,
-                    fontWeight = FontWeight.Bold
+                Box(
+                    modifier = Modifier
+                        .size(94.dp)
+                        .align(Alignment.CenterEnd)
+                        .offset(x = 12.dp, y = (-18).dp)
+                        .border(1.dp, Color.White.copy(alpha = 0.10f), CircleShape)
                 )
-
-                Text(
-                    "Semua informasi sepak bola dalam satu aplikasi.",
-                    color = Muted,
-                    fontSize = 12.sp
-                )
+                Column(
+                    modifier = Modifier.fillMaxWidth(0.86f),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
+                        Box(
+                            Modifier.size(7.dp).clip(CircleShape).background(Color(0xFFFF5B63))
+                        )
+                        Text(
+                            "THE HOME OF FOOTBALL",
+                            color = Color(0xFFBDEEFF),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = 1.7.sp
+                        )
+                    }
+                    Text(
+                        "SEMUA AKSI.\nSATU LAYAR.",
+                        color = Color.White,
+                        fontSize = 28.sp,
+                        lineHeight = 32.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = (-0.5).sp
+                    )
+                    Text(
+                        "Ikuti pertandingan, siaran, dan kabar sepak bola pilihanmu.",
+                        color = Color(0xFFC1D2DF),
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(Cyan)
+                            .padding(horizontal = 13.dp, vertical = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
+                        Text(
+                            "JELAJAHI PERTANDINGAN",
+                            color = Color(0xFF071725),
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            letterSpacing = 0.4.sp
+                        )
+                        Icon(
+                            Icons.Default.ArrowForward,
+                            contentDescription = null,
+                            tint = Color(0xFF071725),
+                            modifier = Modifier.size(14.dp)
+                        )
+                    }
+                }
             }
         }
 
         item {
-            SectionHeader("Pertandingan", "Lihat semua") {
-                onNavigate(1)
-            }
-        }
-
-        item {
-            LiveMatchSection()
-        }
-
-        item {
-            SectionHeader("Jelajahi", "Lihat liga") {
-                onNavigate(4)
-            }
-        }
-
-        item {
-            ExploreGrid(onNavigate)
-        }
-
-        item {
-            Text(
-                "ZORASPORTS • SEPAK BOLA DALAM SATU APLIKASI",
-                color = Muted,
-                fontSize = 10.sp,
-                letterSpacing = 1.2.sp,
+            Row(
                 modifier = Modifier.fillMaxWidth(),
-                textAlign = TextAlign.Center
-            )
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
+                    Text(
+                        "MATCH CENTER",
+                        color = Cyan,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.8.sp
+                    )
+                    Text(
+                        "Pertandingan pilihan",
+                        color = White,
+                        fontSize = 19.sp,
+                        fontWeight = FontWeight.ExtraBold
+                    )
+                }
+                Surface(
+                    color = PanelLight,
+                    shape = RoundedCornerShape(10.dp),
+                    onClick = { onNavigate(1) }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text("SEMUA", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                        Icon(Icons.Default.ChevronRight, null, tint = Cyan, modifier = Modifier.size(15.dp))
+                    }
+                }
+            }
+        }
+
+        item { LiveMatchSection() }
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text(
+                    "EXPLORE MORE",
+                    color = Cyan,
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.8.sp
+                )
+                Text(
+                    "Jelajahi sepak bola",
+                    color = White,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
+        }
+
+        item { ExploreGrid(onNavigate) }
+
+        item {
+            Row(
+                modifier = Modifier.fillMaxWidth().padding(top = 3.dp, bottom = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Box(Modifier.width(22.dp).height(2.dp).clip(CircleShape).background(Cyan))
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "ZORASPORTS  /  FOOTBALL NEVER STOPS",
+                    color = Muted,
+                    fontSize = 8.sp,
+                    letterSpacing = 1.1.sp
+                )
+            }
         }
     }
 }
@@ -1106,92 +1218,71 @@ fun Header(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
-            Image(
-                painter = painterResource(
-                    id = R.drawable.ic_zorasports_logo
-                ),
-                contentDescription = "Logo ZORASPORTS",
+            Box(
                 modifier = Modifier
-                    .size(43.dp)
-                    .clip(RoundedCornerShape(12.dp)),
-                contentScale = ContentScale.Fit
-            )
-
+                    .size(45.dp)
+                    .clip(RoundedCornerShape(15.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(Color(0xFF1C536D), Color(0xFF10283F))
+                        )
+                    )
+                    .border(1.dp, Cyan.copy(alpha = 0.28f), RoundedCornerShape(15.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Image(
+                    painter = painterResource(id = R.drawable.ic_zorasports_logo),
+                    contentDescription = "Logo ZORASPORTS",
+                    modifier = Modifier.size(34.dp),
+                    contentScale = ContentScale.Fit
+                )
+            }
             Spacer(Modifier.width(11.dp))
-
-            Column {
+            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text(
                     "ZORA",
                     color = White,
                     fontSize = 19.sp,
                     fontWeight = FontWeight.Black,
-                    letterSpacing = 2.sp
+                    letterSpacing = 2.3.sp
                 )
-
-                Text(
-                    "SPORTS",
-                    color = Cyan,
-                    fontSize = 10.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 3.sp
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "SPORTS",
+                        color = Cyan,
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 2.8.sp
+                    )
+                    Spacer(Modifier.width(6.dp))
+                    Box(Modifier.width(19.dp).height(1.dp).background(Cyan.copy(alpha = 0.55f)))
+                }
             }
         }
 
         Row(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            horizontalArrangement = Arrangement.spacedBy(7.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Tombol Landscape
-            Surface(
-                modifier = Modifier.clickable {
-                    onFullscreen()
-                },
-                shape = RoundedCornerShape(14.dp),
-                color = Panel
-            ) {
-                Icon(
-                    if (fullscreen) {
-                        Icons.Default.FullscreenExit
-                    } else {
-                        Icons.Default.Fullscreen
-                    },
-                    contentDescription = "Layar penuh",
-                    tint = Cyan,
-                    modifier = Modifier.padding(11.dp)
-                )
-            }
-
-            // Tombol Notifikasi
-            Surface(
-                modifier = Modifier.clickable {
-                    onNotificationsClick()
-                },
-                shape = RoundedCornerShape(14.dp),
-                color = Panel
-            ) {
-                Icon(
-                    Icons.Default.Notifications,
-                    contentDescription = "Notifikasi",
-                    tint = Cyan,
-                    modifier = Modifier.padding(11.dp)
-                )
-            }
-
-            // Tombol Menu
-            Surface(
-                modifier = Modifier.clickable {
-                    onMenuClick()
-                },
-                shape = RoundedCornerShape(14.dp),
-                color = Panel
-            ) {
-                Icon(
-                    Icons.Default.Menu,
-                    contentDescription = "Menu",
-                    tint = Cyan,
-                    modifier = Modifier.padding(12.dp)
-                )
+            listOf(
+                Triple(if (fullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen, "Layar penuh", onFullscreen),
+                Triple(Icons.Default.NotificationsNone, "Notifikasi", onNotificationsClick),
+                Triple(Icons.Default.Menu, "Menu", onMenuClick)
+            ).forEach { (icon, description, action) ->
+                Surface(
+                    modifier = Modifier
+                        .border(1.dp, Color.White.copy(alpha = 0.07f), RoundedCornerShape(13.dp))
+                        .clickable { action() },
+                    shape = RoundedCornerShape(13.dp),
+                    color = Panel
+                ) {
+                    Icon(
+                        icon,
+                        contentDescription = description,
+                        tint = Color(0xFFD6EAF5),
+                        modifier = Modifier.padding(10.dp).size(18.dp)
+                    )
+                }
             }
         }
     }
@@ -1294,41 +1385,57 @@ fun ExploreCard(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
-    Column(
+    Box(
         modifier = modifier
-            .clip(RoundedCornerShape(18.dp))
-            .background(Panel)
+            .clip(RoundedCornerShape(21.dp))
+            .background(
+                Brush.linearGradient(
+                    listOf(PanelLight, Panel, Color(0xFF101F31))
+                )
+            )
             .border(
                 1.dp,
-                ZoraThemeColors.border.copy(alpha = 0.5f),
-                RoundedCornerShape(18.dp)
+                Brush.linearGradient(
+                    listOf(Cyan.copy(alpha = 0.22f), ZoraThemeColors.border.copy(alpha = 0.35f))
+                ),
+                RoundedCornerShape(21.dp)
             )
             .clickable { onClick() }
             .padding(14.dp)
     ) {
         Icon(
-            icon,
-            contentDescription = title,
-            tint = Cyan,
-            modifier = Modifier.size(23.dp)
+            Icons.Default.NorthEast,
+            contentDescription = null,
+            tint = Color.White.copy(alpha = 0.18f),
+            modifier = Modifier.align(Alignment.TopEnd).size(16.dp)
         )
-
-        Spacer(Modifier.height(13.dp))
-
-        Text(
-            title,
-            color = White,
-            fontSize = 11.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(Modifier.height(4.dp))
-
-        Text(
-            subtitle,
-            color = Muted,
-            fontSize = 9.sp
-        )
+        Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+            Box(
+                modifier = Modifier
+                    .size(39.dp)
+                    .clip(RoundedCornerShape(13.dp))
+                    .background(Cyan.copy(alpha = 0.12f))
+                    .border(1.dp, Cyan.copy(alpha = 0.15f), RoundedCornerShape(13.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(icon, contentDescription = title, tint = Cyan, modifier = Modifier.size(21.dp))
+            }
+            Spacer(Modifier.height(14.dp))
+            Text(
+                title,
+                color = White,
+                fontSize = 11.sp,
+                fontWeight = FontWeight.ExtraBold,
+                letterSpacing = 0.5.sp
+            )
+            Spacer(Modifier.height(5.dp))
+            Text(
+                subtitle,
+                color = Muted,
+                fontSize = 9.sp,
+                lineHeight = 13.sp
+            )
+        }
     }
 }
 
@@ -1339,32 +1446,55 @@ fun MatchPage(
     modifier: Modifier = Modifier
 ) {
     LazyColumn(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Navy),
-        contentPadding = PaddingValues(18.dp),
-        verticalArrangement = Arrangement.spacedBy(18.dp)
+        modifier = modifier.fillMaxSize().background(Navy),
+        contentPadding = PaddingValues(horizontal = 17.dp, vertical = 17.dp),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Text(
-                title,
-                color = White,
-                fontSize = 23.sp,
-                fontWeight = FontWeight.Bold
-            )
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(25.dp))
+                    .background(
+                        Brush.linearGradient(
+                            listOf(Color(0xFF174760), Color(0xFF102A42), Color(0xFF101C30))
+                        )
+                    )
+                    .border(1.dp, Cyan.copy(alpha = 0.22f), RoundedCornerShape(25.dp))
+                    .padding(20.dp)
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        "ZORA SPORTS  /  MATCH CENTER",
+                        color = Color(0xFFB9E9F8),
+                        fontSize = 8.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.5.sp
+                    )
+                    Text(
+                        title,
+                        color = Color.White,
+                        fontSize = 23.sp,
+                        fontWeight = FontWeight.Black,
+                        letterSpacing = 0.2.sp
+                    )
+                    Text(
+                        description,
+                        color = Color(0xFFC1D2DF),
+                        fontSize = 11.sp,
+                        lineHeight = 16.sp
+                    )
+                }
+            }
         }
-
         item {
-            Text(
-                description,
-                color = Muted,
-                fontSize = 12.sp
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(Modifier.width(3.dp).height(22.dp).clip(CircleShape).background(Cyan))
+                Spacer(Modifier.width(9.dp))
+                Text("UPDATE PERTANDINGAN", color = White, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.7.sp)
+            }
         }
-
-        item {
-            LiveMatchSection()
-        }
+        item { LiveMatchSection() }
     }
 }
 
@@ -1375,38 +1505,63 @@ fun LeaguePage(modifier: Modifier = Modifier) {
 
 @Composable
 fun FavoritePage(modifier: Modifier = Modifier) {
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(Navy)
-            .padding(20.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+    Box(
+        modifier = modifier.fillMaxSize().background(Navy).padding(20.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Icon(
-            Icons.Default.Star,
-            contentDescription = null,
-            tint = Cyan,
-            modifier = Modifier.size(55.dp)
-        )
-
-        Spacer(Modifier.height(18.dp))
-
-        Text(
-            "TIM FAVORIT",
-            color = White,
-            fontSize = 23.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Spacer(Modifier.height(9.dp))
-
-        Text(
-            "Belum ada tim favorit. Fitur penyimpanan tim favorit akan ditambahkan berikutnya.",
-            color = Muted,
-            fontSize = 12.sp,
-            textAlign = TextAlign.Center
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(27.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFF18364D), Panel, Color(0xFF111D30))
+                    )
+                )
+                .border(1.dp, Cyan.copy(alpha = 0.20f), RoundedCornerShape(27.dp))
+                .padding(horizontal = 24.dp, vertical = 30.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(11.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(76.dp)
+                    .clip(RoundedCornerShape(25.dp))
+                    .background(Cyan.copy(alpha = 0.12f))
+                    .border(1.dp, Cyan.copy(alpha = 0.22f), RoundedCornerShape(25.dp)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(Icons.Default.Star, contentDescription = null, tint = Cyan, modifier = Modifier.size(37.dp))
+            }
+            Text(
+                "YOUR CLUBS",
+                color = Cyan,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 2.sp
+            )
+            Text(
+                "TIM FAVORIT",
+                color = White,
+                fontSize = 23.sp,
+                fontWeight = FontWeight.Black
+            )
+            Text(
+                "Belum ada tim favorit yang tersimpan. Area ini akan menjadi tempat untuk mengikuti klub pilihanmu.",
+                color = Muted,
+                fontSize = 11.sp,
+                lineHeight = 17.sp,
+                textAlign = TextAlign.Center
+            )
+            Row(
+                modifier = Modifier.padding(top = 5.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                Icon(Icons.Default.BookmarkAdd, contentDescription = null, tint = Cyan, modifier = Modifier.size(15.dp))
+                Text("PILIH TIM DARI HALAMAN LIGA", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 0.4.sp)
+            }
+        }
     }
 }
 
