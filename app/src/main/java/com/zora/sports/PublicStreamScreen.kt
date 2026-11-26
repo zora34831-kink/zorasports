@@ -314,7 +314,7 @@ fun PublicStreamScreen(
                         Text("STREAMING TERKUNCI", color = StreamBlue,
                             style = MaterialTheme.typography.labelLarge,
                             fontWeight = FontWeight.Bold)
-                        Text("UPDATE VERSI ${requiredRelease.versionName}", color = StreamWhite,
+                        Text("UPDATE APK VERSI ${requiredRelease.versionName}", color = StreamWhite,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.ExtraBold)
                         Text("UNTUK MENONTON LIVE", color = StreamWhite,
