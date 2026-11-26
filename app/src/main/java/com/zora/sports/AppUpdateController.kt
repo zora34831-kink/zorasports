@@ -90,7 +90,8 @@ private data class PublicAnnouncement(
     val versionName: String = "",
     val minimumVersionCode: Long = 0L,
     val updatedAt: Long = 0L,
-    val published: Boolean = false
+    val published: Boolean = false,
+    val popupEnabled: Boolean = true
 )
 
 private object PublicAnnouncementSource {
@@ -122,6 +123,14 @@ private object PublicAnnouncementSource {
 @Composable
 private fun AnnouncementNotice() {
     val uriHandler = LocalUriHandler.current
+    val context = LocalContext.current
+    val installedVersion = remember {
+        runCatching {
+            PackageInfoCompat.getLongVersionCode(
+                context.packageManager.getPackageInfo(context.packageName, 0)
+            )
+        }.getOrDefault(0L)
+    }
     var announcement by remember { mutableStateOf<PublicAnnouncement?>(null) }
     var shownAt by remember { mutableStateOf(0L) }
 
@@ -134,7 +143,10 @@ private fun AnnouncementNotice() {
     }
 
     val current = announcement
-    if (current != null && current.published && current.updatedAt > shownAt) {
+    val needsUpdate = current != null && current.published &&
+        current.minimumVersionCode > installedVersion
+    if (current != null && current.published && current.popupEnabled &&
+        needsUpdate && current.updatedAt > shownAt) {
         AlertDialog(
             onDismissRequest = { shownAt = current.updatedAt },
             containerColor = Color(0xFF14283B),
