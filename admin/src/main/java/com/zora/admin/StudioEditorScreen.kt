@@ -243,12 +243,14 @@ fun StudioEditorScreen(
                 },
                 actions = {
                     if (locked) {
-                        Text(
-                            "TERKUNCI",
-                            color = Color(0xFFE0A33B),
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                            modifier = Modifier.padding(end = 12.dp)
-                        )
+                        TextButton(
+                            onClick = {
+                                locked = false
+                                message = "Mode edit aktif. Simpan draft setelah selesai."
+                            }
+                        ) {
+                            Text("Edit Desain")
+                        }
                     }
                 }
             )
@@ -642,7 +644,7 @@ fun StudioEditorScreen(
 
             if (locked) {
                 Text(
-                    "Desain sudah dikunci. Elemen tidak dapat dipindahkan atau diubah melalui editor ini.",
+                    "Desain sedang terkunci. Tekan Edit Desain di bagian atas untuk mengubahnya.",
                     color = MaterialTheme.colorScheme.error,
                     fontSize = 12.sp
                 )
