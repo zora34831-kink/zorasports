@@ -445,15 +445,8 @@ fun PublicStreamScreen(
                             .fillMaxWidth()
                             .background(Color(0xFFE6E7E9))
                             .padding(horizontal = 14.dp, vertical = 12.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
+                        horizontalArrangement = Arrangement.End
                     ) {
-                        Text(
-                            "bit tv",
-                            color = Color(0xFF242830),
-                            fontSize = 23.sp,
-                            fontWeight = FontWeight.ExtraBold
-                        )
                         Text(
                             "EVENTS  ▾",
                             color = Color(0xFF303640),
@@ -516,17 +509,49 @@ fun PublicStreamScreen(
                                         fontSize = 12.sp,
                                         maxLines = 1
                                     )
+                                    if (stream.information.isNotBlank()) {
+                                        Text(
+                                            stream.information,
+                                            color = Color(0xFF303640),
+                                            fontSize = 11.sp,
+                                            maxLines = 1
+                                        )
+                                    }
+                                    if (stream.description.isNotBlank()) {
+                                        Text(
+                                            stream.description,
+                                            color = Color(0xFF626A73),
+                                            fontSize = 10.sp,
+                                            maxLines = 1
+                                        )
+                                    }
                                 }
-                                Text(
-                                    if (stream.liveStartedAt > 0L) "LIVE" else formatWib(stream.scheduledStartAt),
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFF70757D))
-                                        .padding(horizontal = 10.dp, vertical = 8.dp)
-                                )
+                                val now = System.currentTimeMillis()
+                                val ended = stream.scheduledEndAt > 0L &&
+                                    now >= stream.scheduledEndAt
+                                val live = now >= stream.scheduledStartAt && !ended
+                                Column(horizontalAlignment = Alignment.End) {
+                                    Text(
+                                        if (ended) "SELESAI LIVE" else if (live) "LIVE" else formatWib(stream.scheduledStartAt),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 10.sp,
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(8.dp))
+                                            .background(
+                                                if (ended) Color(0xFF777D85)
+                                                else if (live) Color(0xFFD62836)
+                                                else Color(0xFF70757D)
+                                            )
+                                            .padding(horizontal = 10.dp, vertical = 8.dp)
+                                    )
+                                    Text(
+                                        if (ended) "Selesai ${formatWib(stream.scheduledEndAt)}"
+                                        else "Mulai ${formatWib(stream.scheduledStartAt)}",
+                                        color = Color(0xFF454C54),
+                                        fontSize = 9.sp
+                                    )
+                                }
                             }
                         }
                     }
@@ -685,7 +710,7 @@ private fun StreamPlayerDialog(
     }
 
     var fullScreen by remember {
-        mutableStateOf(true)
+        mutableStateOf(false)
     }
 
     var isPlaying by remember {
@@ -743,13 +768,18 @@ private fun StreamPlayerDialog(
         }
     }
 
-    DisposableEffect(activity) {
+    DisposableEffect(activity, fullScreen) {
         val previousOrientation =
             activity?.requestedOrientation
                 ?: ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
 
-        activity?.requestedOrientation =
-            ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        if (fullScreen) {
+            activity?.requestedOrientation =
+                ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE
+        } else {
+            activity?.requestedOrientation =
+                ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        }
 
         onDispose {
             activity?.requestedOrientation = previousOrientation
