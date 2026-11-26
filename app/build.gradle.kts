@@ -19,7 +19,6 @@ android {
         }
         create("tv") {
             dimension = "device"
-            applicationIdSuffix = ".tv"
             versionNameSuffix = "-tv"
         }
     }
