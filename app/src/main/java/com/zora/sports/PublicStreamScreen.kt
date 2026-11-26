@@ -30,6 +30,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalUriHandler
+import com.google.firebase.database.DataSnapshot
+import com.google.firebase.database.DatabaseError
+import com.google.firebase.database.FirebaseDatabase
+import com.google.firebase.database.ValueEventListener
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -188,6 +193,44 @@ private fun StreamOverlayLayer(
 fun PublicStreamScreen(
     modifier: Modifier = Modifier
 ) {
+    val context = LocalContext.current
+    val uriHandler = LocalUriHandler.current
+    val currentVersionCode = remember {
+        runCatching {
+            context.packageManager.getPackageInfo(context.packageName, 0).versionCode.toLong()
+        }.getOrDefault(0L)
+    }
+
+    var release by remember { mutableStateOf<AppRelease?>(null) }
+    var releaseChecked by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
+        val reference = FirebaseDatabase.getInstance(
+            "https://zorasports-cf452-default-rtdb.asia-southeast1.firebasedatabase.app/"
+        ).getReference("appRelease")
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                release = snapshot.getValue(AppRelease::class.java)
+                releaseChecked = true
+            }
+            override fun onCancelled(error: DatabaseError) {
+                releaseChecked = true
+            }
+        }
+        reference.addValueEventListener(listener)
+        onDispose { reference.removeEventListener(listener) }
+    }
+
+    LaunchedEffect(Unit) {
+        delay(8000L)
+        releaseChecked = true
+    }
+
+    val requiredRelease = release?.takeIf {
+        it.minimumVersionCode > currentVersionCode && it.apkUrl.isNotBlank()
+    }
+    val updateRequired = releaseChecked && requiredRelease != null
+
     var streams by remember {
         mutableStateOf<List<StreamLink>>(emptyList())
     }
@@ -252,6 +295,53 @@ fun PublicStreamScreen(
         Spacer(Modifier.height(18.dp))
 
         when {
+            !releaseChecked -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = StreamBlue)
+                }
+            }
+
+            updateRequired && requiredRelease != null -> {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(
+                        modifier = Modifier.fillMaxWidth()
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(StreamPanel)
+                            .padding(22.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text("STREAMING TERKUNCI", color = StreamBlue,
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold)
+                        Text("UPDATE VERSI ${requiredRelease.versionName}", color = StreamWhite,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold)
+                        Text("UNTUK MELIHAT STREAMING", color = StreamWhite,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.SemiBold)
+                        Text(
+                            requiredRelease.notes.ifBlank {
+                                "Perbarui aplikasi ZORASPORTS ke versi terbaru untuk membuka semua siaran."
+                            },
+                            color = StreamMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                        Button(
+                            onClick = { runCatching { uriHandler.openUri(requiredRelease.apkUrl) } },
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(13.dp)
+                        ) { Text("UPDATE SEKARANG") }
+                        Text(
+                            "Versi terpasang: ${currentVersionCode} • Versi minimum: ${requiredRelease.minimumVersionCode}",
+                            color = StreamMuted,
+                            style = MaterialTheme.typography.labelSmall
+                        )
+                    }
+                }
+            }
+
             loading && streams.isEmpty() -> {
                 Box(
                     Modifier.fillMaxSize(),
