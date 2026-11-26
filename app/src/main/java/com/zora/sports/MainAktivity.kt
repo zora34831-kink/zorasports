@@ -279,7 +279,7 @@ fun ZoraSportsApp() {
                             modifier = pageModifier
                         )
 
-                        2 -> UpdateAwareStreamScreen(
+                        2 -> PublicStreamScreen(
                             modifier = pageModifier
                         )
 
