@@ -317,7 +317,7 @@ fun PublicStreamScreen(
                         Text("UPDATE VERSI ${requiredRelease.versionName}", color = StreamWhite,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.ExtraBold)
-                        Text("UNTUK MELIHAT STREAMING", color = StreamWhite,
+                        Text("UNTUK MENONTON LIVE", color = StreamWhite,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold)
                         Text(
@@ -376,20 +376,159 @@ fun PublicStreamScreen(
             }
 
             else -> {
-                LazyColumn(
-                    verticalArrangement = Arrangement.spacedBy(12.dp),
-                    contentPadding = PaddingValues(bottom = 24.dp)
+                val featured = streams.first()
+                Column(
+                    modifier = Modifier.fillMaxSize()
                 ) {
-                    items(
-                        items = streams,
-                        key = { it.id }
-                    ) { stream ->
-                        StreamCard(
-                            stream = stream,
-                            onClick = {
-                                selectedStream = stream
-                            }
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .aspectRatio(16f / 9f)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(Color.Black)
+                            .clickable { selectedStream = featured }
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .align(Alignment.TopStart)
+                                .padding(horizontal = 16.dp, vertical = 13.dp)
+                        ) {
+                            Text(
+                                featured.matchName,
+                                color = Color.White,
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1
+                            )
+                            Text(
+                                featured.competition,
+                                color = Color(0xFFBFC8D2),
+                                fontSize = 11.sp
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.PlayArrow,
+                            contentDescription = "Putar live",
+                            tint = Color.White,
+                            modifier = Modifier
+                                .align(Alignment.Center)
+                                .size(58.dp)
+                                .clip(RoundedCornerShape(50))
+                                .background(Color(0xAA20252B))
+                                .padding(10.dp)
                         )
+                        Text(
+                            "LIVE",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 11.sp,
+                            modifier = Modifier
+                                .align(Alignment.BottomStart)
+                                .padding(14.dp)
+                                .clip(RoundedCornerShape(7.dp))
+                                .background(Color(0xFF252A30))
+                                .padding(horizontal = 11.dp, vertical = 7.dp)
+                        )
+                        Text(
+                            "PUTAR SIARAN",
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 10.sp,
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .padding(14.dp)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(Color(0xFFE6E7E9))
+                            .padding(horizontal = 14.dp, vertical = 12.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            "bit tv",
+                            color = Color(0xFF242830),
+                            fontSize = 23.sp,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                        Text(
+                            "EVENTS  ▾",
+                            color = Color(0xFF303640),
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(30.dp))
+                                .background(Color(0xFFD0D2D5))
+                                .clickable { selectedStream = featured }
+                                .padding(horizontal = 18.dp, vertical = 10.dp)
+                        )
+                    }
+
+                    LazyColumn(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(1.dp),
+                        contentPadding = PaddingValues(bottom = 20.dp)
+                    ) {
+                        items(
+                            items = streams,
+                            key = { it.id }
+                        ) { stream ->
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFE2E3E5))
+                                    .clickable { selectedStream = stream }
+                                    .padding(horizontal = 13.dp, vertical = 12.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(54.dp)
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF243A78)),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Text(
+                                        stream.competition.take(3).uppercase(),
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+                                Column(
+                                    modifier = Modifier
+                                        .weight(1f)
+                                        .padding(start = 11.dp)
+                                ) {
+                                    Text(
+                                        stream.matchName,
+                                        color = Color(0xFF242A31),
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 14.sp,
+                                        maxLines = 1
+                                    )
+                                    Text(
+                                        stream.competition,
+                                        color = Color(0xFF424A54),
+                                        fontSize = 12.sp,
+                                        maxLines = 1
+                                    )
+                                }
+                                Text(
+                                    if (stream.liveStartedAt > 0L) "LIVE" else formatWib(stream.scheduledStartAt),
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier
+                                        .clip(RoundedCornerShape(8.dp))
+                                        .background(Color(0xFF70757D))
+                                        .padding(horizontal = 10.dp, vertical = 8.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }
