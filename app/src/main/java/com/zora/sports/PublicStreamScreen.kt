@@ -64,6 +64,9 @@ private val StreamBackground
 private val StreamPanel
     get() = ZoraThemeColors.panel
 
+private val StreamPanelLight
+    get() = ZoraThemeColors.panelLight
+
 private val StreamBlue
     get() = ZoraThemeColors.accent
 
@@ -94,7 +97,7 @@ private fun formatWib(timestamp: Long): String {
     if (timestamp <= 0L) return "--:--"
 
     val formatter = SimpleDateFormat(
-        "HH:mm",
+        "HH.mm",
         Locale("id", "ID")
     )
 
@@ -443,18 +446,18 @@ fun PublicStreamScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .background(Color(0xFFE6E7E9))
+                            .background(StreamPanel)
                             .padding(horizontal = 14.dp, vertical = 12.dp),
                         horizontalArrangement = Arrangement.End
                     ) {
                         Text(
                             "EVENTS  ▾",
-                            color = Color(0xFF303640),
+                            color = StreamWhite,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                             modifier = Modifier
                                 .clip(RoundedCornerShape(30.dp))
-                                .background(Color(0xFFD0D2D5))
+                                .background(StreamPanelLight)
                                 .clickable { selectedStream = featured }
                                 .padding(horizontal = 18.dp, vertical = 10.dp)
                         )
@@ -472,7 +475,7 @@ fun PublicStreamScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .background(Color(0xFFE2E3E5))
+                                    .background(StreamPanel)
                                     .clickable { selectedStream = stream }
                                     .padding(horizontal = 13.dp, vertical = 12.dp),
                                 verticalAlignment = Alignment.CenterVertically
@@ -481,7 +484,7 @@ fun PublicStreamScreen(
                                     modifier = Modifier
                                         .size(54.dp)
                                         .clip(RoundedCornerShape(8.dp))
-                                        .background(Color(0xFF243A78)),
+                                        .background(StreamPanelLight),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
@@ -498,21 +501,21 @@ fun PublicStreamScreen(
                                 ) {
                                     Text(
                                         stream.matchName,
-                                        color = Color(0xFF242A31),
+                                        color = StreamWhite,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 14.sp,
                                         maxLines = 1
                                     )
                                     Text(
                                         stream.competition,
-                                        color = Color(0xFF424A54),
+                                        color = StreamMuted,
                                         fontSize = 12.sp,
                                         maxLines = 1
                                     )
                                     if (stream.information.isNotBlank()) {
                                         Text(
                                             stream.information,
-                                            color = Color(0xFF303640),
+                                            color = StreamWhite,
                                             fontSize = 11.sp,
                                             maxLines = 1
                                         )
@@ -520,7 +523,7 @@ fun PublicStreamScreen(
                                     if (stream.description.isNotBlank()) {
                                         Text(
                                             stream.description,
-                                            color = Color(0xFF626A73),
+                                            color = StreamMuted,
                                             fontSize = 10.sp,
                                             maxLines = 1
                                         )
