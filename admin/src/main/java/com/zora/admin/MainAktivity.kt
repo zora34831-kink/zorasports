@@ -332,6 +332,7 @@ fun AdminApp(
             }
         }
     }
+    }
 
     if (showEditor && loggedIn && !showStandings && studioStream == null) {
         StreamEditor(
