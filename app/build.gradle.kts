@@ -12,6 +12,18 @@ android {
     namespace = "com.zora.sports"
     compileSdk = 36
 
+    flavorDimensions += "device"
+    productFlavors {
+        create("mobile") {
+            dimension = "device"
+        }
+        create("tv") {
+            dimension = "device"
+            applicationIdSuffix = ".tv"
+            versionNameSuffix = "-tv"
+        }
+    }
+
     defaultConfig {
         applicationId = "com.zora.sports"
         minSdk = 24
