@@ -583,19 +583,27 @@ fun StreamEditor(
         mutableStateOf(false)
     }
 
+    val editorMaxHeight = androidx.compose.ui.platform.LocalConfiguration.current.screenHeightDp.dp * 0.82f
+
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(20.dp),
             modifier = Modifier
                 .fillMaxWidth()
-                .heightIn(max = 560.dp)
+                .heightIn(max = editorMaxHeight)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .verticalScroll(rememberScrollState())
-                    .padding(20.dp)
+                    .heightIn(max = editorMaxHeight)
+                    .imePadding()
+                    .padding(16.dp)
             ) {
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                ) {
                 Text(
                     if (initial == null) {
                         "Tambah streaming"
@@ -774,6 +782,10 @@ fun StreamEditor(
                 }
 
                 Spacer(Modifier.height(12.dp))
+
+                }
+
+                Spacer(Modifier.height(8.dp))
 
                 Row(
                     horizontalArrangement = Arrangement.End,
