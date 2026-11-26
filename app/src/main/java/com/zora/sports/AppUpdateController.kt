@@ -163,6 +163,8 @@ private data class PublicAnnouncement(
     val information: String = "",
     val description: String = "",
     val link: String = "",
+    val versionName: String = "",
+    val minimumVersionCode: Long = 0L,
     val updatedAt: Long = 0L,
     val published: Boolean = false
 )
@@ -248,116 +250,74 @@ fun UpdateAwareStreamScreen(modifier: Modifier = Modifier) {
             )
         }.getOrDefault(0L)
     }
-    var release by remember { mutableStateOf<PublicAppRelease?>(null) }
+    var announcement by remember { mutableStateOf<PublicAnnouncement?>(null) }
     var loading by remember { mutableStateOf(true) }
     var failed by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
-        val listener = PublicAppReleaseSource.listen(
-            onData = {
-                release = it
-                loading = false
-                failed = false
-            },
-            onError = {
-                loading = false
-                failed = true
-            }
-        )
-        onDispose { PublicAppReleaseSource.remove(listener) }
+        val listener = PublicAnnouncementSource.listen {
+            announcement = it
+            loading = false
+            failed = false
+        }
+        onDispose { PublicAnnouncementSource.remove(listener) }
     }
 
-    val latest = release
-    val mustUpdate = latest != null &&
-        latest.minimumVersionCode > installedVersion
+    val update = announcement
+    val mustUpdate = update != null && update.published &&
+        update.minimumVersionCode > installedVersion
 
     when {
-        loading -> Box(
-            modifier = modifier.fillMaxSize(),
-            contentAlignment = Alignment.Center
-        ) {
+        loading -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(color = Color(0xFF55B9E8))
         }
-
-        mustUpdate && latest != null -> {
-            Box(
-                modifier = modifier
-                    .fillMaxSize()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color(0xFF0A1A2A), Color(0xFF142D43))
-                        )
-                    )
-                    .padding(22.dp),
-                contentAlignment = Alignment.Center
+        failed -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            Text("Tidak dapat memeriksa versi aplikasi. Periksa koneksi internet.", color = Color.White)
+        }
+        mustUpdate && update != null -> Box(
+            modifier = modifier.fillMaxSize()
+                .background(Brush.verticalGradient(listOf(Color(0xFF0A1A2A), Color(0xFF142D43))))
+                .padding(22.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Card(
+                modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFF6BAFD0).copy(alpha = 0.35f), RoundedCornerShape(26.dp)),
+                shape = RoundedCornerShape(26.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xE91B344A))
             ) {
-                Card(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .border(
-                            1.dp,
-                            Color(0xFF6BAFD0).copy(alpha = 0.35f),
-                            RoundedCornerShape(26.dp)
-                        ),
-                    shape = RoundedCornerShape(26.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = Color(0xE91B344A)
-                    )
+                Column(
+                    modifier = Modifier.padding(24.dp),
+                    verticalArrangement = Arrangement.spacedBy(14.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Column(
-                        modifier = Modifier.padding(24.dp),
-                        verticalArrangement = Arrangement.spacedBy(14.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally
-                    ) {
-                        Text(
-                            "PEMBARUAN DIPERLUKAN",
-                            color = Color(0xFF82D2F5),
-                            fontWeight = FontWeight.Bold
-                        )
-                        Text(
-                            "UPDATE VERSI ${latest.versionName}",
-                            color = Color.White,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            textAlign = TextAlign.Center
-                        )
-                        Text(
-                            "UNTUK MELIHAT STREAMING",
-                            color = Color(0xFFD2E1EC),
-                            fontWeight = FontWeight.SemiBold,
-                            textAlign = TextAlign.Center
-                        )
-                        if (latest.notes.isNotBlank()) {
-                            Text(
-                                latest.notes,
-                                color = Color(0xFFB7C9D8),
-                                textAlign = TextAlign.Center
-                            )
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Button(
-                            onClick = { uriHandler.openUri(latest.apkUrl) },
-                            modifier = Modifier.fillMaxWidth(),
-                            contentPadding = PaddingValues(vertical = 15.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF328CC8)
-                            )
-                        ) {
-                            Text(
-                                "UPDATE SEKARANG",
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                        Text(
-                            "Halaman lain tetap bisa digunakan.",
-                            color = Color(0xFF9FB3C4),
-                            style = MaterialTheme.typography.bodySmall
-                        )
+                    Text("INFORMASI!", color = Color(0xFF82D2F5), fontWeight = FontWeight.Bold)
+                    Text(
+                        update.information.ifBlank { "ZORASPORTS MEMERLUKAN UPDATE VERSI BARU" },
+                        color = Color.White,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        textAlign = TextAlign.Center
+                    )
+                    Text(
+                        "UPDATE VERSI ${update.versionName} UNTUK MELIHAT STREAMING",
+                        color = Color(0xFFD2E1EC),
+                        fontWeight = FontWeight.Bold,
+                        textAlign = TextAlign.Center
+                    )
+                    if (update.description.isNotBlank()) {
+                        Text(update.description, color = Color(0xFFB7C9D8), textAlign = TextAlign.Center)
                     }
+                    Button(
+                        onClick = { uriHandler.openUri(update.link) },
+                        enabled = update.link.startsWith("https://") || update.link.startsWith("http://"),
+                        modifier = Modifier.fillMaxWidth(),
+                        contentPadding = PaddingValues(vertical = 15.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF328CC8))
+                    ) { Text("DOWNLOAD APK TERBARU", fontWeight = FontWeight.Bold) }
+                    Text("Streaming terkunci sampai APK versi terbaru terpasang.", color = Color(0xFFFFD18A), textAlign = TextAlign.Center)
                 }
             }
         }
-
         else -> PublicStreamScreen(modifier = modifier)
     }
 }
