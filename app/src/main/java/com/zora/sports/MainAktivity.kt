@@ -1164,7 +1164,7 @@ fun HomeScreen(
             }
         }
 
-        item { LiveMatchSection() }
+        item { LiveMatchSection(showHeader = false) }
 
         item {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
@@ -1494,7 +1494,7 @@ fun MatchPage(
                 Text("UPDATE PERTANDINGAN", color = White, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.7.sp)
             }
         }
-        item { LiveMatchSection() }
+        item { LiveMatchSection(showHeader = false) }
     }
 }
 
