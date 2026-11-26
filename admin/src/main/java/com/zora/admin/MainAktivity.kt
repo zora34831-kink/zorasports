@@ -539,6 +539,14 @@ fun StreamEditor(
         mutableStateOf(initial?.provider ?: "")
     }
 
+    var information by remember(initial?.id) {
+        mutableStateOf(initial?.information ?: "")
+    }
+
+    var description by remember(initial?.id) {
+        mutableStateOf(initial?.description ?: "")
+    }
+
     var url by remember(initial?.id) {
         mutableStateOf(initial?.url ?: "")
     }
@@ -565,6 +573,13 @@ fun StreamEditor(
         mutableStateOf(
             formatScheduleTime(initialSchedule, "HH:mm")
         )
+    }
+
+    val initialEnd = initial?.scheduledEndAt?.takeIf { it > 0L }
+        ?: (initialSchedule + 2L * 60L * 60L * 1000L)
+
+    var endTime by remember(initial?.id) {
+        mutableStateOf(formatScheduleTime(initialEnd, "HH:mm"))
     }
 
     var error by remember {
@@ -622,6 +637,24 @@ fun StreamEditor(
                 )
 
                 OutlinedTextField(
+                    value = information,
+                    onValueChange = { information = it },
+                    label = { Text("INFORMASI") },
+                    placeholder = { Text("Isi infomu") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+
+                OutlinedTextField(
+                    value = description,
+                    onValueChange = { description = it },
+                    label = { Text("KETERANGAN") },
+                    placeholder = { Text("Isi keteranganmu") },
+                    modifier = Modifier.fillMaxWidth(),
+                    minLines = 2
+                )
+
+                OutlinedTextField(
                     value = url,
                     onValueChange = { url = it },
                     label = { Text("URL streaming resmi") },
@@ -662,8 +695,19 @@ fun StreamEditor(
                     )
                 )
 
+                OutlinedTextField(
+                    value = endTime,
+                    onValueChange = { endTime = it },
+                    label = { Text("Jam selesai live (HH:mm)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Ascii
+                    )
+                )
+
                 Text(
-                    "Zona waktu: WIB (Asia/Jakarta)",
+                    "Zona waktu: WIB (Asia/Jakarta). Contoh jam: 15:00",
                     color = Color.Gray,
                     style = MaterialTheme.typography.bodySmall
                 )
@@ -756,15 +800,24 @@ fun StreamEditor(
                                 scheduleTime.trim()
                             )
 
+                            val endTimestamp = parseScheduleTime(
+                                scheduleDate.trim(),
+                                endTime.trim()
+                            )
+
                             if (
                                 matchName.isBlank() ||
                                 competition.isBlank() ||
                                 provider.isBlank() ||
+                                information.isBlank() ||
+                                description.isBlank() ||
                                 !validUrl ||
-                                scheduleTimestamp == null
+                                scheduleTimestamp == null ||
+                                endTimestamp == null ||
+                                endTimestamp <= (scheduleTimestamp ?: 0L)
                             ) {
                                 error =
-                                    "Lengkapi data, URL, tanggal, dan jam mulai live."
+                                    "Lengkapi informasi, keterangan, URL, tanggal, serta jam mulai dan selesai yang benar."
                             } else {
                                 onSave(
                                     StreamLink(
@@ -777,6 +830,9 @@ fun StreamEditor(
                                         published = published,
                                         updatedAt = System.currentTimeMillis(),
                                         scheduledStartAt = scheduleTimestamp,
+                                        scheduledEndAt = endTimestamp,
+                                        information = information.trim(),
+                                        description = description.trim(),
                                         liveStartedAt =
                                             initial?.liveStartedAt ?: 0L,
                                         design =
