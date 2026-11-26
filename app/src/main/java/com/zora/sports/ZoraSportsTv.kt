@@ -119,7 +119,7 @@ fun ZoraSportsTvApp() {
                             onNotificationsClick = { selected = 6 }
                         )
                         selected == 1 -> MatchPage("SKOR LANGSUNG", "Pantau pertandingan yang sedang berlangsung.", Modifier.fillMaxSize())
-                        selected == 2 -> PublicStreamScreen(Modifier.fillMaxSize())
+                        selected == 2 -> UpdateAwareStreamScreen(Modifier.fillMaxSize())
                         selected == 3 -> MatchPage("JADWAL PERTANDINGAN", "Lihat pertandingan hari ini dan jadwal mendatang.", Modifier.fillMaxSize())
                         selected == 4 -> LeaguePage(Modifier.fillMaxSize())
                         selected == 5 -> FavoritePage(Modifier.fillMaxSize())
