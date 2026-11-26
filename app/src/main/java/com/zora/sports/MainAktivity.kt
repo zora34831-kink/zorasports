@@ -75,6 +75,8 @@ fun ZoraSportsApp() {
 
     // Sinkronisasi jadwal Firebase untuk pengingat lokal.
     NotificationScheduleSync()
+    // Tampilkan pemberitahuan pembaruan saat versi baru tersedia.
+    AppUpdateNotice()
 
     val themePrefs = remember {
         activity.getSharedPreferences(
