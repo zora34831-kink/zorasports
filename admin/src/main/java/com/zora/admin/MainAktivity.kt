@@ -261,6 +261,11 @@ fun AdminApp(
                         Text("MANAJEMEN KLASEMEN")
                     }
 
+                    Spacer(Modifier.height(18.dp))
+
+                    ApkReleaseManager()
+
+
                     if (message.isNotBlank()) {
                         Text(
                             message,
