@@ -32,6 +32,9 @@ data class StreamLink(
     val updatedAt: Long = 0L,
     val scheduledStartAt: Long = 0L,
     val liveStartedAt: Long = 0L,
+    val scheduledEndAt: Long = 0L,
+    val information: String = "",
+    val description: String = "",
 
     // Konfigurasi tampilan streaming
     val design: StreamDesign = StreamDesign()
