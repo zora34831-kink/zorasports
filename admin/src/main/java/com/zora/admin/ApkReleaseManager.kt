@@ -13,6 +13,7 @@ import com.google.firebase.database.ValueEventListener
 
 @Composable
 fun ApkReleaseManager() {
+    var expanded by remember { mutableStateOf(false) }
     var versionName by remember { mutableStateOf("1.4.0") }
     var versionCode by remember { mutableStateOf("6") }
     var notes by remember { mutableStateOf("") }
@@ -52,7 +53,17 @@ fun ApkReleaseManager() {
             modifier = Modifier.padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            Text("APK TERBARU", style = MaterialTheme.typography.titleMedium, color = Color(0xFF174A91))
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+            ) {
+                Text("APK TERBARU", style = MaterialTheme.typography.titleMedium, color = Color(0xFF174A91))
+                TextButton(onClick = { expanded = !expanded }) {
+                    Text(if (expanded) "Tutup" else "Kelola APK")
+                }
+            }
+            if (expanded) {
             Text(
                 current?.let { "Rilis aktif: ${it.versionName} • code ${it.versionCode}" }
                     ?: "Belum ada APK yang dipublikasikan",
@@ -141,6 +152,7 @@ fun ApkReleaseManager() {
                 color = Color.Gray,
                 style = MaterialTheme.typography.bodySmall
             )
+            }
         }
     }
 }
