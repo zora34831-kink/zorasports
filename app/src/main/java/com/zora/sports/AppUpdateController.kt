@@ -185,8 +185,9 @@ fun UpdateAwareStreamScreen(modifier: Modifier = Modifier) {
     var announcement by remember { mutableStateOf<PublicAnnouncement?>(null) }
     var loading by remember { mutableStateOf(true) }
     var failed by remember { mutableStateOf(false) }
+    var retryToken by remember { mutableStateOf(0) }
 
-    DisposableEffect(Unit) {
+    DisposableEffect(retryToken) {
         val listener = PublicAnnouncementSource.listen(
             onData = {
                 announcement = it
@@ -210,7 +211,26 @@ fun UpdateAwareStreamScreen(modifier: Modifier = Modifier) {
             CircularProgressIndicator(color = Color(0xFF55B9E8))
         }
         failed -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            Text("Tidak dapat memeriksa versi aplikasi. Periksa koneksi internet.", color = Color.White)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(14.dp),
+                modifier = Modifier.padding(24.dp)
+            ) {
+                Text(
+                    "Tidak dapat memeriksa versi aplikasi. Periksa koneksi internet.",
+                    color = Color.White,
+                    textAlign = TextAlign.Center
+                )
+                Button(
+                    onClick = {
+                        failed = false
+                        loading = true
+                        retryToken++
+                    }
+                ) {
+                    Text("COBA LAGI")
+                }
+            }
         }
         mustUpdate && update != null -> Box(
             modifier = modifier.fillMaxSize()
