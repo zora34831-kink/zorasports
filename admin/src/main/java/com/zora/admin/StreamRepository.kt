@@ -17,10 +17,8 @@ object StreamRepository {
         )
         .getReference("streamLinks")
 
-    // Menggunakan bucket Firebase Storage ZORASPORTS
-    private val storage = FirebaseStorage.getInstance(
-        "gs://zorasports-cf452.firebasestorage.app"
-    )
+    // Mengikuti bucket default yang dikonfigurasi di google-services.json.
+    private val storage = FirebaseStorage.getInstance()
 
     fun listen(
         onData: (List<StreamLink>) -> Unit,
@@ -149,36 +147,34 @@ object StreamRepository {
         onResult: (Boolean, String) -> Unit
     ) {
         if (streamId.isBlank()) {
-            onResult(
-                false,
-                "Simpan data streaming terlebih dahulu"
-            )
+            onResult(false, "Simpan data streaming terlebih dahulu")
             return
         }
 
         val fileName = "${UUID.randomUUID()}.jpg"
-
         val imageRef = storage.reference
             .child("streamOverlays/$streamId/$fileName")
 
-        imageRef.putFile(imageUri)
-            .continueWithTask { task ->
-                if (!task.isSuccessful) {
-                    throw task.exception
-                        ?: Exception("Upload gambar gagal")
-                }
+        val metadata = com.google.firebase.storage.StorageMetadata.Builder()
+            .setContentType("image/jpeg")
+            .build()
 
-                imageRef.downloadUrl
-            }
-            .addOnSuccessListener { downloadUri ->
-                onResult(true, downloadUri.toString())
+        imageRef.putFile(imageUri, metadata)
+            .addOnSuccessListener { snapshot ->
+                snapshot.storage.downloadUrl
+                    .addOnSuccessListener { downloadUri ->
+                        onResult(true, downloadUri.toString())
+                    }
+                    .addOnFailureListener { error ->
+                        onResult(
+                            false,
+                            "Foto terunggah, tetapi URL gagal dibuat: ${error.localizedMessage ?: error.javaClass.simpleName}"
+                        )
+                    }
             }
             .addOnFailureListener { error ->
-                onResult(
-                    false,
-                    error.localizedMessage
-                        ?: "Upload gambar gagal"
-                )
+                val detail = error.localizedMessage ?: error.javaClass.simpleName
+                onResult(false, "Upload Storage gagal: $detail")
             }
     }
 
