@@ -2,6 +2,10 @@
 package com.zora.sports
 
 import android.content.pm.ActivityInfo
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -21,9 +25,11 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -207,35 +213,11 @@ fun ZoraSportsApp() {
                     extraPage.isEmpty() &&
                     !showNotifications
                 ) {
-                    NavigationBar(
-                        containerColor = ZoraThemeColors.navigation
-                    ) {
-                        tabs.forEachIndexed { index, tab ->
-                            NavigationBarItem(
-                                selected = selectedTab == index,
-                                onClick = { selectedTab = index },
-                                icon = {
-                                    Icon(
-                                        tab.icon,
-                                        contentDescription = tab.title
-                                    )
-                                },
-                                label = {
-                                    Text(
-                                        tab.title,
-                                        fontSize = 10.sp
-                                    )
-                                },
-                                colors = NavigationBarItemDefaults.colors(
-                                    selectedIconColor = Cyan,
-                                    selectedTextColor = Cyan,
-                                    indicatorColor = PanelLight,
-                                    unselectedIconColor = Muted,
-                                    unselectedTextColor = Muted
-                                )
-                            )
-                        }
-                    }
+                    LiquidGlassNavigationBar(
+                        tabs = tabs,
+                        selectedTab = selectedTab,
+                        onTabSelected = { selectedTab = it }
+                    )
                 }
             }
         ) { padding ->
@@ -333,6 +315,119 @@ fun ZoraSportsApp() {
                     .apply()
             }
         )
+    }
+}
+
+
+@Composable
+fun LiquidGlassNavigationBar(
+    tabs: List<AppTab>,
+    selectedTab: Int,
+    onTabSelected: (Int) -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 13.dp, vertical = 9.dp)
+            .shadow(
+                elevation = 22.dp,
+                shape = RoundedCornerShape(27.dp),
+                ambientColor = Cyan.copy(alpha = 0.20f),
+                spotColor = Cyan.copy(alpha = 0.24f)
+            )
+            .clip(RoundedCornerShape(27.dp))
+            .background(
+                Brush.linearGradient(
+                    colors = listOf(
+                        Color(0xE62A4055),
+                        Color(0xE6122235),
+                        Color(0xE6293D51)
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                brush = Brush.linearGradient(
+                    listOf(
+                        Color.White.copy(alpha = 0.34f),
+                        Cyan.copy(alpha = 0.20f),
+                        Color.White.copy(alpha = 0.08f)
+                    )
+                ),
+                shape = RoundedCornerShape(27.dp)
+            )
+            .padding(horizontal = 5.dp, vertical = 8.dp)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(1.dp)
+        ) {
+            tabs.forEachIndexed { index, tab ->
+                val selected = selectedTab == index
+                val iconScale by animateFloatAsState(
+                    targetValue = if (selected) 1.13f else 1f,
+                    animationSpec = tween(
+                        durationMillis = 360,
+                        easing = FastOutSlowInEasing
+                    ),
+                    label = "nav_icon_scale"
+                )
+                val tint by animateColorAsState(
+                    targetValue = if (selected) Color.White else Color(0xFF9EADBD),
+                    animationSpec = tween(280),
+                    label = "nav_icon_tint"
+                )
+                val pillColor by animateColorAsState(
+                    targetValue = if (selected) {
+                        Cyan.copy(alpha = 0.28f)
+                    } else {
+                        Color.Transparent
+                    },
+                    animationSpec = tween(320),
+                    label = "nav_pill"
+                )
+
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .clip(RoundedCornerShape(19.dp))
+                        .background(pillColor)
+                        .clickable { onTabSelected(index) }
+                        .padding(vertical = 7.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(3.dp)
+                ) {
+                    Icon(
+                        imageVector = tab.icon,
+                        contentDescription = tab.title,
+                        tint = tint,
+                        modifier = Modifier
+                            .size(21.dp)
+                            .graphicsLayer {
+                                scaleX = iconScale
+                                scaleY = iconScale
+                            }
+                    )
+                    Text(
+                        text = tab.title,
+                        color = if (selected) Color.White else Color(0xFF9EADBD),
+                        fontSize = 8.sp,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1
+                    )
+                    Box(
+                        modifier = Modifier
+                            .width(if (selected) 13.dp else 3.dp)
+                            .height(2.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (selected) Cyan else Color.Transparent
+                            )
+                    )
+                }
+            }
+        }
     }
 }
 
