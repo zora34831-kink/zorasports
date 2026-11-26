@@ -155,6 +155,86 @@ fun AppUpdateNotice() {
             }
         )
     }
+    AnnouncementNotice()
+}
+
+
+private data class PublicAnnouncement(
+    val information: String = "",
+    val description: String = "",
+    val link: String = "",
+    val updatedAt: Long = 0L,
+    val published: Boolean = false
+)
+
+private object PublicAnnouncementSource {
+    private val reference = FirebaseDatabase.getInstance(
+        "https://zorasports-cf452-default-rtdb.asia-southeast1.firebasedatabase.app/"
+    ).getReference("announcement")
+
+    fun listen(onData: (PublicAnnouncement?) -> Unit): ValueEventListener {
+        val listener = object : ValueEventListener {
+            override fun onDataChange(snapshot: DataSnapshot) {
+                onData(snapshot.getValue(PublicAnnouncement::class.java))
+            }
+            override fun onCancelled(error: DatabaseError) = Unit
+        }
+        reference.addValueEventListener(listener)
+        return listener
+    }
+
+    fun remove(listener: ValueEventListener) {
+        reference.removeEventListener(listener)
+    }
+}
+
+@Composable
+private fun AnnouncementNotice() {
+    val uriHandler = LocalUriHandler.current
+    var announcement by remember { mutableStateOf<PublicAnnouncement?>(null) }
+    var shownAt by remember { mutableStateOf(0L) }
+
+    DisposableEffect(Unit) {
+        val listener = PublicAnnouncementSource.listen { announcement = it }
+        onDispose { PublicAnnouncementSource.remove(listener) }
+    }
+
+    val current = announcement
+    if (current != null && current.published && current.updatedAt > shownAt) {
+        AlertDialog(
+            onDismissRequest = { shownAt = current.updatedAt },
+            containerColor = Color(0xFF14283B),
+            title = {
+                Text("INFORMASI!", color = Color.White, fontWeight = FontWeight.Bold)
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
+                    Text(current.information, color = Color(0xFFEAF2F9))
+                    if (current.description.isNotBlank()) {
+                        Text(current.description, color = Color(0xFFB8C8D8))
+                    }
+                }
+            },
+            confirmButton = {
+                if (current.link.isNotBlank()) {
+                    Button(
+                        onClick = {
+                            shownAt = current.updatedAt
+                            uriHandler.openUri(current.link)
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF2D83C6))
+                    ) { Text("KLIK LINK DI BAWAH") }
+                } else {
+                    Button(onClick = { shownAt = current.updatedAt }) { Text("TUTUP") }
+                }
+            },
+            dismissButton = {
+                if (current.link.isNotBlank()) {
+                    OutlinedButton(onClick = { shownAt = current.updatedAt }) { Text("TUTUP") }
+                }
+            }
+        )
+    }
 }
 
 @Composable
