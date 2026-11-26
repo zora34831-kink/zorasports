@@ -45,7 +45,7 @@ fun AnnouncementManager() {
     var expanded by remember { mutableStateOf(true) }
     var information by remember { mutableStateOf("ZORASPORTS MEMERLUKAN UPDATE VERSI BARU AGAR BISA MENGAKSES STREAMING") }
     var description by remember { mutableStateOf("") }
-    var link by remember { mutableStateOf("https://linkdownloadterbaru") }
+    var link by remember { mutableStateOf("") }
     var versionName by remember { mutableStateOf("1.4.0") }
     var versionCode by remember { mutableStateOf("6") }
     var busy by remember { mutableStateOf(false) }
@@ -120,7 +120,7 @@ fun AnnouncementManager() {
                         } else if (versionName.isBlank() || versionCode.toLongOrNull() == null || versionCode.toLong() <= 0L) {
                             message = "Isi versi dan version code yang valid."
                             isError = true
-                        } else if (link.isBlank() || (!link.trim().startsWith("https://") && !link.trim().startsWith("http://"))) {
+                        } else if (link.isNotBlank() && !link.trim().startsWith("https://") && !link.trim().startsWith("http://")) {
                             message = "Link harus diawali https:// atau http://"
                             isError = true
                         } else {
