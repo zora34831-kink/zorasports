@@ -58,8 +58,11 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
+        val isAndroidTv = packageManager.hasSystemFeature(
+            android.content.pm.PackageManager.FEATURE_LEANBACK
+        )
         setContent {
-            ZoraSportsApp()
+            if (isAndroidTv) ZoraSportsTvApp() else ZoraSportsApp()
         }
     }
 }
