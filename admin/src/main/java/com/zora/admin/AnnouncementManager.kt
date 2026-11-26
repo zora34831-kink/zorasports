@@ -13,6 +13,8 @@ private data class AdminAnnouncement(
     var information: String = "",
     var description: String = "",
     var link: String = "",
+    var versionName: String = "",
+    var minimumVersionCode: Long = 0L,
     var updatedAt: Long = 0L,
     var published: Boolean = false
 )
@@ -22,11 +24,13 @@ private object AnnouncementAdminRepository {
         "https://zorasports-cf452-default-rtdb.asia-southeast1.firebasedatabase.app/"
     ).getReference("announcement")
 
-    fun publish(info: String, description: String, link: String, done: (Boolean, String) -> Unit) {
+    fun publish(info: String, description: String, link: String, versionName: String, versionCode: Long, done: (Boolean, String) -> Unit) {
         val data = AdminAnnouncement(
             information = info.trim(),
             description = description.trim(),
             link = link.trim(),
+            versionName = versionName.trim(),
+            minimumVersionCode = versionCode,
             updatedAt = System.currentTimeMillis(),
             published = true
         )
@@ -42,6 +46,8 @@ fun AnnouncementManager() {
     var information by remember { mutableStateOf("ZORASPORTS MEMERLUKAN UPDATE VERSI BARU AGAR BISA MENGAKSES STREAMING") }
     var description by remember { mutableStateOf("") }
     var link by remember { mutableStateOf("https://linkdownloadterbaru") }
+    var versionName by remember { mutableStateOf("1.4.0") }
+    var versionCode by remember { mutableStateOf("6") }
     var busy by remember { mutableStateOf(false) }
     var message by remember { mutableStateOf("") }
     var isError by remember { mutableStateOf(false) }
@@ -85,6 +91,20 @@ fun AnnouncementManager() {
                     minLines = 2
                 )
                 OutlinedTextField(
+                    value = versionName,
+                    onValueChange = { versionName = it },
+                    label = { Text("VERSI TERBARU (contoh 1.4.0)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
+                    value = versionCode,
+                    onValueChange = { versionCode = it.filter(Char::isDigit) },
+                    label = { Text("VERSION CODE MINIMUM") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true
+                )
+                OutlinedTextField(
                     value = link,
                     onValueChange = { link = it },
                     label = { Text("LINK UPDATE") },
@@ -97,14 +117,17 @@ fun AnnouncementManager() {
                         if (information.isBlank()) {
                             message = "Isi informasi terlebih dahulu."
                             isError = true
-                        } else if (link.isNotBlank() && !link.trim().startsWith("https://") && !link.trim().startsWith("http://")) {
+                        } else if (versionName.isBlank() || versionCode.toLongOrNull() == null || versionCode.toLong() <= 0L) {
+                            message = "Isi versi dan version code yang valid."
+                            isError = true
+                        } else if (link.isBlank() || (!link.trim().startsWith("https://") && !link.trim().startsWith("http://"))) {
                             message = "Link harus diawali https:// atau http://"
                             isError = true
                         } else {
                             busy = true
                             message = "Mengirim informasi..."
                             isError = false
-                            AnnouncementAdminRepository.publish(information, description, link) { success, result ->
+                            AnnouncementAdminRepository.publish(information, description, link, versionName, versionCode.toLong()) { success, result ->
                                 busy = false
                                 message = result
                                 isError = !success
@@ -123,7 +146,7 @@ fun AnnouncementManager() {
                     Text(message, color = if (isError) MaterialTheme.colorScheme.error else Color(0xFF16834A))
                 }
                 Text(
-                    "Pengumuman akan ditampilkan sebagai notifikasi di aplikasi saat pengguna membuka ZORASPORTS.",
+                    "Pengguna dengan version code di bawah batas minimum tidak dapat membuka Streaming sampai memasang APK terbaru.",
                     color = Color.Gray,
                     style = MaterialTheme.typography.bodySmall
                 )
