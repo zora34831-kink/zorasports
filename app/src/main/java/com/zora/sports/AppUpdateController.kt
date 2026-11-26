@@ -98,12 +98,17 @@ private object PublicAnnouncementSource {
         "https://zorasports-cf452-default-rtdb.asia-southeast1.firebasedatabase.app/"
     ).getReference("announcement")
 
-    fun listen(onData: (PublicAnnouncement?) -> Unit): ValueEventListener {
+    fun listen(
+        onData: (PublicAnnouncement?) -> Unit,
+        onError: () -> Unit
+    ): ValueEventListener {
         val listener = object : ValueEventListener {
             override fun onDataChange(snapshot: DataSnapshot) {
                 onData(snapshot.getValue(PublicAnnouncement::class.java))
             }
-            override fun onCancelled(error: DatabaseError) = Unit
+            override fun onCancelled(error: DatabaseError) {
+                onError()
+            }
         }
         reference.addValueEventListener(listener)
         return listener
@@ -121,7 +126,10 @@ private fun AnnouncementNotice() {
     var shownAt by remember { mutableStateOf(0L) }
 
     DisposableEffect(Unit) {
-        val listener = PublicAnnouncementSource.listen { announcement = it }
+        val listener = PublicAnnouncementSource.listen(
+            onData = { announcement = it },
+            onError = { /* Informational popup can safely remain hidden if unavailable. */ }
+        )
         onDispose { PublicAnnouncementSource.remove(listener) }
     }
 
@@ -179,11 +187,17 @@ fun UpdateAwareStreamScreen(modifier: Modifier = Modifier) {
     var failed by remember { mutableStateOf(false) }
 
     DisposableEffect(Unit) {
-        val listener = PublicAnnouncementSource.listen {
-            announcement = it
-            loading = false
-            failed = false
-        }
+        val listener = PublicAnnouncementSource.listen(
+            onData = {
+                announcement = it
+                loading = false
+                failed = false
+            },
+            onError = {
+                loading = false
+                failed = true
+            }
+        )
         onDispose { PublicAnnouncementSource.remove(listener) }
     }
 
