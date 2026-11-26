@@ -263,7 +263,7 @@ fun AdminApp(
 
                     Spacer(Modifier.height(18.dp))
 
-                    ApkReleaseManager()
+                    AnnouncementManager()
 
 
                     if (message.isNotBlank()) {
