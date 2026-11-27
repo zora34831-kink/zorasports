@@ -201,25 +201,29 @@ fun ZoraSportsApp() {
     MaterialTheme(
         colorScheme = if (lightMode) {
             lightColorScheme(
-                primary = Cyan,
-                background = Navy,
-                surface = Panel,
-                surfaceVariant = PanelLight,
-                onBackground = White,
-                onSurface = White,
-                onSurfaceVariant = Muted,
+                primary = ZoraThemeColors.accent,
+                background = ZoraThemeColors.background,
+                surface = ZoraThemeColors.panel,
+                surfaceVariant = ZoraThemeColors.panelLight,
+                onBackground = ZoraThemeColors.text,
+                onSurface = ZoraThemeColors.text,
+                onSurfaceVariant = ZoraThemeColors.muted,
                 outline = ZoraThemeColors.border,
-                surfaceTint = Cyan,
-                inverseSurface = if (lightMode) Color(0xFF182B3A) else Color(0xFFE8F1F7),
-                inverseOnSurface = if (lightMode) Color(0xFFF4FAFF) else Color(0xFF142536)
+                surfaceTint = ZoraThemeColors.accent,
+                inverseSurface = Color(0xFF182B3A),
+                inverseOnSurface = Color(0xFFF4FAFF)
             )
         } else {
             darkColorScheme(
-                primary = Cyan,
-                background = Navy,
-                surface = Panel,
-                onBackground = White,
-                onSurface = White
+                primary = ZoraThemeColors.accent,
+                background = ZoraThemeColors.background,
+                surface = ZoraThemeColors.panel,
+                surfaceVariant = ZoraThemeColors.panelLight,
+                onBackground = ZoraThemeColors.text,
+                onSurface = ZoraThemeColors.text,
+                onSurfaceVariant = ZoraThemeColors.muted,
+                outline = ZoraThemeColors.border,
+                surfaceTint = ZoraThemeColors.accent
             )
         }
     ) {
@@ -275,10 +279,6 @@ fun ZoraSportsApp() {
                         modifier = pageModifier,
                         onBack = { extraPage = "" }
                     )
-                }
-
-                targetPage == "extra:BERITA" -> {
-                    FootballNewsPage(modifier = pageModifier)
                 }
 
 
@@ -344,10 +344,6 @@ fun ZoraSportsApp() {
             onInfo = {
                 showHamburger = false
                 extraPage = "INFO APK"
-            },
-            onNews = {
-                showHamburger = false
-                extraPage = "BERITA"
             },
             lightMode = lightMode,
             onThemeChange = {
@@ -488,7 +484,6 @@ fun HamburgerMenu(
     onDismiss: () -> Unit,
     onSupport: () -> Unit,
     onInfo: () -> Unit,
-    onNews: () -> Unit,
     lightMode: Boolean,
     onThemeChange: (Boolean) -> Unit
 ) {
@@ -562,13 +557,6 @@ fun HamburgerMenu(
 
                 HorizontalDivider(
                     color = ZoraThemeColors.border
-                )
-
-                MenuOption(
-                    title = "FOOTBALL NEWS",
-                    subtitle = "Berita sepak bola terbaru",
-                    icon = Icons.Default.Newspaper,
-                    onClick = onNews
                 )
 
                 MenuOption(
