@@ -152,7 +152,25 @@ fun LiveMatchSection(showHeader: Boolean = true) {
                     Text("Coba periksa kembali nanti.", color = ZoraThemeColors.muted, fontSize = 10.sp)
                 }
             }
-            else -> matches.forEach { match -> ApiMatchCard(match) }
+            else -> {
+                // Batasi komposisi kartu agar respons UI tetap ringan pada
+                // perangkat dengan memori dan kemampuan pemrosesan terbatas.
+                val visibleMatches = matches.take(10)
+                visibleMatches.forEach { match ->
+                    key(match.fixture?.id ?: match.hashCode()) {
+                        ApiMatchCard(match)
+                    }
+                }
+                if (matches.size > visibleMatches.size) {
+                    Text(
+                        "Menampilkan ${visibleMatches.size} dari ${matches.size} pertandingan. Buka halaman jadwal untuk melihat pembaruan lainnya.",
+                        color = ZoraThemeColors.muted,
+                        fontSize = 10.sp,
+                        lineHeight = 15.sp,
+                        modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp)
+                    )
+                }
+            }
         }
     }
 }
