@@ -14,6 +14,7 @@ const cache = new Map();
 const providerStatus = new Map();
 const now = () => new Date().toISOString();
 const cacheKey = (kind, leagueId) => `${kind}:${leagueId}`;
+const INDONESIA_CACHE_TTL = 30 * 60 * 1000;
 
 async function firstSuccessful(providers, key) {
   const errors = [];
@@ -52,7 +53,8 @@ function providersFor(league, kind) {
 async function getData(kind, league) {
   const key = cacheKey(kind, league.id);
   const existing = cache.get(key);
-  if (existing && Date.now() - Date.parse(existing.updatedAt) < CACHE_TTL) {
+  const ttl = league.id === "liga-1-indonesia" ? INDONESIA_CACHE_TTL : CACHE_TTL;
+  if (existing && Date.now() - Date.parse(existing.updatedAt) < ttl) {
     return { ...existing, stale: false, cached: true };
   }
   return firstSuccessful(providersFor(league, kind), key);
