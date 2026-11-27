@@ -813,19 +813,19 @@ fun StreamEditor(
                                 endTime.trim()
                             )
 
-                            if (
-                                matchName.isBlank() ||
-                                competition.isBlank() ||
-                                provider.isBlank() ||
-                                information.isBlank() ||
-                                description.isBlank() ||
-                                !validUrl ||
-                                scheduleTimestamp == null ||
-                                endTimestamp == null ||
+                            val hasAnyInput = listOf(
+                                matchName, competition, provider, information, description, url
+                            ).any { it.isNotBlank() }
+
+                            if (!hasAnyInput) {
+                                error = "Isi minimal satu kolom sebelum menyimpan."
+                            } else if (cleanUrl.isNotBlank() && !validUrl) {
+                                error = "URL harus diawali http:// atau https://."
+                            } else if (
+                                scheduleTimestamp == null || endTimestamp == null ||
                                 endTimestamp <= (scheduleTimestamp ?: 0L)
                             ) {
-                                error =
-                                    "Lengkapi informasi, keterangan, URL, tanggal, serta jam mulai dan selesai yang benar."
+                                error = "Periksa format tanggal serta jam mulai dan selesai."
                             } else {
                                 onSave(
                                     StreamLink(
@@ -837,8 +837,8 @@ fun StreamEditor(
                                         sourceType = sourceType,
                                         published = published,
                                         updatedAt = System.currentTimeMillis(),
-                                        scheduledStartAt = scheduleTimestamp,
-                                        scheduledEndAt = endTimestamp,
+                                        scheduledStartAt = scheduleTimestamp ?: 0L,
+                                        scheduledEndAt = endTimestamp ?: 0L,
                                         information = information.trim(),
                                         description = description.trim(),
                                         liveStartedAt =
