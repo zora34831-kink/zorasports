@@ -98,38 +98,38 @@ fun TransferCenterPage(modifier: Modifier = Modifier) {
         catch (e: Exception) { error = e.message ?: "Gagal memuat kabar transfer." }
         finally { loading = false }
     }
-    Column(Modifier.fillMaxSize().background(Navy)) {
+    Column(Modifier.fillMaxSize().background(ZoraThemeColors.background)) {
         Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("ZORA SPORTS / TRANSFER DESK", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                Text("Transfer Center", color = White, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                Text("Kabar perpindahan pemain dan aktivitas bursa", color = Muted, fontSize = 11.sp)
+                Text("ZORA SPORTS / TRANSFER DESK", color = ZoraThemeColors.accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Text("Transfer Center", color = ZoraThemeColors.text, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                Text("Kabar perpindahan pemain dan aktivitas bursa", color = ZoraThemeColors.muted, fontSize = 11.sp)
             }
             IconButton(onClick = { refresh++ }, enabled = !loading) { Icon(Icons.Default.Refresh, null, tint = Cyan) }
         }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp).clip(RoundedCornerShape(14.dp)).background(Panel).border(1.dp, Color(0xFF294258), RoundedCornerShape(14.dp)).padding(13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp).clip(RoundedCornerShape(14.dp)).background(ZoraThemeColors.panel).border(1.dp, Color(0xFF294258), RoundedCornerShape(14.dp)).padding(13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
             Icon(Icons.Default.SwapHoriz, null, tint = Cyan, modifier = Modifier.size(25.dp))
             Column {
-                Text("TRANSFER WATCH", color = White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text("Artikel disaring dari feed BBC Sport. Rumor bukan konfirmasi resmi.", color = Muted, fontSize = 9.sp)
+                Text("TRANSFER WATCH", color = ZoraThemeColors.text, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                Text("Artikel disaring dari feed BBC Sport. Rumor bukan konfirmasi resmi.", color = ZoraThemeColors.muted, fontSize = 9.sp)
             }
         }
         when {
-            loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Cyan) }
+            loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = ZoraThemeColors.accent) }
             error != null -> Box(Modifier.fillMaxSize().padding(22.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
-                    Text(error.orEmpty(), color = White, fontSize = 13.sp)
-                    TextButton(onClick = { refresh++ }) { Text("COBA LAGI", color = Cyan) }
+                    Text(error.orEmpty(), color = ZoraThemeColors.text, fontSize = 13.sp)
+                    TextButton(onClick = { refresh++ }) { Text("COBA LAGI", color = ZoraThemeColors.accent) }
                 }
             }
             else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-                item { Text("${articles.size} ARTIKEL TERKAIT TRANSFER", color = Muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp) }
+                item { Text("${articles.size} ARTIKEL TERKAIT TRANSFER", color = ZoraThemeColors.muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp) }
                 items(articles) { article ->
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(Panel).border(1.dp, Color(0xFF294258), RoundedCornerShape(17.dp)).clickable { runCatching { uri.openUri(article.link) } }.padding(15.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
-                        Text("TRANSFER NEWS  •  BBC SPORT", color = Cyan, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                        Text(article.title, color = White, fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.Bold, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                        if (article.summary.isNotBlank()) Text(article.summary, color = Muted, fontSize = 10.sp, lineHeight = 15.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                        Text(article.date, color = Muted, fontSize = 9.sp)
+                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(ZoraThemeColors.panel).border(1.dp, Color(0xFF294258), RoundedCornerShape(17.dp)).clickable { runCatching { uri.openUri(article.link) } }.padding(15.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                        Text("TRANSFER NEWS  •  BBC SPORT", color = ZoraThemeColors.accent, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Text(article.title, color = ZoraThemeColors.text, fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.Bold, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                        if (article.summary.isNotBlank()) Text(article.summary, color = ZoraThemeColors.muted, fontSize = 10.sp, lineHeight = 15.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                        Text(article.date, color = ZoraThemeColors.muted, fontSize = 9.sp)
                     }
                 }
             }
