@@ -46,22 +46,24 @@ private object FootballNewsRepository {
     suspend fun load(): List<FootballNewsItem> = withContext(Dispatchers.IO) {
         val connection = URL(BBC_FEED).openConnection() as HttpURLConnection
         try {
+            connection.instanceFollowRedirects = true
             connection.requestMethod = "GET"
-            connection.setRequestProperty("User-Agent", "ZORASPORTS Android")
-            connection.connectTimeout = 12000
-            connection.readTimeout = 15000
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) ZORASPORTS/1.5")
+            connection.setRequestProperty("Accept", "application/rss+xml, application/xml, text/xml, */*")
+            connection.connectTimeout = 15000
+            connection.readTimeout = 20000
             if (connection.responseCode !in 200..299) {
                 throw IllegalStateException("Sumber berita sedang tidak bisa diakses (HTTP " + connection.responseCode + ").")
             }
 
             val parser = Xml.newPullParser()
-            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
-            connection.inputStream.use { parser.setInput(it, null) }
+            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
+            connection.inputStream.buffered().use { parser.setInput(it, "UTF-8") }
             val results = mutableListOf<FootballNewsItem>()
             var event = parser.eventType
 
             while (event != XmlPullParser.END_DOCUMENT && results.size < 30) {
-                if (event == XmlPullParser.START_TAG && parser.name.equals("item", true)) {
+                if (event == XmlPullParser.START_TAG && parser.name.substringAfter(':').equals("item", true)) {
                     var title = ""
                     var link = ""
                     var description = ""
@@ -72,7 +74,7 @@ private object FootballNewsRepository {
                     while (inside) {
                         event = parser.next()
                         when (event) {
-                            XmlPullParser.START_TAG -> when (parser.name.lowercase()) {
+                            XmlPullParser.START_TAG -> when (parser.name.substringAfter(':').lowercase()) {
                                 "title" -> title = parser.nextText().trim()
                                 "link" -> link = parser.nextText().trim()
                                 "description" -> description = parser.nextText().trim()
@@ -184,14 +186,11 @@ fun FootballNewsPage(modifier: Modifier = Modifier) {
                         fontWeight = FontWeight.Bold, letterSpacing = 1.2.sp)
                 }
                 items(news) { item ->
-                    Surface(
-                        onClick = { runCatching { uriHandler.openUri(item.link) } },
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(18.dp),
-                        color = ZoraThemeColors.panel,
-                        border = androidx.compose.foundation.BorderStroke(1.dp, ZoraThemeColors.border)
+                    Column(
+                        Modifier.fillMaxWidth()
+                            .clickable { runCatching { uriHandler.openUri(item.link) } },
+                        verticalArrangement = Arrangement.spacedBy(7.dp)
                     ) {
-                        Column {
                             if (!item.imageUrl.isNullOrBlank()) {
                                 AsyncImage(
                                     model = item.imageUrl,
@@ -200,7 +199,7 @@ fun FootballNewsPage(modifier: Modifier = Modifier) {
                                     contentScale = ContentScale.Crop
                                 )
                             }
-                            Column(Modifier.padding(15.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                            Column(Modifier.padding(vertical = 12.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
                                 Text("BBC SPORT  •  FOOTBALL", color = ZoraThemeColors.accent,
                                     fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                                 Text(item.title, color = ZoraThemeColors.text,
@@ -226,8 +225,7 @@ fun FootballNewsPage(modifier: Modifier = Modifier) {
                                     }
                                 }
                             }
-                        }
-                    }
+                    HorizontalDivider(color = ZoraThemeColors.border)
                 }
             }
         }
