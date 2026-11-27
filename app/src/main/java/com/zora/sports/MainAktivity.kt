@@ -255,6 +255,10 @@ fun ZoraSportsApp() {
                     FootballNewsPage(modifier = pageModifier)
                 }
 
+                extraPage == "TRANSFER" -> {
+                    TransferCenterPage(modifier = pageModifier)
+                }
+
                 showNotifications -> {
                     NotificationsScreen(
                         modifier = pageModifier,
@@ -319,6 +323,10 @@ fun ZoraSportsApp() {
             onNews = {
                 showHamburger = false
                 extraPage = "BERITA"
+            },
+            onTransfers = {
+                showHamburger = false
+                extraPage = "TRANSFER"
             },
             lightMode = lightMode,
             onThemeChange = {
@@ -450,6 +458,7 @@ fun HamburgerMenu(
     onSupport: () -> Unit,
     onInfo: () -> Unit,
     onNews: () -> Unit,
+    onTransfers: () -> Unit,
     lightMode: Boolean,
     onThemeChange: (Boolean) -> Unit
 ) {
@@ -530,6 +539,13 @@ fun HamburgerMenu(
                     subtitle = "Berita sepak bola terbaru",
                     icon = Icons.Default.Newspaper,
                     onClick = onNews
+                )
+
+                MenuOption(
+                    title = "TRANSFER CENTER",
+                    subtitle = "Kabar transfer dan bursa pemain",
+                    icon = Icons.Default.SwapHoriz,
+                    onClick = onTransfers
                 )
 
                 MenuOption(
