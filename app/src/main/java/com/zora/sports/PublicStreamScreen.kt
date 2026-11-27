@@ -466,17 +466,6 @@ fun PublicStreamScreen(
                             Text("JADWAL SIARAN", color = StreamWhite, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
                             Text("${streams.size} pertandingan tersedia", color = StreamMuted, fontSize = 10.sp)
                         }
-                        Text(
-                            "PILIH EVENT  ›",
-                            color = StreamWhite,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(11.dp))
-                                .background(StreamPanelLight)
-                                .clickable { selectedStream = featured }
-                                .padding(horizontal = 13.dp, vertical = 9.dp)
-                        )
                     }
 
                     LazyColumn(
@@ -493,9 +482,9 @@ fun PublicStreamScreen(
                                     .fillMaxWidth()
                                     .clip(RoundedCornerShape(17.dp))
                                     .background(StreamPanel)
+                                    .border(1.dp, ZoraThemeColors.border.copy(alpha = 0.65f), RoundedCornerShape(17.dp))
                                     .clickable { selectedStream = stream }
-                                    .padding(horizontal = 13.dp, vertical = 13.dp)
-                                    .border(1.dp, ZoraThemeColors.border.copy(alpha = 0.65f), RoundedCornerShape(17.dp)),
+                                    .padding(horizontal = 13.dp, vertical = 13.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
