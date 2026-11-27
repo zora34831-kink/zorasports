@@ -73,11 +73,11 @@ object StreamRepository {
 
                     previous?.published == true ->
                         previous.liveStartedAt.takeIf { it > 0L }
-                            ?: link.scheduledStartAt.takeIf { it > 0L }
+                            ?: link.liveStartedAt.takeIf { it > 0L }
                             ?: now
 
                     else ->
-                        link.scheduledStartAt.takeIf { it > 0L } ?: now
+                        link.liveStartedAt.takeIf { it > 0L } ?: now
                 }
 
                 val finalDesign = link.design.copy(
@@ -88,6 +88,7 @@ object StreamRepository {
                     id = key,
                     updatedAt = now,
                     liveStartedAt = liveStartedAt,
+                    liveEnded = previous?.liveEnded ?: link.liveEnded,
                     design = finalDesign
                 )
 
