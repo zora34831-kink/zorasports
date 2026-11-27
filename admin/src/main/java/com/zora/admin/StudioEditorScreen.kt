@@ -155,6 +155,9 @@ fun StudioEditorScreen(
         mutableStateOf("")
     }
 
+    var liveStatusMessage by remember { mutableStateOf("") }
+    var liveStatusLoading by remember { mutableStateOf(false) }
+
     var uploading by remember {
         mutableStateOf(false)
     }
