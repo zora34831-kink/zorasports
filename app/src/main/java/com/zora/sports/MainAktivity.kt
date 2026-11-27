@@ -1344,6 +1344,14 @@ private fun Header(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
+        Image(
+            painter = painterResource(id = R.drawable.ic_zorasports_logo),
+            contentDescription = "Logo ZORASPORTS",
+            modifier = Modifier
+                .size(42.dp)
+                .padding(end = 9.dp),
+            contentScale = ContentScale.Fit
+        )
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 "ZORASPORTS",
