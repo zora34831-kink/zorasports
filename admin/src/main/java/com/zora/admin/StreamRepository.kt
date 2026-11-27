@@ -113,6 +113,29 @@ object StreamRepository {
             }
     }
 
+    fun setLiveStatus(
+        streamId: String,
+        isLive: Boolean,
+        onResult: (Boolean, String) -> Unit
+    ) {
+        if (streamId.isBlank()) {
+            onResult(false, "ID channel tidak valid")
+            return
+        }
+        val updates = mapOf<String, Any>(
+            "liveEnded" to !isLive,
+            "liveStartedAt" to if (isLive) System.currentTimeMillis() else 0L,
+            "updatedAt" to System.currentTimeMillis()
+        )
+        reference.child(streamId).updateChildren(updates)
+            .addOnSuccessListener {
+                onResult(true, if (isLive) "Channel sekarang LIVE" else "Channel selesai live")
+            }
+            .addOnFailureListener {
+                onResult(false, it.message ?: "Gagal mengubah status live")
+            }
+    }
+
     fun saveDesign(
         streamId: String,
         design: StreamDesign,
