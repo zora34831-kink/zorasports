@@ -105,10 +105,10 @@ fun TransferCenterPage(modifier: Modifier = Modifier) {
                 Text("Transfer Center", color = ZoraThemeColors.text, fontSize = 24.sp, fontWeight = FontWeight.Black)
                 Text("Kabar perpindahan pemain dan aktivitas bursa", color = ZoraThemeColors.muted, fontSize = 11.sp)
             }
-            IconButton(onClick = { refresh++ }, enabled = !loading) { Icon(Icons.Default.Refresh, null, tint = Cyan) }
+            IconButton(onClick = { refresh++ }, enabled = !loading) { Icon(Icons.Default.Refresh, null, tint = ZoraThemeColors.accent) }
         }
         Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp).clip(RoundedCornerShape(14.dp)).background(ZoraThemeColors.panel).border(1.dp, Color(0xFF294258), RoundedCornerShape(14.dp)).padding(13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Icon(Icons.Default.SwapHoriz, null, tint = Cyan, modifier = Modifier.size(25.dp))
+            Icon(Icons.Default.SwapHoriz, null, tint = ZoraThemeColors.accent, modifier = Modifier.size(25.dp))
             Column {
                 Text("TRANSFER WATCH", color = ZoraThemeColors.text, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Text("Artikel disaring dari feed BBC Sport. Rumor bukan konfirmasi resmi.", color = ZoraThemeColors.muted, fontSize = 9.sp)
