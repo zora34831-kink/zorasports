@@ -321,8 +321,10 @@ fun ZoraSportsApp() {
                         3 -> MatchPage(
                             title = "JADWAL PERTANDINGAN",
                             description =
-                                "Lihat pertandingan hari ini dan jadwal mendatang.",
-                            modifier = pageModifier
+                                "Semua pertandingan hari ini.",
+                            modifier = pageModifier,
+                            matchLimit = null,
+                            enableSearch = true
                         )
 
                         4 -> LeaguePage(modifier = pageModifier)
@@ -1113,277 +1115,29 @@ fun HomeScreen(
             }
         }
 
-        item { LiveMatchSection(showHeader = false) }
+        item { LiveMatchSection(showHeader = false, matchLimit = 10, enableSearch = true) }
 
         item {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(
-                    "EXPLORE MORE",
-                    color = Cyan,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = 1.8.sp
-                )
-                Text(
-                    "Jelajahi sepak bola",
-                    color = White,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.ExtraBold
-                )
-            }
-        }
-
-        item { ExploreGrid(onNavigate) }
-
-        item {
-            Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 3.dp, bottom = 8.dp),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp, bottom = 18.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(5.dp)
             ) {
-                Box(Modifier.width(22.dp).height(2.dp).clip(CircleShape).background(Cyan))
-                Spacer(Modifier.width(8.dp))
                 Text(
-                    "ZORASPORTS  /  FOOTBALL NEVER STOPS",
+                    "DISPONSORI OLEH :",
                     color = Muted,
-                    fontSize = 8.sp,
-                    letterSpacing = 1.1.sp
+                    fontSize = 9.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 1.2.sp
                 )
-            }
-        }
-    }
-}
-
-@Composable
-fun Header(
-    onFullscreen: () -> Unit,
-    fullscreen: Boolean,
-    onMenuClick: () -> Unit,
-    onNotificationsClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Row(verticalAlignment = Alignment.CenterVertically) {
-            Box(
-                modifier = Modifier
-                    .size(45.dp)
-                    .clip(RoundedCornerShape(15.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(Color(0xFF1C536D), Color(0xFF10283F))
-                        )
-                    )
-                    .border(1.dp, Cyan.copy(alpha = 0.28f), RoundedCornerShape(15.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Image(
-                    painter = painterResource(id = R.drawable.ic_zorasports_logo),
-                    contentDescription = "Logo ZORASPORTS",
-                    modifier = Modifier.size(34.dp),
-                    contentScale = ContentScale.Fit
-                )
-            }
-            Spacer(Modifier.width(11.dp))
-            Column(verticalArrangement = Arrangement.spacedBy(1.dp)) {
                 Text(
-                    "ZORA",
+                    "ZORA STORE SUMSEL",
                     color = White,
-                    fontSize = 19.sp,
-                    fontWeight = FontWeight.Black,
-                    letterSpacing = 2.3.sp
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.ExtraBold,
+                    letterSpacing = 0.8.sp
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Text(
-                        "SPORTS",
-                        color = Cyan,
-                        fontSize = 9.sp,
-                        fontWeight = FontWeight.ExtraBold,
-                        letterSpacing = 2.8.sp
-                    )
-                    Spacer(Modifier.width(6.dp))
-                    Box(Modifier.width(19.dp).height(1.dp).background(Cyan.copy(alpha = 0.55f)))
-                }
             }
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(7.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            listOf(
-                Triple(if (fullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen, "Layar penuh", onFullscreen),
-                Triple(Icons.Default.NotificationsNone, "Notifikasi", onNotificationsClick),
-                Triple(Icons.Default.Menu, "Menu", onMenuClick)
-            ).forEach { (icon, description, action) ->
-                Surface(
-                    modifier = Modifier
-                        .border(1.dp, ZoraThemeColors.border.copy(alpha = 0.8f), RoundedCornerShape(13.dp))
-                        .clickable { action() },
-                    shape = RoundedCornerShape(13.dp),
-                    color = Panel
-                ) {
-                    Icon(
-                        icon,
-                        contentDescription = description,
-                        tint = White,
-                        modifier = Modifier.padding(10.dp).size(18.dp)
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun SectionHeader(
-    title: String,
-    action: String,
-    onClick: () -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Text(
-            title,
-            color = White,
-            fontSize = 17.sp,
-            fontWeight = FontWeight.Bold
-        )
-
-        Row(
-            modifier = Modifier.clickable { onClick() },
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Text(
-                action,
-                color = Cyan,
-                fontSize = 10.sp
-            )
-
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = Cyan,
-                modifier = Modifier.size(17.dp)
-            )
-        }
-    }
-}
-
-@Composable
-fun ExploreGrid(onNavigate: (Int) -> Unit) {
-    Column(
-        verticalArrangement = Arrangement.spacedBy(10.dp)
-    ) {
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            ExploreCard(
-                "KLASEMEN",
-                "Posisi setiap tim",
-                Icons.Default.EmojiEvents,
-                Modifier.weight(1f)
-            ) {
-                onNavigate(4)
-            }
-
-            ExploreCard(
-                "STATISTIK",
-                "Analisis pertandingan",
-                Icons.Default.BarChart,
-                Modifier.weight(1f)
-            ) {
-                onNavigate(1)
-            }
-        }
-
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(10.dp)
-        ) {
-            ExploreCard(
-                "HASIL",
-                "Pertandingan selesai",
-                Icons.Default.Scoreboard,
-                Modifier.weight(1f)
-            ) {
-                onNavigate(1)
-            }
-
-            ExploreCard(
-                "FAVORIT",
-                "Tim pilihanmu",
-                Icons.Default.Star,
-                Modifier.weight(1f)
-            ) {
-                onNavigate(5)
-            }
-        }
-    }
-}
-
-@Composable
-fun ExploreCard(
-    title: String,
-    subtitle: String,
-    icon: ImageVector,
-    modifier: Modifier = Modifier,
-    onClick: () -> Unit
-) {
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(21.dp))
-            .background(
-                Brush.linearGradient(
-                    listOf(PanelLight, Panel, Color(0xFF101F31))
-                )
-            )
-            .border(
-                1.dp,
-                Brush.linearGradient(
-                    listOf(Cyan.copy(alpha = 0.22f), ZoraThemeColors.border.copy(alpha = 0.35f))
-                ),
-                RoundedCornerShape(21.dp)
-            )
-            .clickable { onClick() }
-            .padding(14.dp)
-    ) {
-        Icon(
-            Icons.Default.NorthEast,
-            contentDescription = null,
-            tint = Color.White.copy(alpha = 0.18f),
-            modifier = Modifier.align(Alignment.TopEnd).size(16.dp)
-        )
-        Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
-            Box(
-                modifier = Modifier
-                    .size(39.dp)
-                    .clip(RoundedCornerShape(13.dp))
-                    .background(Cyan.copy(alpha = 0.12f))
-                    .border(1.dp, Cyan.copy(alpha = 0.15f), RoundedCornerShape(13.dp)),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(icon, contentDescription = title, tint = Cyan, modifier = Modifier.size(21.dp))
-            }
-            Spacer(Modifier.height(14.dp))
-            Text(
-                title,
-                color = White,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.ExtraBold,
-                letterSpacing = 0.5.sp
-            )
-            Spacer(Modifier.height(5.dp))
-            Text(
-                subtitle,
-                color = Muted,
-                fontSize = 9.sp,
-                lineHeight = 13.sp
-            )
         }
     }
 }
@@ -1392,7 +1146,9 @@ fun ExploreCard(
 fun MatchPage(
     title: String,
     description: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    matchLimit: Int? = null,
+    enableSearch: Boolean = true
 ) {
     LazyColumn(
         modifier = modifier.fillMaxSize().background(Navy),
@@ -1413,7 +1169,13 @@ fun MatchPage(
                 Text("UPDATE PERTANDINGAN", color = White, fontSize = 12.sp, fontWeight = FontWeight.ExtraBold, letterSpacing = 0.7.sp)
             }
         }
-        item { LiveMatchSection(showHeader = false) }
+        item {
+            LiveMatchSection(
+                showHeader = false,
+                matchLimit = matchLimit,
+                enableSearch = enableSearch
+            )
+        }
     }
 }
 
