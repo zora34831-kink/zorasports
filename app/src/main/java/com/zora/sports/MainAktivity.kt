@@ -379,21 +379,9 @@ private fun ZoraSplashScreen() {
             .fillMaxSize()
             .background(Color(0xFF071321))
     ) {
-        // Logo kecil tetap ditampilkan di pojok kiri atas.
         Image(
             painter = painterResource(id = R.drawable.ic_zorasports_logo),
             contentDescription = "Logo ZORASPORTS",
-            modifier = Modifier
-                .align(Alignment.TopStart)
-                .padding(start = 20.dp, top = 24.dp)
-                .size(42.dp),
-            contentScale = ContentScale.Fit
-        )
-
-        // Logo utama tetap berada di tengah splash screen.
-        Image(
-            painter = painterResource(id = R.drawable.ic_zorasports_logo),
-            contentDescription = "Logo utama ZORASPORTS",
             modifier = Modifier
                 .size(164.dp)
                 .align(Alignment.Center),
@@ -408,14 +396,14 @@ private fun ZoraSplashScreen() {
             verticalArrangement = Arrangement.spacedBy(5.dp)
         ) {
             Text(
-                text = BuildConfig.VERSION_NAME,
+                text = "ALPHA",
                 color = Color.White,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Bold,
-                letterSpacing = 2.sp
+                letterSpacing = 4.sp
             )
             Text(
-                text = "VERSI APK",
+                text = BuildConfig.VERSION_NAME,
                 color = Color(0xFF91A4B8),
                 fontSize = 9.sp,
                 fontWeight = FontWeight.Medium,
@@ -424,7 +412,6 @@ private fun ZoraSplashScreen() {
         }
     }
 }
-
 @Composable
 fun LiquidGlassNavigationBar(
     tabs: List<AppTab>,
