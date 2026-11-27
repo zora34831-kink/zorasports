@@ -1083,11 +1083,11 @@ fun HomeScreen(
                     .clip(RoundedCornerShape(29.dp))
                     .background(
                         Brush.linearGradient(
-                            colors = listOf(
-                                Color(0xFF164D69),
-                                Color(0xFF102D47),
-                                Color(0xFF101E34)
-                            )
+                            colors = if (ZoraThemeColors.isLight) {
+                                listOf(Color(0xFFEAF5F8), Color(0xFFDCEBF1), Color(0xFFF4F7FA))
+                            } else {
+                                listOf(Color(0xFF164D69), Color(0xFF102D47), Color(0xFF101E34))
+                            }
                         )
                     )
                     .border(
@@ -1129,7 +1129,7 @@ fun HomeScreen(
                         )
                         Text(
                             "THE HOME OF FOOTBALL",
-                            color = Color(0xFFBDEEFF),
+                            color = if (ZoraThemeColors.isLight) Color(0xFF17647A) else Color(0xFFBDEEFF),
                             fontSize = 9.sp,
                             fontWeight = FontWeight.Bold,
                             letterSpacing = 1.7.sp
@@ -1137,7 +1137,7 @@ fun HomeScreen(
                     }
                     Text(
                         "SEMUA AKSI.\nSATU LAYAR.",
-                        color = Color.White,
+                        color = ZoraThemeColors.text,
                         fontSize = 28.sp,
                         lineHeight = 32.sp,
                         fontWeight = FontWeight.Black,
@@ -1145,7 +1145,7 @@ fun HomeScreen(
                     )
                     Text(
                         "Ikuti pertandingan, siaran, dan kabar sepak bola pilihanmu.",
-                        color = Color(0xFFC1D2DF),
+                        color = if (ZoraThemeColors.isLight) Color(0xFF4F6574) else Color(0xFFC1D2DF),
                         fontSize = 11.sp,
                         lineHeight = 16.sp
                     )
