@@ -157,6 +157,7 @@ fun StudioEditorScreen(
 
     var liveStatusMessage by remember { mutableStateOf("") }
     var liveStatusLoading by remember { mutableStateOf(false) }
+    var isLive by remember(stream.id) { mutableStateOf(!stream.liveEnded) }
 
     var uploading by remember {
         mutableStateOf(false)
