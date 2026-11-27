@@ -46,21 +46,54 @@ async function espnMatches(league) {
   return (data.events || []).map((event) => normalizeEspnMatch(event, league));
 }
 
-async function espnStandings(league) {
-  const data = await safeFetch(`${ESPN_STANDINGS}/${league.espn}/standings`);
-  const entries = data.children?.flatMap((group) => group.standings?.entries || []) || data.standings?.entries || [];
-  return entries.map((entry) => {
-    const stats = Object.fromEntries((entry.stats || []).map((item) => [item.name, Number(item.value)]));
-    return {
-      position: Number(stats.rank || 0), team: entry.team?.displayName || "Unknown",
-      logo: entry.team?.logos?.[0]?.href || null, played: Number(stats.gamesPlayed || 0),
-      won: Number(stats.wins || 0), drawn: Number(stats.ties || 0), lost: Number(stats.losses || 0),
-      goalsFor: Number(stats.pointsFor || 0), goalsAgainst: Number(stats.pointsAgainst || 0),
-      goalDifference: Number(stats.pointDifferential || 0), points: Number(stats.points || 0), source: "ESPN"
-    };
-  });
+function currentSeasonStartYear() {
+  const now = new Date();
+  return now.getUTCMonth() >= 6 ? now.getUTCFullYear() : now.getUTCFullYear() - 1;
 }
 
+async function espnStandings(league) {
+  // Pin ESPN to the current football season; do not rely on its default season.
+  const season = currentSeasonStartYear();
+  const data = await safeFetch(`${ESPN_STANDINGS}/${league.espn}/standings?season=${season}`);
+
+  const returnedSeason = Number(data.season?.year || 0);
+  if (!returnedSeason || returnedSeason !== season) {
+    throw new Error(`ESPN returned an unverified/wrong season (expected ${season}, got ${returnedSeason || "unknown"}); refusing to publish this table`);
+  }
+
+  const entries = data.children?.flatMap((group) => group.standings?.entries || []) || data.standings?.entries || [];
+  if (!entries.length) throw new Error("ESPN standings table is empty");
+
+  const rows = entries.map((entry) => {
+    const stats = Object.fromEntries((entry.stats || []).map((item) => [item.name, Number(item.value)]));
+    const played = Number(stats.gamesPlayed || 0);
+    const won = Number(stats.wins || 0);
+    const drawn = Number(stats.ties || 0);
+    const lost = Number(stats.losses || 0);
+    const goalsFor = Number(stats.pointsFor || 0);
+    const goalsAgainst = Number(stats.pointsAgainst || 0);
+    const points = Number(stats.points || 0);
+
+    if (played < 0 || played > 50 || won + drawn + lost !== played) {
+      throw new Error(`Invalid match statistics for ${entry.team?.displayName || "unknown team"}`);
+    }
+    if (points !== won * 3 + drawn) {
+      throw new Error(`Points validation failed for ${entry.team?.displayName || "unknown team"}`);
+    }
+
+    return {
+      position: Number(stats.rank || 0), team: entry.team?.displayName || "Unknown",
+      logo: entry.team?.logos?.[0]?.href || null, played, won, drawn, lost,
+      goalsFor, goalsAgainst, goalDifference: Number(stats.pointDifferential ?? goalsFor - goalsAgainst),
+      points, source: "ESPN", season
+    };
+  });
+
+  if (rows.some((row) => !row.position || row.team === "Unknown")) {
+    throw new Error("ESPN returned incomplete team or position data");
+  }
+  return rows;
+}
 function normalizeFdMatch(match, league) {
   const status = ["IN_PLAY", "PAUSED"].includes(match.status) ? "LIVE" : match.status === "FINISHED" ? "FINISHED" : "SCHEDULED";
   return {
