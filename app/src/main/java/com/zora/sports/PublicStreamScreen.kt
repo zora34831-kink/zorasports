@@ -573,6 +573,8 @@ fun PublicStreamScreen(
     selectedStream?.let { stream ->
         StreamPlayerDialog(
             stream = stream,
+            availableStreams = streams,
+            onSelectStream = { selectedStream = it },
             onDismiss = {
                 selectedStream = null
             },
@@ -703,6 +705,28 @@ private fun StreamCard(
     }
 }
 
+@Composable
+private fun StreamChannelPicker(
+    streams: List<StreamLink>,
+    selectedId: String,
+    onSelect: (StreamLink) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    Box {
+        TextButton(onClick = { expanded = true }) {
+            Text("CHANNEL", color = StreamBlue, fontSize = 10.sp, fontWeight = FontWeight.Bold)
+        }
+        DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }, containerColor = StreamPanel) {
+            streams.forEach { item ->
+                DropdownMenuItem(
+                    text = { Text(item.matchName.ifBlank { item.competition.ifBlank { "Channel" } }, color = if (item.id == selectedId) StreamBlue else StreamWhite, maxLines = 1) },
+                    onClick = { expanded = false; onSelect(item) }
+                )
+            }
+        }
+    }
+}
+
 // =====================================================
 // STREAM PLAYER DIALOG
 // =====================================================
@@ -710,6 +734,8 @@ private fun StreamCard(
 @Composable
 private fun StreamPlayerDialog(
     stream: StreamLink,
+    availableStreams: List<StreamLink>,
+    onSelectStream: (StreamLink) -> Unit,
     onDismiss: () -> Unit,
     onExpired: () -> Unit
 ) {
@@ -849,6 +875,12 @@ private fun StreamPlayerDialog(
                         )
                     }
 
+                    StreamChannelPicker(
+                        streams = availableStreams,
+                        selectedId = stream.id,
+                        onSelect = onSelectStream
+                    )
+
                     IconButton(
                         onClick = {
                             fullScreen = false
@@ -898,6 +930,12 @@ private fun StreamPlayerDialog(
                             elapsed = elapsed
                         )
                     }
+
+                    StreamChannelPicker(
+                        streams = availableStreams,
+                        selectedId = stream.id,
+                        onSelect = onSelectStream
+                    )
 
                     IconButton(
                         onClick = {
