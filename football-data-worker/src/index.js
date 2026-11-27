@@ -1,11 +1,11 @@
 const LEAGUES = [
-  { id: "premier-league", name: "Premier League", country: "England", espn: "eng.1", footballData: "PL" },
-  { id: "la-liga", name: "La Liga", country: "Spain", espn: "esp.1", footballData: "PD" },
-  { id: "serie-a", name: "Serie A", country: "Italy", espn: "ita.1", footballData: "SA" },
-  { id: "bundesliga", name: "Bundesliga", country: "Germany", espn: "ger.1", footballData: "BL" },
-  { id: "ligue-1", name: "Ligue 1", country: "France", espn: "fra.1", footballData: "FL" },
+  { id: "premier-league", name: "Premier League", country: "England", espn: "eng.1", footballData: "PL", apiNinjas: "epl" },
+  { id: "la-liga", name: "La Liga", country: "Spain", espn: "esp.1", footballData: "PD", apiNinjas: "laliga" },
+  { id: "serie-a", name: "Serie A", country: "Italy", espn: "ita.1", footballData: "SA", apiNinjas: "seriea" },
+  { id: "bundesliga", name: "Bundesliga", country: "Germany", espn: "ger.1", footballData: "BL", apiNinjas: "bundesliga" },
+  { id: "ligue-1", name: "Ligue 1", country: "France", espn: "fra.1", footballData: "FL", apiNinjas: "ligue1" },
   { id: "liga-1-indonesia", name: "Liga 1 Indonesia", country: "Indonesia", apisports: true },
-  { id: "champions-league", name: "UEFA Champions League", country: "Europe", espn: "uefa.champions", footballData: "CL" }
+  { id: "champions-league", name: "UEFA Champions League", country: "Europe", espn: "uefa.champions", footballData: "CL", apiNinjas: "ucl" }
 ];
 
 const ESPN = "https://site.api.espn.com/apis/site/v2/sports/soccer";
@@ -94,6 +94,48 @@ async function espnStandings(league) {
   }
   return rows;
 }
+
+
+const API_NINJAS = "https://api.api-ninjas.com/v1";
+
+async function apiNinjasStandings(league, env) {
+  if (!env.API_NINJAS_KEY) throw new Error("API_NINJAS_KEY belum dikonfigurasi");
+  if (!league.apiNinjas) throw new Error("Kompetisi belum didukung API Ninjas");
+
+  const season = currentSeasonStartYear();
+  const data = await safeFetch(
+    `${API_NINJAS}/soccerstandings?league=${encodeURIComponent(league.apiNinjas)}&season=${season}`,
+    { "X-Api-Key": env.API_NINJAS_KEY }
+  );
+
+  if (!Array.isArray(data) || !data.length) {
+    throw new Error("API Ninjas mengembalikan klasemen kosong");
+  }
+
+  const rows = data.map((row) => ({
+    position: Number(row.league_rank || row.group_rank || 0),
+    team: row.team?.name || "Unknown",
+    logo: null,
+    played: Number(row.games_played || 0),
+    won: Number(row.wins || 0),
+    drawn: Number(row.draws || 0),
+    lost: Number(row.losses || 0),
+    goalsFor: Number(row.goals_for || 0),
+    goalsAgainst: Number(row.goals_against || 0),
+    goalDifference: Number(row.goal_difference || 0),
+    points: Number(row.points || 0),
+    group: row.group || null,
+    qualification: row.qualification || null,
+    source: "API_NINJAS",
+    season: Number(row.season || season)
+  }));
+
+  if (rows.some((row) => !row.position || row.team === "Unknown")) {
+    throw new Error("API Ninjas mengembalikan data tim atau posisi yang tidak lengkap");
+  }
+  return rows;
+}
+
 function normalizeFdMatch(match, league) {
   const status = ["IN_PLAY", "PAUSED"].includes(match.status) ? "LIVE" : match.status === "FINISHED" ? "FINISHED" : "SCHEDULED";
   return {
@@ -155,10 +197,12 @@ async function apiSports(league, kind, env) {
 async function loadLeagueData(kind, league, env) {
   const providers = league.id === "liga-1-indonesia"
     ? [["API_SPORTS", () => apiSports(league, kind, env)]]
-    : [
-        ["ESPN", () => kind === "matches" ? espnMatches(league) : espnStandings(league)],
-        ["FOOTBALL_DATA", () => kind === "matches" ? footballDataMatches(league, env) : footballDataStandings(league, env)]
-      ];
+    : kind === "standings"
+      ? [["API_NINJAS", () => apiNinjasStandings(league, env)]]
+      : [
+          ["ESPN", () => espnMatches(league)],
+          ["FOOTBALL_DATA", () => footballDataMatches(league, env)]
+        ];
   const errors = [];
   for (const [source, load] of providers) {
     try {
