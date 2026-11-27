@@ -127,6 +127,12 @@ fun ZoraSportsApp() {
     var showHamburger by remember { mutableStateOf(false) }
     var showNotifications by remember { mutableStateOf(false) }
     var extraPage by remember { mutableStateOf("") }
+    var showSplash by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        kotlinx.coroutines.delay(2200)
+        showSplash = false
+    }
 
     fun toggleFullscreen() {
         fullscreen = !fullscreen
@@ -227,6 +233,7 @@ fun ZoraSportsApp() {
             )
         }
     ) {
+        Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             containerColor = Navy,
             bottomBar = {
@@ -334,6 +341,11 @@ fun ZoraSportsApp() {
             }
             }
         }
+
+        if (showSplash) {
+            ZoraSplashScreen()
+        }
+        }
     }
 
     if (showHamburger) {
@@ -358,6 +370,49 @@ fun ZoraSportsApp() {
     }
 }
 
+
+
+@Composable
+private fun ZoraSplashScreen() {
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(Color(0xFF071321)),
+        contentAlignment = Alignment.Center
+    ) {
+        Image(
+            painter = painterResource(id = R.drawable.ic_zorasports_logo),
+            contentDescription = "Logo ZORASPORTS",
+            modifier = Modifier
+                .size(164.dp)
+                .align(Alignment.Center),
+            contentScale = ContentScale.Fit
+        )
+
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 54.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(5.dp)
+        ) {
+            Text(
+                text = "ALPHA",
+                color = Color.White,
+                fontSize = 15.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 4.sp
+            )
+            Text(
+                text = "VERSI APK",
+                color = Color(0xFF91A4B8),
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Medium,
+                letterSpacing = 2.5.sp
+            )
+        }
+    }
+}
 
 @Composable
 fun LiquidGlassNavigationBar(
