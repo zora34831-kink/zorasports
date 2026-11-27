@@ -124,6 +124,11 @@ private object PublicAnnouncementSource {
 private fun AnnouncementNotice() {
     val uriHandler = LocalUriHandler.current
     val context = LocalContext.current
+    val isLight = ZoraThemeColors.isLight
+    val dialogBackground = if (isLight) Color.White else Color(0xFF14283B)
+    val dialogTitle = if (isLight) Color(0xFF142536) else Color.White
+    val dialogText = if (isLight) Color(0xFF24394B) else Color(0xFFEAF2F9)
+    val dialogMuted = if (isLight) Color(0xFF647789) else Color(0xFFB8C8D8)
     val installedVersion = remember {
         runCatching {
             PackageInfoCompat.getLongVersionCode(
@@ -149,15 +154,15 @@ private fun AnnouncementNotice() {
         needsUpdate && current.updatedAt > shownAt) {
         AlertDialog(
             onDismissRequest = { shownAt = current.updatedAt },
-            containerColor = Color(0xFF14283B),
+            containerColor = dialogBackground,
             title = {
-                Text("INFORMASI!", color = Color.White, fontWeight = FontWeight.Bold)
+                Text("INFORMASI!", color = dialogTitle, fontWeight = FontWeight.Bold)
             },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(9.dp)) {
-                    Text(current.information, color = Color(0xFFEAF2F9))
+                    Text(current.information, color = dialogText)
                     if (current.description.isNotBlank()) {
-                        Text(current.description, color = Color(0xFFB8C8D8))
+                        Text(current.description, color = dialogMuted)
                     }
                 }
             },
@@ -187,6 +192,17 @@ private fun AnnouncementNotice() {
 fun UpdateAwareStreamScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
     val uriHandler = LocalUriHandler.current
+    val isLight = ZoraThemeColors.isLight
+    val pageTop = if (isLight) Color(0xFFF5F8FB) else Color(0xFF0A1A2A)
+    val pageBottom = if (isLight) Color(0xFFE6EEF5) else Color(0xFF142D43)
+    val cardColor = if (isLight) Color(0xFFFFFFFF) else Color(0xE91B344A)
+    val cardBorder = if (isLight) Color(0xFFCBD8E3) else Color(0xFF6BAFD0).copy(alpha = 0.35f)
+    val headingColor = if (isLight) Color(0xFF087F9A) else Color(0xFF82D2F5)
+    val mainText = if (isLight) Color(0xFF142536) else Color.White
+    val secondaryText = if (isLight) Color(0xFF40566A) else Color(0xFFD2E1EC)
+    val mutedText = if (isLight) Color(0xFF647789) else Color(0xFFB7C9D8)
+    val noteText = if (isLight) Color(0xFF805313) else Color(0xFFFFD18A)
+    val actionColor = if (isLight) Color(0xFF087F9A) else Color(0xFF328CC8)
     val installedVersion = remember {
         runCatching {
             PackageInfoCompat.getLongVersionCode(
@@ -220,7 +236,7 @@ fun UpdateAwareStreamScreen(modifier: Modifier = Modifier) {
 
     when {
         loading -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-            CircularProgressIndicator(color = Color(0xFF55B9E8))
+            CircularProgressIndicator(color = ZoraThemeColors.accent)
         }
         failed -> Box(modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
             Column(
@@ -230,7 +246,7 @@ fun UpdateAwareStreamScreen(modifier: Modifier = Modifier) {
             ) {
                 Text(
                     "Tidak dapat memeriksa versi aplikasi. Periksa koneksi internet.",
-                    color = Color.White,
+                    color = ZoraThemeColors.text,
                     textAlign = TextAlign.Center
                 )
                 Button(
@@ -246,45 +262,45 @@ fun UpdateAwareStreamScreen(modifier: Modifier = Modifier) {
         }
         mustUpdate && update != null -> Box(
             modifier = modifier.fillMaxSize()
-                .background(Brush.verticalGradient(listOf(Color(0xFF0A1A2A), Color(0xFF142D43))))
+                .background(Brush.verticalGradient(listOf(pageTop, pageBottom)))
                 .padding(22.dp),
             contentAlignment = Alignment.Center
         ) {
             Card(
-                modifier = Modifier.fillMaxWidth().border(1.dp, Color(0xFF6BAFD0).copy(alpha = 0.35f), RoundedCornerShape(26.dp)),
+                modifier = Modifier.fillMaxWidth().border(1.dp, cardBorder, RoundedCornerShape(26.dp)),
                 shape = RoundedCornerShape(26.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xE91B344A))
+                colors = CardDefaults.cardColors(containerColor = cardColor)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
                     verticalArrangement = Arrangement.spacedBy(14.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
-                    Text("INFORMASI!", color = Color(0xFF82D2F5), fontWeight = FontWeight.Bold)
+                    Text("INFORMASI!", color = headingColor, fontWeight = FontWeight.Bold)
                     Text(
                         update.information.ifBlank { "ZORASPORTS MEMERLUKAN UPDATE VERSI BARU" },
-                        color = Color.White,
+                        color = mainText,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
                         textAlign = TextAlign.Center
                     )
                     Text(
                         "UPDATE VERSI ${update.versionName} UNTUK MELIHAT STREAMING",
-                        color = Color(0xFFD2E1EC),
+                        color = secondaryText,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
                     )
                     if (update.description.isNotBlank()) {
-                        Text(update.description, color = Color(0xFFB7C9D8), textAlign = TextAlign.Center)
+                        Text(update.description, color = mutedText, textAlign = TextAlign.Center)
                     }
                     Button(
                         onClick = { uriHandler.openUri(update.link) },
                         enabled = update.link.startsWith("https://") || update.link.startsWith("http://"),
                         modifier = Modifier.fillMaxWidth(),
                         contentPadding = PaddingValues(vertical = 15.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF328CC8))
+                        colors = ButtonDefaults.buttonColors(containerColor = actionColor)
                     ) { Text("DOWNLOAD APK TERBARU", fontWeight = FontWeight.Bold) }
-                    Text("Streaming terkunci sampai APK versi terbaru terpasang.", color = Color(0xFFFFD18A), textAlign = TextAlign.Center)
+                    Text("Streaming terkunci sampai APK versi terbaru terpasang.", color = noteText, textAlign = TextAlign.Center)
                 }
             }
         }
