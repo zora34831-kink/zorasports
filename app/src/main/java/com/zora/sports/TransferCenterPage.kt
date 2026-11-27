@@ -83,6 +83,46 @@ private object TransferCenterRepository {
 
 @Composable
 fun TransferCenterPage(modifier: Modifier = Modifier) {
+    var selectedSection by remember { mutableStateOf("TRANSFER") }
+    Column(modifier.fillMaxSize().background(ZoraThemeColors.background)) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("ZORA SPORTS / MARKET", color = ZoraThemeColors.accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Text("Market", color = ZoraThemeColors.text, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                Text("Berita transfer dan kabar sepak bola", color = ZoraThemeColors.muted, fontSize = 11.sp)
+            }
+        }
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 4.dp)
+                .clip(RoundedCornerShape(13.dp)).background(ZoraThemeColors.panel).padding(4.dp),
+            horizontalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            listOf("TRANSFER" to "Transfer Pemain", "NEWS" to "Berita Bola").forEach { (key, label) ->
+                val active = selectedSection == key
+                Box(
+                    Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
+                        .background(if (active) ZoraThemeColors.accent else Color.Transparent)
+                        .clickable { selectedSection = key }.padding(vertical = 11.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(label, color = if (active) Color(0xFF071522) else ZoraThemeColors.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
+        if (selectedSection == "TRANSFER") {
+            TransferArticlesContent(Modifier.weight(1f))
+        } else {
+            FootballNewsPage(modifier = Modifier.weight(1f))
+        }
+    }
+}
+
+@Composable
+private fun TransferArticlesContent(modifier: Modifier = Modifier) {
     val uri = LocalUriHandler.current
     var articles by remember { mutableStateOf<List<TransferArticle>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
@@ -98,34 +138,45 @@ fun TransferCenterPage(modifier: Modifier = Modifier) {
         catch (e: Exception) { error = e.message ?: "Gagal memuat kabar transfer." }
         finally { loading = false }
     }
-    Column(Modifier.fillMaxSize().background(ZoraThemeColors.background)) {
-        Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 16.dp), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("ZORA SPORTS / TRANSFER DESK", color = ZoraThemeColors.accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                Text("Transfer Center", color = ZoraThemeColors.text, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                Text("Kabar perpindahan pemain dan aktivitas bursa", color = ZoraThemeColors.muted, fontSize = 11.sp)
-            }
-            IconButton(onClick = { refresh++ }, enabled = !loading) { Icon(Icons.Default.Refresh, null, tint = ZoraThemeColors.accent) }
-        }
-        Row(Modifier.fillMaxWidth().padding(horizontal = 18.dp).clip(RoundedCornerShape(14.dp)).background(ZoraThemeColors.panel).border(1.dp, Color(0xFF294258), RoundedCornerShape(14.dp)).padding(13.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            Icon(Icons.Default.SwapHoriz, null, tint = ZoraThemeColors.accent, modifier = Modifier.size(25.dp))
-            Column {
+    Column(modifier.fillMaxSize()) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp)
+                .clip(RoundedCornerShape(14.dp)).background(ZoraThemeColors.panel)
+                .border(1.dp, Color(0xFF294258), RoundedCornerShape(14.dp)).padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            Icon(Icons.Default.SwapHoriz, null, tint = ZoraThemeColors.accent, modifier = Modifier.size(24.dp))
+            Column(Modifier.weight(1f)) {
                 Text("TRANSFER WATCH", color = ZoraThemeColors.text, fontSize = 11.sp, fontWeight = FontWeight.Bold)
-                Text("Artikel disaring dari feed BBC Sport. Rumor bukan konfirmasi resmi.", color = ZoraThemeColors.muted, fontSize = 9.sp)
+                Text("Rumor transfer bukan konfirmasi resmi.", color = ZoraThemeColors.muted, fontSize = 9.sp)
+            }
+            IconButton(onClick = { refresh++ }, enabled = !loading) {
+                Icon(Icons.Default.Refresh, "Muat ulang", tint = ZoraThemeColors.accent)
             }
         }
         when {
-            loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = ZoraThemeColors.accent) }
-            error != null -> Box(Modifier.fillMaxSize().padding(22.dp), contentAlignment = Alignment.Center) {
+            loading -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator(color = ZoraThemeColors.accent)
+            }
+            error != null -> Box(Modifier.weight(1f).fillMaxWidth().padding(22.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(error.orEmpty(), color = ZoraThemeColors.text, fontSize = 13.sp)
                     TextButton(onClick = { refresh++ }) { Text("COBA LAGI", color = ZoraThemeColors.accent) }
                 }
             }
-            else -> LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(18.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
+            else -> LazyColumn(
+                Modifier.weight(1f).fillMaxWidth(),
+                contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(11.dp)
+            ) {
                 item { Text("${articles.size} ARTIKEL TERKAIT TRANSFER", color = ZoraThemeColors.muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp) }
                 items(articles) { article ->
-                    Column(Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(ZoraThemeColors.panel).border(1.dp, Color(0xFF294258), RoundedCornerShape(17.dp)).clickable { runCatching { uri.openUri(article.link) } }.padding(15.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                    Column(
+                        Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(ZoraThemeColors.panel)
+                            .border(1.dp, Color(0xFF294258), RoundedCornerShape(17.dp))
+                            .clickable { runCatching { uri.openUri(article.link) } }.padding(15.dp),
+                        verticalArrangement = Arrangement.spacedBy(7.dp)
+                    ) {
                         Text("TRANSFER NEWS  •  BBC SPORT", color = ZoraThemeColors.accent, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                         Text(article.title, color = ZoraThemeColors.text, fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.Bold, maxLines = 3, overflow = TextOverflow.Ellipsis)
                         if (article.summary.isNotBlank()) Text(article.summary, color = ZoraThemeColors.muted, fontSize = 10.sp, lineHeight = 15.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
