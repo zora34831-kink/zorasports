@@ -4,7 +4,6 @@ const LEAGUES = [
   { id: "serie-a", name: "Serie A", country: "Italy", espn: "ita.1", footballData: "SA", apiNinjas: "seriea" },
   { id: "bundesliga", name: "Bundesliga", country: "Germany", espn: "ger.1", footballData: "BL", apiNinjas: "bundesliga" },
   { id: "ligue-1", name: "Ligue 1", country: "France", espn: "fra.1", footballData: "FL", apiNinjas: "ligue1" },
-  { id: "liga-1-indonesia", name: "Liga 1 Indonesia", country: "Indonesia", apisports: true },
   { id: "champions-league", name: "UEFA Champions League", country: "Europe", espn: "uefa.champions", footballData: "CL", apiNinjas: "ucl" }
 ];
 
@@ -125,7 +124,7 @@ async function apiNinjasStandings(league, env) {
     goalDifference: Number(row.goal_difference || 0),
     points: Number(row.points || 0),
     group: row.group || null,
-    qualification: row.qualification || null,
+    qualification: null,
     source: "API_NINJAS",
     season: Number(row.season || season)
   }));
@@ -133,6 +132,20 @@ async function apiNinjasStandings(league, env) {
   if (rows.some((row) => !row.position || row.team === "Unknown")) {
     throw new Error("API Ninjas mengembalikan data tim atau posisi yang tidak lengkap");
   }
+
+  // Reject inconsistent standings instead of publishing misleading values.
+  for (const row of rows) {
+    if (row.played !== row.won + row.drawn + row.lost) {
+      throw new Error(`Validasi jumlah pertandingan gagal untuk ${row.team}`);
+    }
+    if (row.points !== row.won * 3 + row.drawn) {
+      throw new Error(`Validasi poin gagal untuk ${row.team}`);
+    }
+    if (row.goalDifference !== row.goalsFor - row.goalsAgainst) {
+      throw new Error(`Validasi selisih gol gagal untuk ${row.team}`);
+    }
+  }
+
   return rows;
 }
 
