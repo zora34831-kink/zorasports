@@ -2,10 +2,17 @@
 package com.zora.sports
 
 import android.content.pm.ActivityInfo
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.togetherWith
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -236,27 +243,40 @@ fun ZoraSportsApp() {
                         .fillMaxSize()
                 }
 
+            val pageKey = when {
+                extraPage.isNotEmpty() -> "extra:$extraPage"
+                showNotifications -> "notifications"
+                else -> "tab:$selectedTab"
+            }
+            AnimatedContent(
+                targetState = pageKey,
+                transitionSpec = {
+                    (fadeIn(tween(190)) + slideInHorizontally(tween(230)) { it / 16 }) togetherWith
+                        (fadeOut(tween(130)) + slideOutHorizontally(tween(190)) { -it / 20 })
+                },
+                label = "zora_page_transition"
+            ) { targetPage ->
             when {
-                extraPage == "DUKUNGAN" -> {
+                targetPage == "extra:DUKUNGAN" -> {
                     SupportPage(
                         modifier = pageModifier,
                         onBack = { extraPage = "" }
                     )
                 }
 
-                extraPage == "INFO APK" -> {
+                targetPage == "extra:INFO APK" -> {
                     AppInfoPage(
                         modifier = pageModifier,
                         onBack = { extraPage = "" }
                     )
                 }
 
-                extraPage == "BERITA" -> {
+                targetPage == "extra:BERITA" -> {
                     FootballNewsPage(modifier = pageModifier)
                 }
 
 
-                showNotifications -> {
+                targetPage == "notifications" -> {
                     NotificationsScreen(
                         modifier = pageModifier,
                         onBack = {
@@ -266,7 +286,8 @@ fun ZoraSportsApp() {
                 }
 
                 else -> {
-                    when (selectedTab) {
+                    val targetTab = targetPage.removePrefix("tab:").toIntOrNull() ?: selectedTab
+                    when (targetTab) {
                         0 -> HomeScreen(
                             modifier = pageModifier,
                             onNavigate = { selectedTab = it },
@@ -302,6 +323,7 @@ fun ZoraSportsApp() {
                         5 -> TransferCenterPage(modifier = pageModifier)
                     }
                 }
+            }
             }
         }
     }
@@ -381,15 +403,15 @@ fun LiquidGlassNavigationBar(
                 val selected = selectedTab == index
                 val iconScale by animateFloatAsState(
                     targetValue = if (selected) 1.13f else 1f,
-                    animationSpec = tween(
-                        durationMillis = 360,
-                        easing = FastOutSlowInEasing
+                    animationSpec = spring(
+                        dampingRatio = 0.62f,
+                        stiffness = 520f
                     ),
                     label = "nav_icon_scale"
                 )
                 val tint by animateColorAsState(
                     targetValue = if (selected) Color.White else Color(0xFF9EADBD),
-                    animationSpec = tween(280),
+                    animationSpec = spring(dampingRatio = 0.82f, stiffness = 650f),
                     label = "nav_icon_tint"
                 )
                 val pillColor by animateColorAsState(
@@ -398,7 +420,7 @@ fun LiquidGlassNavigationBar(
                     } else {
                         Color.Transparent
                     },
-                    animationSpec = tween(320),
+                    animationSpec = spring(dampingRatio = 0.78f, stiffness = 560f),
                     label = "nav_pill"
                 )
 
@@ -442,6 +464,16 @@ fun LiquidGlassNavigationBar(
                 }
             }
         }
+
+        Box(
+            modifier = Modifier
+                .align(Alignment.TopCenter)
+                .padding(top = 1.dp)
+                .fillMaxWidth(0.42f)
+                .height(1.dp)
+                .clip(CircleShape)
+                .background(Color.White.copy(alpha = 0.42f))
+        )
     }
 }
 
