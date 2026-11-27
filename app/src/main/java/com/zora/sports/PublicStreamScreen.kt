@@ -539,12 +539,11 @@ fun PublicStreamScreen(
                                         )
                                     }
                                 }
-                                val now = System.currentTimeMillis()
                                 val ended = stream.liveEnded
                                 val live = !ended && stream.liveStartedAt > 0L
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
-                                        if (ended) "SELESAI LIVE" else if (live) "LIVE" else formatWib(stream.scheduledStartAt),
+                                        if (ended) "SELESAI LIVE" else if (live) "LIVE" else if (stream.scheduledStartAt > 0L) formatWib(stream.scheduledStartAt) else "BELUM DIJADWALKAN",
                                         color = Color.White,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 10.sp,
@@ -573,7 +572,8 @@ fun PublicStreamScreen(
         }
     }
 
-    selectedStream?.let { stream ->
+    selectedStream?.let { selected ->
+        val stream = streams.firstOrNull { it.id == selected.id } ?: selected
         StreamPlayerDialog(
             stream = stream,
             availableStreams = streams,
