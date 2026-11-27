@@ -315,6 +315,55 @@ fun StudioEditorScreen(
                 )
             }
 
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Button(
+                    onClick = {
+                        liveStatusLoading = true
+                        liveStatusMessage = ""
+                        StreamRepository.setLiveStatus(stream.id, true) { success, result ->
+                            liveStatusLoading = false
+                            liveStatusMessage = result
+                            if (success) isLive = true
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = !liveStatusLoading && !isLive && stream.id.isNotBlank()
+                ) {
+                    Text(if (liveStatusLoading && !isLive) "Memproses..." else "LIVE")
+                }
+
+                OutlinedButton(
+                    onClick = {
+                        liveStatusLoading = true
+                        liveStatusMessage = ""
+                        StreamRepository.setLiveStatus(stream.id, false) { success, result ->
+                            liveStatusLoading = false
+                            liveStatusMessage = result
+                            if (success) isLive = false
+                        }
+                    },
+                    modifier = Modifier.weight(1f),
+                    enabled = !liveStatusLoading && isLive && stream.id.isNotBlank()
+                ) {
+                    Text(if (liveStatusLoading && isLive) "Memproses..." else "SELESAI LIVE")
+                }
+            }
+
+            if (liveStatusLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+
+            if (liveStatusMessage.isNotBlank()) {
+                Text(
+                    liveStatusMessage,
+                    color = MaterialTheme.colorScheme.primary,
+                    fontSize = 12.sp
+                )
+            }
+
             BoxWithConstraints(
                 modifier = Modifier
                     .fillMaxWidth()
