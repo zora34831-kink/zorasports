@@ -8,6 +8,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.SportsSoccer
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -28,7 +29,12 @@ import retrofit2.HttpException
 import java.io.IOException
 
 @Composable
-fun LiveMatchSection(showHeader: Boolean = true) {
+fun LiveMatchSection(
+    showHeader: Boolean = true,
+    matchLimit: Int? = 10,
+    enableSearch: Boolean = false
+) {
+    var searchQuery by remember { mutableStateOf("") }
     var matches by remember { mutableStateOf<List<FixtureItem>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -103,6 +109,38 @@ fun LiveMatchSection(showHeader: Boolean = true) {
             }
         }
 
+        if (enableSearch) {
+            OutlinedTextField(
+                value = searchQuery,
+                onValueChange = { searchQuery = it },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                placeholder = { Text("Cari tim atau kompetisi...", color = ZoraThemeColors.muted, fontSize = 12.sp) },
+                leadingIcon = {
+                    Icon(Icons.Default.Search, contentDescription = "Cari pertandingan", tint = ZoraThemeColors.muted)
+                },
+                shape = RoundedCornerShape(14.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedTextColor = ZoraThemeColors.text,
+                    unfocusedTextColor = ZoraThemeColors.text,
+                    focusedBorderColor = ZoraThemeColors.accent,
+                    unfocusedBorderColor = ZoraThemeColors.border,
+                    cursorColor = ZoraThemeColors.accent,
+                    focusedContainerColor = ZoraThemeColors.panel,
+                    unfocusedContainerColor = ZoraThemeColors.panel
+                )
+            )
+        }
+
+        val filteredMatches = matches.filter { match ->
+            val query = searchQuery.trim()
+            query.isEmpty() ||
+                match.teams?.home?.name?.contains(query, ignoreCase = true) == true ||
+                match.teams?.away?.name?.contains(query, ignoreCase = true) == true ||
+                match.league?.name?.contains(query, ignoreCase = true) == true
+        }
+        val visibleMatches = if (matchLimit == null) filteredMatches else filteredMatches.take(matchLimit)
+
         when {
             loading -> {
                 Column(
@@ -136,7 +174,7 @@ fun LiveMatchSection(showHeader: Boolean = true) {
                     }
                 }
             }
-            matches.isEmpty() -> {
+            filteredMatches.isEmpty() -> {
                 Column(
                     modifier = Modifier.fillMaxWidth().clip(RoundedCornerShape(20.dp))
                         .background(ZoraThemeColors.panel.copy(alpha = 0.82f))
@@ -147,23 +185,24 @@ fun LiveMatchSection(showHeader: Boolean = true) {
                 ) {
                     Icon(Icons.Default.SportsSoccer, contentDescription = null,
                         tint = ZoraThemeColors.muted, modifier = Modifier.size(25.dp))
-                    Text(if (liveOnly) "Belum ada pertandingan live" else "Belum ada jadwal hari ini",
-                        color = ZoraThemeColors.text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        if (searchQuery.isNotBlank()) "Pertandingan tidak ditemukan"
+                        else if (liveOnly) "Belum ada pertandingan live"
+                        else "Belum ada jadwal hari ini",
+                        color = ZoraThemeColors.text, fontSize = 12.sp, fontWeight = FontWeight.SemiBold
+                    )
                     Text("Coba periksa kembali nanti.", color = ZoraThemeColors.muted, fontSize = 10.sp)
                 }
             }
             else -> {
-                // Batasi komposisi kartu agar respons UI tetap ringan pada
-                // perangkat dengan memori dan kemampuan pemrosesan terbatas.
-                val visibleMatches = matches.take(10)
                 visibleMatches.forEach { match ->
                     key(match.fixture?.id ?: match.hashCode()) {
                         ApiMatchCard(match)
                     }
                 }
-                if (matches.size > visibleMatches.size) {
+                if (filteredMatches.size > visibleMatches.size) {
                     Text(
-                        "Menampilkan ${visibleMatches.size} dari ${matches.size} pertandingan. Buka halaman jadwal untuk melihat pembaruan lainnya.",
+                        "Menampilkan " + visibleMatches.size + " dari " + filteredMatches.size + " pertandingan.",
                         color = ZoraThemeColors.muted,
                         fontSize = 10.sp,
                         lineHeight = 15.sp,
