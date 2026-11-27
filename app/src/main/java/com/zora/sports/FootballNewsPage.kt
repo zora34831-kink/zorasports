@@ -155,14 +155,14 @@ fun FootballNewsPage(modifier: Modifier = Modifier) {
         }
 
         when {
-            loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+            loading -> Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(12.dp)) {
                     CircularProgressIndicator(color = ZoraThemeColors.accent)
                     Text("Mengambil berita terbaru...", color = ZoraThemeColors.muted, fontSize = 12.sp)
                 }
             }
-            error != null -> Box(Modifier.fillMaxSize().padding(22.dp), contentAlignment = Alignment.Center) {
+            error != null -> Box(Modifier.weight(1f).fillMaxWidth().padding(22.dp), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally,
                     verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Icon(Icons.Default.Newspaper, null, tint = ZoraThemeColors.muted,
@@ -174,7 +174,7 @@ fun FootballNewsPage(modifier: Modifier = Modifier) {
                 }
             }
             else -> LazyColumn(
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.weight(1f).fillMaxWidth(),
                 contentPadding = PaddingValues(start = 18.dp, end = 18.dp, bottom = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(13.dp)
             ) {
