@@ -17,6 +17,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.graphics.Color
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.ui.text.style.TextOverflow
@@ -79,7 +80,23 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            MaterialTheme {
+            val darkMode = isSystemInDarkTheme()
+            val adminColors = if (darkMode) darkColorScheme(
+                primary = Color(0xFF66C5E8),
+                background = Color(0xFF0B1420),
+                surface = Color(0xFF142235),
+                onBackground = Color(0xFFEAF2FA),
+                onSurface = Color(0xFFEAF2FA),
+                onSurfaceVariant = Color(0xFFA7B6C7)
+            ) else lightColorScheme(
+                primary = Color(0xFF176B9B),
+                background = Color(0xFFF3F6FA),
+                surface = Color.White,
+                onBackground = Color(0xFF172536),
+                onSurface = Color(0xFF172536),
+                onSurfaceVariant = Color(0xFF617386)
+            )
+            MaterialTheme(colorScheme = adminColors) {
                 AdminApp(
                     loggedIn = loggedIn,
                     loginMessage = loginMessage,
@@ -148,7 +165,7 @@ fun AdminApp(
 
     Surface(
         modifier = Modifier.fillMaxSize(),
-        color = Color(0xFFF2F5FA)
+        color = MaterialTheme.colorScheme.background
     ) {
         when {
             !loggedIn -> {
