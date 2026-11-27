@@ -188,7 +188,8 @@ fun ZoraSportsApp() {
         AppTab("Siaran", Icons.Default.PlayCircle),
         AppTab("Jadwal", Icons.Default.CalendarMonth),
         AppTab("Liga", Icons.Default.EmojiEvents),
-        AppTab("Favorit", Icons.Default.Star)
+        AppTab("Favorit", Icons.Default.Star),
+        AppTab("Berita", Icons.Default.Newspaper)
     )
 
     MaterialTheme(
@@ -295,6 +296,7 @@ fun ZoraSportsApp() {
 
                         4 -> LeaguePage(modifier = pageModifier)
                         5 -> FavoritePage(modifier = pageModifier)
+                        6 -> FootballNewsPage(modifier = pageModifier)
                     }
                 }
             }
