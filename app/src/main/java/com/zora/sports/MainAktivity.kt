@@ -204,8 +204,14 @@ fun ZoraSportsApp() {
                 primary = Cyan,
                 background = Navy,
                 surface = Panel,
+                surfaceVariant = PanelLight,
                 onBackground = White,
-                onSurface = White
+                onSurface = White,
+                onSurfaceVariant = Muted,
+                outline = ZoraThemeColors.border,
+                surfaceTint = Cyan,
+                inverseSurface = if (lightMode) Color(0xFF182B3A) else Color(0xFFE8F1F7),
+                inverseOnSurface = if (lightMode) Color(0xFFF4FAFF) else Color(0xFF142536)
             )
         } else {
             darkColorScheme(
@@ -385,9 +391,9 @@ fun LiquidGlassNavigationBar(
                 width = 1.dp,
                 brush = Brush.linearGradient(
                     listOf(
-                        Color.White.copy(alpha = 0.34f),
+                        (if (ZoraThemeColors.isLight) Color(0xFF7890A2) else Color.White).copy(alpha = 0.34f),
                         Cyan.copy(alpha = 0.20f),
-                        Color.White.copy(alpha = 0.08f)
+                        (if (ZoraThemeColors.isLight) Color(0xFF7890A2) else Color.White).copy(alpha = 0.08f)
                     )
                 ),
                 shape = RoundedCornerShape(27.dp)
@@ -410,7 +416,7 @@ fun LiquidGlassNavigationBar(
                     label = "nav_icon_scale"
                 )
                 val tint by animateColorAsState(
-                    targetValue = if (selected) Color.White else Color(0xFF9EADBD),
+                    targetValue = if (selected) (if (ZoraThemeColors.isLight) Color(0xFF142536) else Color.White) else Muted,
                     animationSpec = spring(dampingRatio = 0.82f, stiffness = 650f),
                     label = "nav_icon_tint"
                 )
@@ -447,7 +453,7 @@ fun LiquidGlassNavigationBar(
                     )
                     Text(
                         text = tab.title,
-                        color = if (selected) Color.White else Color(0xFF9EADBD),
+                        color = if (selected) White else Muted,
                         fontSize = 8.sp,
                         fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
                         maxLines = 1
@@ -472,7 +478,7 @@ fun LiquidGlassNavigationBar(
                 .fillMaxWidth(0.42f)
                 .height(1.dp)
                 .clip(CircleShape)
-                .background(Color.White.copy(alpha = 0.42f))
+                .background((if (ZoraThemeColors.isLight) Color(0xFF7890A2) else Color.White).copy(alpha = 0.42f))
         )
     }
 }
