@@ -50,13 +50,31 @@ fun ZoraSportsTvApp() {
         if (settings) settings = false else selected = 0
     }
     MaterialTheme(
-        colorScheme = darkColorScheme(
-            primary = ZoraThemeColors.accent,
-            background = ZoraThemeColors.background,
-            surface = ZoraThemeColors.panel,
-            onBackground = ZoraThemeColors.text,
-            onSurface = ZoraThemeColors.text
-        )
+        colorScheme = if (ZoraThemeColors.isLight) {
+            lightColorScheme(
+                primary = ZoraThemeColors.accent,
+                background = ZoraThemeColors.background,
+                surface = ZoraThemeColors.panel,
+                surfaceVariant = ZoraThemeColors.panelLight,
+                onBackground = ZoraThemeColors.text,
+                onSurface = ZoraThemeColors.text,
+                onSurfaceVariant = ZoraThemeColors.muted,
+                outline = ZoraThemeColors.border,
+                surfaceTint = ZoraThemeColors.accent
+            )
+        } else {
+            darkColorScheme(
+                primary = ZoraThemeColors.accent,
+                background = ZoraThemeColors.background,
+                surface = ZoraThemeColors.panel,
+                surfaceVariant = ZoraThemeColors.panelLight,
+                onBackground = ZoraThemeColors.text,
+                onSurface = ZoraThemeColors.text,
+                onSurfaceVariant = ZoraThemeColors.muted,
+                outline = ZoraThemeColors.border,
+                surfaceTint = ZoraThemeColors.accent
+            )
+        }
     ) {
         Row(
             Modifier.fillMaxSize().background(ZoraThemeColors.background)
