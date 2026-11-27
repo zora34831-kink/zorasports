@@ -324,6 +324,7 @@ fun PublicStreamScreen(
                         modifier = Modifier.fillMaxWidth()
                             .clip(RoundedCornerShape(22.dp))
                             .background(StreamPanel)
+                            .border(1.dp, ZoraThemeColors.border, RoundedCornerShape(22.dp))
                             .padding(22.dp),
                         horizontalAlignment = Alignment.CenterHorizontally,
                         verticalArrangement = Arrangement.spacedBy(12.dp)
@@ -348,8 +349,12 @@ fun PublicStreamScreen(
                         Button(
                             onClick = { runCatching { uriHandler.openUri(requiredRelease.apkUrl) } },
                             modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(13.dp)
-                        ) { Text("UPDATE SEKARANG") }
+                            shape = RoundedCornerShape(13.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = StreamBlue,
+                                contentColor = if (ZoraThemeColors.isLight) Color.White else StreamBackground
+                            )
+                        ) { Text("UPDATE SEKARANG", fontWeight = FontWeight.Bold) }
                         Text(
                             "Versi terpasang: ${currentVersionCode} • Versi minimum: ${requiredRelease.minimumVersionCode}",
                             color = StreamMuted,
