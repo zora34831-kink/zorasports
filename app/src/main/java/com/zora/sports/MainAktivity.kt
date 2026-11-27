@@ -188,8 +188,7 @@ fun ZoraSportsApp() {
         AppTab("Siaran", Icons.Default.PlayCircle),
         AppTab("Jadwal", Icons.Default.CalendarMonth),
         AppTab("Liga", Icons.Default.EmojiEvents),
-        AppTab("Favorit", Icons.Default.Star),
-        AppTab("Berita", Icons.Default.Newspaper)
+        AppTab("Favorit", Icons.Default.Star)
     )
 
     MaterialTheme(
@@ -252,6 +251,10 @@ fun ZoraSportsApp() {
                     )
                 }
 
+                extraPage == "BERITA" -> {
+                    FootballNewsPage(modifier = pageModifier)
+                }
+
                 showNotifications -> {
                     NotificationsScreen(
                         modifier = pageModifier,
@@ -296,7 +299,6 @@ fun ZoraSportsApp() {
 
                         4 -> LeaguePage(modifier = pageModifier)
                         5 -> FavoritePage(modifier = pageModifier)
-                        6 -> FootballNewsPage(modifier = pageModifier)
                     }
                 }
             }
@@ -313,6 +315,10 @@ fun ZoraSportsApp() {
             onInfo = {
                 showHamburger = false
                 extraPage = "INFO APK"
+            },
+            onNews = {
+                showHamburger = false
+                extraPage = "BERITA"
             },
             lightMode = lightMode,
             onThemeChange = {
@@ -443,6 +449,7 @@ fun HamburgerMenu(
     onDismiss: () -> Unit,
     onSupport: () -> Unit,
     onInfo: () -> Unit,
+    onNews: () -> Unit,
     lightMode: Boolean,
     onThemeChange: (Boolean) -> Unit
 ) {
@@ -516,6 +523,13 @@ fun HamburgerMenu(
 
                 HorizontalDivider(
                     color = ZoraThemeColors.border
+                )
+
+                MenuOption(
+                    title = "FOOTBALL NEWS",
+                    subtitle = "Berita sepak bola terbaru",
+                    icon = Icons.Default.Newspaper,
+                    onClick = onNews
                 )
 
                 MenuOption(
