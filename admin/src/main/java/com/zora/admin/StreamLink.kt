@@ -33,6 +33,7 @@ data class StreamLink(
     val scheduledStartAt: Long = 0L,
     val liveStartedAt: Long = 0L,
     val scheduledEndAt: Long = 0L,
+    val liveEnded: Boolean = false,
     val information: String = "",
     val description: String = "",
 
