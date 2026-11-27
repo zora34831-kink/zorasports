@@ -109,5 +109,19 @@ app.post("/api/v1/admin/sync", async (req, res) => {
   res.json({ ok: true, completed: result.filter((item) => item.status === "fulfilled").length, failed: result.filter((item) => item.status === "rejected").length, time: now() });
 });
 
+const syncInterval = Math.max(60, Number(process.env.SYNC_INTERVAL_SECONDS || 90)) * 1000;
+async function syncAll() {
+  const tasks = LEAGUES.flatMap((league) =>
+    ["matches", "standings"].map((kind) => getData(kind, league))
+  );
+  await Promise.allSettled(tasks);
+}
+setTimeout(() => {
+  syncAll().catch((error) => console.error("Initial sync failed:", error.message));
+  setInterval(() => {
+    syncAll().catch((error) => console.error("Scheduled sync failed:", error.message));
+  }, syncInterval);
+}, 3000);
+
 const port = Number(process.env.PORT || 3000);
 app.listen(port, () => console.log(`ZORA FOOTBALL DATA listening on ${port}`));
