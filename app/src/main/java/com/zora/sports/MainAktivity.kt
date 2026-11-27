@@ -1279,3 +1279,46 @@ fun InfoCard(
         )
     }
 }
+
+@Composable
+private fun Header(
+    onFullscreen: () -> Unit,
+    fullscreen: Boolean,
+    onMenuClick: () -> Unit,
+    onNotificationsClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                "ZORASPORTS",
+                color = White,
+                fontSize = 22.sp,
+                fontWeight = FontWeight.Black,
+                letterSpacing = 0.4.sp
+            )
+            Text(
+                "FOOTBALL • LIVE • NEWS",
+                color = Muted,
+                fontSize = 9.sp,
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.3.sp
+            )
+        }
+        IconButton(onClick = onNotificationsClick) {
+            Icon(Icons.Default.NotificationsNone, contentDescription = "Notifikasi", tint = White)
+        }
+        IconButton(onClick = onFullscreen) {
+            Icon(
+                if (fullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                contentDescription = "Layar penuh",
+                tint = White
+            )
+        }
+        IconButton(onClick = onMenuClick) {
+            Icon(Icons.Default.Menu, contentDescription = "Menu", tint = White)
+        }
+    }
+}
