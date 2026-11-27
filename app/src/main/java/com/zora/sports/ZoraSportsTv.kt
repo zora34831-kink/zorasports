@@ -4,6 +4,8 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.focusable
+import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsFocusedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -16,12 +18,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.FocusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.draw.scale
 
 private data class TvDestination(val label: String, val icon: ImageVector)
 
@@ -36,10 +40,13 @@ fun ZoraSportsTvApp() {
         TvDestination("JADWAL", Icons.Default.CalendarMonth),
         TvDestination("LIGA", Icons.Default.EmojiEvents),
         TvDestination("FAVORIT", Icons.Default.Star),
+        TvDestination("BERITA", Icons.Default.Newspaper),
         TvDestination("NOTIFIKASI", Icons.Default.Notifications)
     )
     var selected by remember { mutableIntStateOf(0) }
     var settings by remember { mutableStateOf(false) }
+    val firstNavFocus = remember { FocusRequester() }
+    LaunchedEffect(Unit) { runCatching { firstNavFocus.requestFocus() } }
     BackHandler(enabled = settings || selected != 0) {
         if (settings) settings = false else selected = 0
     }
@@ -67,15 +74,28 @@ fun ZoraSportsTvApp() {
                 Spacer(Modifier.height(22.dp))
                 destinations.forEachIndexed { index, item ->
                     val active = selected == index
+                    val interaction = remember { MutableInteractionSource() }
+                    val focused by interaction.collectIsFocusedAsState()
                     Button(
                         onClick = { selected = index },
-                        modifier = Modifier.fillMaxWidth().height(49.dp).focusable(),
-                        shape = RoundedCornerShape(13.dp),
+                        interactionSource = interaction,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(54.dp)
+                            .then(if (index == 0) Modifier.focusRequester(firstNavFocus) else Modifier)
+                            .border(
+                                width = if (focused) 2.dp else 1.dp,
+                                color = if (focused) ZoraThemeColors.accent else if (active) ZoraThemeColors.border else Color.Transparent,
+                                shape = RoundedCornerShape(14.dp)
+                            )
+                            .scale(if (focused) 1.025f else 1f),
+                        shape = RoundedCornerShape(14.dp),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (active) ZoraThemeColors.panelLight else Color.Transparent,
-                            contentColor = if (active) ZoraThemeColors.accent else ZoraThemeColors.muted
+                            containerColor = if (focused) ZoraThemeColors.panelLight.copy(alpha = 0.95f)
+                                else if (active) ZoraThemeColors.panelLight else Color.Transparent,
+                            contentColor = if (active || focused) ZoraThemeColors.accent else ZoraThemeColors.muted
                         ),
-                        contentPadding = PaddingValues(horizontal = 13.dp)
+                        contentPadding = PaddingValues(horizontal = 14.dp)
                     ) {
                         Icon(item.icon, null, Modifier.size(19.dp))
                         Spacer(Modifier.width(12.dp))
@@ -123,6 +143,7 @@ fun ZoraSportsTvApp() {
                         selected == 3 -> MatchPage("JADWAL PERTANDINGAN", "Lihat pertandingan hari ini dan jadwal mendatang.", Modifier.fillMaxSize())
                         selected == 4 -> LeaguePage(Modifier.fillMaxSize())
                         selected == 5 -> FavoritePage(Modifier.fillMaxSize())
+                        selected == 6 -> FootballNewsPage(Modifier.fillMaxSize())
                         else -> NotificationsScreen(Modifier.fillMaxSize(), onBack = { selected = 0 })
                     }
                 }
