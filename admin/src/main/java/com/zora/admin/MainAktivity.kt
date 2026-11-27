@@ -803,15 +803,22 @@ fun StreamEditor(
                                 cleanUrl.startsWith("https://") ||
                                 cleanUrl.startsWith("http://")
 
-                            val scheduleTimestamp = parseScheduleTime(
-                                scheduleDate.trim(),
-                                scheduleTime.trim()
-                            )
-
-                            val endTimestamp = parseScheduleTime(
-                                scheduleDate.trim(),
-                                endTime.trim()
-                            )
+                            val scheduleFieldsFilled = scheduleDate.isNotBlank() ||
+                                scheduleTime.isNotBlank() || endTime.isNotBlank()
+                            val scheduleTimestamp = if (scheduleDate.isBlank() || scheduleTime.isBlank()) {
+                                null
+                            } else {
+                                parseScheduleTime(scheduleDate.trim(), scheduleTime.trim())
+                            }
+                            val parsedEndTimestamp = if (scheduleDate.isBlank() || endTime.isBlank()) {
+                                null
+                            } else {
+                                parseScheduleTime(scheduleDate.trim(), endTime.trim())
+                            }
+                            val endTimestamp = if (
+                                scheduleTimestamp != null && parsedEndTimestamp != null &&
+                                parsedEndTimestamp <= scheduleTimestamp
+                            ) parsedEndTimestamp + 24L * 60L * 60L * 1000L else parsedEndTimestamp
 
                             val hasAnyInput = listOf(
                                 matchName, competition, provider, information, description, url
@@ -822,10 +829,13 @@ fun StreamEditor(
                             } else if (cleanUrl.isNotBlank() && !validUrl) {
                                 error = "URL harus diawali http:// atau https://."
                             } else if (
-                                scheduleTimestamp == null || endTimestamp == null ||
-                                endTimestamp <= (scheduleTimestamp ?: 0L)
+                                scheduleFieldsFilled && scheduleTimestamp == null
                             ) {
-                                error = "Periksa format tanggal serta jam mulai dan selesai."
+                                error = "Isi tanggal dan jam mulai dengan format yang benar."
+                            } else if (
+                                scheduleFieldsFilled && endTime.isNotBlank() && endTimestamp == null
+                            ) {
+                                error = "Periksa format jam selesai."
                             } else {
                                 onSave(
                                     StreamLink(
@@ -839,6 +849,7 @@ fun StreamEditor(
                                         updatedAt = System.currentTimeMillis(),
                                         scheduledStartAt = scheduleTimestamp ?: 0L,
                                         scheduledEndAt = endTimestamp ?: 0L,
+                                        liveEnded = initial?.liveEnded ?: false,
                                         information = information.trim(),
                                         description = description.trim(),
                                         liveStartedAt =
