@@ -28,6 +28,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalUriHandler
@@ -280,22 +281,34 @@ fun PublicStreamScreen(
     ) {
         Spacer(Modifier.height(18.dp))
 
-        Text(
-            text = "SIARAN LANGSUNG",
-            color = StreamWhite,
-            style = MaterialTheme.typography.headlineSmall,
-            fontWeight = FontWeight.Bold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Text("ZORA SPORTS  /  BROADCAST", color = StreamBlue, fontSize = 9.sp,
+                    fontWeight = FontWeight.Bold, letterSpacing = 1.6.sp)
+                Text("Siaran langsung", color = StreamWhite,
+                    style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.ExtraBold)
+                Text("Pertandingan pilihan, dalam satu layar.", color = StreamMuted,
+                    style = MaterialTheme.typography.bodySmall)
+            }
+            Surface(
+                color = StreamPanelLight,
+                shape = RoundedCornerShape(12.dp),
+                border = androidx.compose.foundation.BorderStroke(1.dp, ZoraThemeColors.border)
+            ) {
+                Row(Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    Box(Modifier.size(6.dp).clip(RoundedCornerShape(50)).background(Color(0xFFE35D68)))
+                    Text("ON AIR", color = StreamWhite, fontSize = 9.sp, fontWeight = FontWeight.Bold)
+                }
+            }
+        }
 
-        Spacer(Modifier.height(4.dp))
-
-        Text(
-            text = "Saksikan pertandingan pilihan",
-            color = StreamMuted,
-            style = MaterialTheme.typography.bodyMedium
-        )
-
-        Spacer(Modifier.height(18.dp))
+        Spacer(Modifier.height(17.dp))
 
         when {
             !releaseChecked -> {
@@ -387,8 +400,8 @@ fun PublicStreamScreen(
                         modifier = Modifier
                             .fillMaxWidth()
                             .aspectRatio(16f / 9f)
-                            .clip(RoundedCornerShape(3.dp))
-                            .background(Color.Black)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(Brush.linearGradient(listOf(Color(0xFF1B3D55), Color(0xFF101D2D), Color(0xFF080F19))))
                             .clickable { selectedStream = featured }
                     ) {
                         Column(
@@ -415,10 +428,10 @@ fun PublicStreamScreen(
                             tint = Color.White,
                             modifier = Modifier
                                 .align(Alignment.Center)
-                                .size(58.dp)
-                                .clip(RoundedCornerShape(50))
-                                .background(Color(0xAA20252B))
-                                .padding(10.dp)
+                                .size(62.dp)
+                                .clip(RoundedCornerShape(22.dp))
+                                .background(Color(0xAA152C40))
+                                .padding(11.dp)
                         )
                         Text(
                             "LIVE",
@@ -444,29 +457,31 @@ fun PublicStreamScreen(
                     }
 
                     Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(StreamPanel)
-                            .padding(horizontal = 14.dp, vertical = 12.dp),
-                        horizontalArrangement = Arrangement.End
+                        modifier = Modifier.fillMaxWidth().padding(top = 14.dp, bottom = 9.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
                     ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Text("JADWAL SIARAN", color = StreamWhite, fontSize = 13.sp, fontWeight = FontWeight.ExtraBold)
+                            Text("${streams.size} pertandingan tersedia", color = StreamMuted, fontSize = 10.sp)
+                        }
                         Text(
-                            "EVENTS  ▾",
+                            "PILIH EVENT  ›",
                             color = StreamWhite,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp,
                             modifier = Modifier
-                                .clip(RoundedCornerShape(30.dp))
+                                .clip(RoundedCornerShape(11.dp))
                                 .background(StreamPanelLight)
                                 .clickable { selectedStream = featured }
-                                .padding(horizontal = 18.dp, vertical = 10.dp)
+                                .padding(horizontal = 13.dp, vertical = 9.dp)
                         )
                     }
 
                     LazyColumn(
                         modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(1.dp),
-                        contentPadding = PaddingValues(bottom = 20.dp)
+                        verticalArrangement = Arrangement.spacedBy(10.dp),
+                        contentPadding = PaddingValues(bottom = 24.dp)
                     ) {
                         items(
                             items = streams,
@@ -475,16 +490,18 @@ fun PublicStreamScreen(
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .clip(RoundedCornerShape(17.dp))
                                     .background(StreamPanel)
                                     .clickable { selectedStream = stream }
-                                    .padding(horizontal = 13.dp, vertical = 12.dp),
+                                    .padding(horizontal = 13.dp, vertical = 13.dp)
+                                    .border(1.dp, ZoraThemeColors.border.copy(alpha = 0.65f), RoundedCornerShape(17.dp)),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Box(
                                     modifier = Modifier
-                                        .size(54.dp)
-                                        .clip(RoundedCornerShape(8.dp))
-                                        .background(StreamPanelLight),
+                                        .size(56.dp)
+                                        .clip(RoundedCornerShape(14.dp))
+                                        .background(Brush.linearGradient(listOf(StreamPanelLight, Color(0xFF1C4058)))),
                                     contentAlignment = Alignment.Center
                                 ) {
                                     Text(
