@@ -376,11 +376,11 @@ fun LiquidGlassNavigationBar(
             .clip(RoundedCornerShape(27.dp))
             .background(
                 Brush.linearGradient(
-                    colors = listOf(
-                        Color(0xE62A4055),
-                        Color(0xE6122235),
-                        Color(0xE6293D51)
-                    )
+                    colors = if (ZoraThemeColors.isLight) {
+                        listOf(Color(0xF7FFFFFF), Color(0xF0EAF1F5), Color(0xF7FFFFFF))
+                    } else {
+                        listOf(Color(0xE62A4055), Color(0xE6122235), Color(0xE6293D51))
+                    }
                 )
             )
             .border(
@@ -1077,105 +1077,6 @@ fun HomeScreen(
         }
 
         item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(29.dp))
-                    .background(
-                        Brush.linearGradient(
-                            colors = if (ZoraThemeColors.isLight) {
-                                listOf(Color(0xFFEAF5F8), Color(0xFFDCEBF1), Color(0xFFF4F7FA))
-                            } else {
-                                listOf(Color(0xFF164D69), Color(0xFF102D47), Color(0xFF101E34))
-                            }
-                        )
-                    )
-                    .border(
-                        1.dp,
-                        Brush.linearGradient(
-                            listOf(Cyan.copy(alpha = 0.65f), Color.White.copy(alpha = 0.08f))
-                        ),
-                        RoundedCornerShape(29.dp)
-                    )
-                    .clickable { onNavigate(1) }
-                    .padding(21.dp)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .size(142.dp)
-                        .align(Alignment.CenterEnd)
-                        .offset(x = 37.dp, y = 27.dp)
-                        .border(1.dp, Color.White.copy(alpha = 0.10f), CircleShape)
-                        .clip(CircleShape)
-                        .background(Cyan.copy(alpha = 0.07f))
-                )
-                Box(
-                    modifier = Modifier
-                        .size(94.dp)
-                        .align(Alignment.CenterEnd)
-                        .offset(x = 12.dp, y = (-18).dp)
-                        .border(1.dp, Color.White.copy(alpha = 0.10f), CircleShape)
-                )
-                Column(
-                    modifier = Modifier.fillMaxWidth(0.86f),
-                    verticalArrangement = Arrangement.spacedBy(10.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(7.dp)
-                    ) {
-                        Box(
-                            Modifier.size(7.dp).clip(CircleShape).background(Color(0xFFFF5B63))
-                        )
-                        Text(
-                            "THE HOME OF FOOTBALL",
-                            color = if (ZoraThemeColors.isLight) Color(0xFF17647A) else Color(0xFFBDEEFF),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.Bold,
-                            letterSpacing = 1.7.sp
-                        )
-                    }
-                    Text(
-                        "SEMUA AKSI.\nSATU LAYAR.",
-                        color = ZoraThemeColors.text,
-                        fontSize = 28.sp,
-                        lineHeight = 32.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = (-0.5).sp
-                    )
-                    Text(
-                        "Ikuti pertandingan, siaran, dan kabar sepak bola pilihanmu.",
-                        color = if (ZoraThemeColors.isLight) Color(0xFF4F6574) else Color(0xFFC1D2DF),
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp
-                    )
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(12.dp))
-                            .background(Cyan)
-                            .padding(horizontal = 13.dp, vertical = 9.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(7.dp)
-                    ) {
-                        Text(
-                            "JELAJAHI PERTANDINGAN",
-                            color = Color(0xFF071725),
-                            fontSize = 9.sp,
-                            fontWeight = FontWeight.ExtraBold,
-                            letterSpacing = 0.4.sp
-                        )
-                        Icon(
-                            Icons.Default.ArrowForward,
-                            contentDescription = null,
-                            tint = Color(0xFF071725),
-                            modifier = Modifier.size(14.dp)
-                        )
-                    }
-                }
-            }
-        }
-
-        item {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -1319,7 +1220,7 @@ fun Header(
             ).forEach { (icon, description, action) ->
                 Surface(
                     modifier = Modifier
-                        .border(1.dp, Color.White.copy(alpha = 0.07f), RoundedCornerShape(13.dp))
+                        .border(1.dp, ZoraThemeColors.border.copy(alpha = 0.8f), RoundedCornerShape(13.dp))
                         .clickable { action() },
                     shape = RoundedCornerShape(13.dp),
                     color = Panel
@@ -1327,7 +1228,7 @@ fun Header(
                     Icon(
                         icon,
                         contentDescription = description,
-                        tint = Color(0xFFD6EAF5),
+                        tint = White,
                         modifier = Modifier.padding(10.dp).size(18.dp)
                     )
                 }
@@ -1499,40 +1400,10 @@ fun MatchPage(
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         item {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clip(RoundedCornerShape(25.dp))
-                    .background(
-                        Brush.linearGradient(
-                            listOf(Color(0xFF174760), Color(0xFF102A42), Color(0xFF101C30))
-                        )
-                    )
-                    .border(1.dp, Cyan.copy(alpha = 0.22f), RoundedCornerShape(25.dp))
-                    .padding(20.dp)
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        "ZORA SPORTS  /  MATCH CENTER",
-                        color = Color(0xFFB9E9F8),
-                        fontSize = 8.sp,
-                        fontWeight = FontWeight.Bold,
-                        letterSpacing = 1.5.sp
-                    )
-                    Text(
-                        title,
-                        color = Color.White,
-                        fontSize = 23.sp,
-                        fontWeight = FontWeight.Black,
-                        letterSpacing = 0.2.sp
-                    )
-                    Text(
-                        description,
-                        color = Color(0xFFC1D2DF),
-                        fontSize = 11.sp,
-                        lineHeight = 16.sp
-                    )
-                }
+            Column(verticalArrangement = Arrangement.spacedBy(7.dp)) {
+                Text("ZORA SPORTS  /  MATCH CENTER", color = Cyan, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+                Text(title, color = White, fontSize = 23.sp, fontWeight = FontWeight.Black)
+                Text(description, color = Muted, fontSize = 11.sp, lineHeight = 16.sp)
             }
         }
         item {
