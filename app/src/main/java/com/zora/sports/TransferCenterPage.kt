@@ -3,12 +3,10 @@ package com.zora.sports
 import android.text.Html
 import android.util.Xml
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SwapHoriz
@@ -16,8 +14,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalUriHandler
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -35,20 +31,28 @@ private data class TransferArticle(val title: String, val link: String, val summ
 
 private object TransferCenterRepository {
     private const val FEED = "https://feeds.bbci.co.uk/sport/football/rss.xml"
+
     suspend fun load(): List<TransferArticle> = withContext(Dispatchers.IO) {
         val connection = URL(FEED).openConnection() as HttpURLConnection
         try {
-            connection.connectTimeout = 12000
-            connection.readTimeout = 15000
-            connection.setRequestProperty("User-Agent", "ZORASPORTS Android")
-            if (connection.responseCode !in 200..299) error("Sumber berita transfer tidak tersedia (HTTP ${connection.responseCode}).")
+            connection.instanceFollowRedirects = true
+            connection.requestMethod = "GET"
+            connection.connectTimeout = 15000
+            connection.readTimeout = 20000
+            connection.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android) ZORASPORTS/1.5")
+            connection.setRequestProperty("Accept", "application/rss+xml, application/xml, text/xml, */*")
+            if (connection.responseCode !in 200..299) {
+                throw IllegalStateException("BBC Sport tidak merespons (HTTP ${connection.responseCode}).")
+            }
+
             val parser = Xml.newPullParser()
-            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, true)
-            connection.inputStream.use { parser.setInput(it, null) }
-            val found = mutableListOf<TransferArticle>()
+            parser.setFeature(XmlPullParser.FEATURE_PROCESS_NAMESPACES, false)
+            connection.inputStream.buffered().use { parser.setInput(it, "UTF-8") }
+            val found = linkedMapOf<String, TransferArticle>()
             var event = parser.eventType
-            while (event != XmlPullParser.END_DOCUMENT && found.size < 60) {
-                if (event == XmlPullParser.START_TAG && parser.name.equals("item", true)) {
+
+            while (event != XmlPullParser.END_DOCUMENT && found.size < 80) {
+                if (event == XmlPullParser.START_TAG && parser.name.substringAfter(':').equals("item", true)) {
                     var title = ""
                     var link = ""
                     var summary = ""
@@ -57,27 +61,37 @@ private object TransferCenterRepository {
                     while (inside) {
                         event = parser.next()
                         when (event) {
-                            XmlPullParser.START_TAG -> when (parser.name.lowercase()) {
+                            XmlPullParser.START_TAG -> when (parser.name.substringAfter(':').lowercase()) {
                                 "title" -> title = parser.nextText().trim()
                                 "link" -> link = parser.nextText().trim()
                                 "description" -> summary = parser.nextText().trim()
                                 "pubdate" -> date = parser.nextText().trim()
                             }
-                            XmlPullParser.END_TAG -> if (parser.name.equals("item", true)) inside = false
+                            XmlPullParser.END_TAG -> if (parser.name.substringAfter(':').equals("item", true)) inside = false
                             XmlPullParser.END_DOCUMENT -> inside = false
                         }
                     }
-                    val cleanTitle = Html.fromHtml(title, Html.FROM_HTML_MODE_COMPACT).toString()
-                    val cleanSummary = Html.fromHtml(summary, Html.FROM_HTML_MODE_COMPACT).toString().replace(Regex("\\s+"), " ").trim()
+                    val cleanTitle = Html.fromHtml(title, Html.FROM_HTML_MODE_COMPACT).toString().trim()
+                    val cleanSummary = Html.fromHtml(summary, Html.FROM_HTML_MODE_COMPACT).toString()
+                        .replace(Regex("\\s+"), " ").trim()
                     val text = (cleanTitle + " " + cleanSummary).lowercase()
-                    val terms = listOf("transfer", "transfers", "signing", "signs", "loan", "bid", "deal", "rumour", "rumor", "contract", "move to", "joins")
-                    if (cleanTitle.isNotBlank() && link.startsWith("https://") && terms.any { text.contains(it) }) {
-                        found.add(TransferArticle(cleanTitle, link, cleanSummary, date))
+                    val terms = listOf(
+                        "transfer", "transfers", "signing", "signs", "signed", "loan", "bid", "deal",
+                        "rumour", "rumor", "gossip", "contract", "move to", "joins", "joined",
+                        "interested", "linked with", "target", "departure", "exit", "wants", "agreed terms"
+                    )
+                    if (cleanTitle.isNotBlank() && link.startsWith("https://") &&
+                        terms.any { text.contains(it) }) {
+                        found.putIfAbsent(link, TransferArticle(cleanTitle, link, cleanSummary, date))
                     }
-                } else event = parser.next()
+                } else {
+                    event = parser.next()
+                }
             }
-            found
-        } finally { connection.disconnect() }
+            found.values.toList()
+        } finally {
+            connection.disconnect()
+        }
     }
 }
 
@@ -85,34 +99,35 @@ private object TransferCenterRepository {
 fun TransferCenterPage(modifier: Modifier = Modifier) {
     var selectedSection by remember { mutableStateOf("TRANSFER") }
     Column(modifier.fillMaxSize().background(ZoraThemeColors.background)) {
-        Row(
-            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
+        Column(
+            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 15.dp),
+            verticalArrangement = Arrangement.spacedBy(4.dp)
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text("ZORA SPORTS / MARKET", color = ZoraThemeColors.accent, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
-                Text("Market", color = ZoraThemeColors.text, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                Text("Berita transfer dan kabar sepak bola", color = ZoraThemeColors.muted, fontSize = 11.sp)
-            }
+            Text("ZORA SPORTS / MARKET", color = ZoraThemeColors.accent,
+                fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.5.sp)
+            Text("Market", color = ZoraThemeColors.text, fontSize = 24.sp, fontWeight = FontWeight.Black)
+            Text("Pusat kabar transfer dan berita sepak bola", color = ZoraThemeColors.muted, fontSize = 11.sp)
         }
+
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 4.dp)
-                .clip(RoundedCornerShape(13.dp)).background(ZoraThemeColors.panel).padding(4.dp),
-            horizontalArrangement = Arrangement.spacedBy(4.dp)
+            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(22.dp)
         ) {
-            listOf("TRANSFER" to "Transfer Pemain", "NEWS" to "Berita Bola").forEach { (key, label) ->
+            listOf("TRANSFER" to "Transfer Pemain", "NEWS" to "Football News").forEach { (key, label) ->
                 val active = selectedSection == key
-                Box(
-                    Modifier.weight(1f).clip(RoundedCornerShape(10.dp))
-                        .background(if (active) ZoraThemeColors.accent else Color.Transparent)
-                        .clickable { selectedSection = key }.padding(vertical = 11.dp),
-                    contentAlignment = Alignment.Center
+                Column(
+                    Modifier.clickable { selectedSection = key }.padding(vertical = 9.dp),
+                    verticalArrangement = Arrangement.spacedBy(7.dp)
                 ) {
-                    Text(label, color = if (active) Color(0xFF071522) else ZoraThemeColors.muted, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    Text(label, color = if (active) ZoraThemeColors.text else ZoraThemeColors.muted,
+                        fontSize = 12.sp, fontWeight = if (active) FontWeight.Bold else FontWeight.Medium)
+                    Spacer(Modifier.fillMaxWidth().height(2.dp)
+                        .background(if (active) ZoraThemeColors.accent else ZoraThemeColors.background))
                 }
             }
         }
+        HorizontalDivider(color = ZoraThemeColors.border)
+
         if (selectedSection == "TRANSFER") {
             TransferArticlesContent(Modifier.weight(1f))
         } else {
@@ -128,24 +143,29 @@ private fun TransferArticlesContent(modifier: Modifier = Modifier) {
     var loading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
     var refresh by remember { mutableIntStateOf(0) }
+
     LaunchedEffect(refresh) {
         loading = true
         error = null
         try {
-            articles = withTimeout(22000L) { TransferCenterRepository.load() }
-            if (articles.isEmpty()) error = "Belum ada artikel transfer yang terdeteksi dari sumber berita."
-        } catch (e: CancellationException) { throw e }
-        catch (e: Exception) { error = e.message ?: "Gagal memuat kabar transfer." }
-        finally { loading = false }
+            articles = withTimeout(25000L) { TransferCenterRepository.load() }
+            if (articles.isEmpty()) error = "Belum ada kabar transfer terbaru dari BBC Sport."
+        } catch (e: CancellationException) {
+            throw e
+        } catch (e: Exception) {
+            error = e.message ?: "Gagal memuat kabar transfer."
+        } finally {
+            loading = false
+        }
     }
+
     Column(modifier.fillMaxSize()) {
         Row(
-            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp)
-                .clip(RoundedCornerShape(14.dp)).background(ZoraThemeColors.panel)
-                .border(1.dp, Color(0xFF294258), RoundedCornerShape(14.dp)).padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)
+            Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 10.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(9.dp)
         ) {
-            Icon(Icons.Default.SwapHoriz, null, tint = ZoraThemeColors.accent, modifier = Modifier.size(24.dp))
+            Icon(Icons.Default.SwapHoriz, null, tint = ZoraThemeColors.accent, modifier = Modifier.size(22.dp))
             Column(Modifier.weight(1f)) {
                 Text("TRANSFER WATCH", color = ZoraThemeColors.text, fontSize = 11.sp, fontWeight = FontWeight.Bold)
                 Text("Rumor transfer bukan konfirmasi resmi.", color = ZoraThemeColors.muted, fontSize = 9.sp)
@@ -166,22 +186,29 @@ private fun TransferArticlesContent(modifier: Modifier = Modifier) {
             }
             else -> LazyColumn(
                 Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(start = 18.dp, end = 18.dp, top = 8.dp, bottom = 20.dp),
-                verticalArrangement = Arrangement.spacedBy(11.dp)
+                contentPadding = PaddingValues(horizontal = 18.dp, vertical = 8.dp)
             ) {
-                item { Text("${articles.size} ARTIKEL TERKAIT TRANSFER", color = ZoraThemeColors.muted, fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp) }
-                items(articles) { article ->
+                item {
+                    Text("${articles.size} KABAR TRANSFER", color = ZoraThemeColors.muted,
+                        fontSize = 9.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                    Spacer(Modifier.height(8.dp))
+                }
+                items(articles, key = { it.link }) { article ->
                     Column(
-                        Modifier.fillMaxWidth().clip(RoundedCornerShape(17.dp)).background(ZoraThemeColors.panel)
-                            .border(1.dp, Color(0xFF294258), RoundedCornerShape(17.dp))
-                            .clickable { runCatching { uri.openUri(article.link) } }.padding(15.dp),
-                        verticalArrangement = Arrangement.spacedBy(7.dp)
+                        Modifier.fillMaxWidth().clickable { runCatching { uri.openUri(article.link) } }
+                            .padding(vertical = 13.dp),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Text("TRANSFER NEWS  •  BBC SPORT", color = ZoraThemeColors.accent, fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
-                        Text(article.title, color = ZoraThemeColors.text, fontSize = 14.sp, lineHeight = 19.sp, fontWeight = FontWeight.Bold, maxLines = 3, overflow = TextOverflow.Ellipsis)
-                        if (article.summary.isNotBlank()) Text(article.summary, color = ZoraThemeColors.muted, fontSize = 10.sp, lineHeight = 15.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                        Text("TRANSFER NEWS  /  BBC SPORT", color = ZoraThemeColors.accent,
+                            fontSize = 8.sp, fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
+                        Text(article.title, color = ZoraThemeColors.text, fontSize = 14.sp,
+                            lineHeight = 19.sp, fontWeight = FontWeight.Bold, maxLines = 3,
+                            overflow = TextOverflow.Ellipsis)
+                        if (article.summary.isNotBlank()) Text(article.summary, color = ZoraThemeColors.muted,
+                            fontSize = 10.sp, lineHeight = 15.sp, maxLines = 3, overflow = TextOverflow.Ellipsis)
                         Text(article.date, color = ZoraThemeColors.muted, fontSize = 9.sp)
                     }
+                    HorizontalDivider(color = ZoraThemeColors.border)
                 }
             }
         }
