@@ -78,8 +78,6 @@ private val StreamWhite
 private val StreamMuted
     get() = ZoraThemeColors.muted
 
-private const val LIVE_LIMIT_MS = 120L * 60L * 1000L
-private const val LIVE_WARNING_MS = 115L * 60L * 1000L
 
 private data class StreamQualityOption(
     val trackGroup: TrackGroup,
@@ -408,7 +406,7 @@ fun PublicStreamScreen(
                             .aspectRatio(16f / 9f)
                             .clip(RoundedCornerShape(22.dp))
                             .background(Brush.linearGradient(listOf(Color(0xFF1B3D55), Color(0xFF101D2D), Color(0xFF080F19))))
-                            .clickable { selectedStream = featured }
+                            .clickable(enabled = !featured.liveEnded) { selectedStream = featured }
                     ) {
                         Column(
                             modifier = Modifier
@@ -488,7 +486,7 @@ fun PublicStreamScreen(
                                     .clip(RoundedCornerShape(17.dp))
                                     .background(StreamPanel)
                                     .border(1.dp, ZoraThemeColors.border.copy(alpha = 0.65f), RoundedCornerShape(17.dp))
-                                    .clickable { selectedStream = stream }
+                                    .clickable(enabled = !stream.liveEnded) { selectedStream = stream }
                                     .padding(horizontal = 13.dp, vertical = 13.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
@@ -542,9 +540,8 @@ fun PublicStreamScreen(
                                     }
                                 }
                                 val now = System.currentTimeMillis()
-                                val ended = stream.scheduledEndAt > 0L &&
-                                    now >= stream.scheduledEndAt
-                                val live = now >= stream.scheduledStartAt && !ended
+                                val ended = stream.liveEnded
+                                val live = !ended && stream.liveStartedAt > 0L
                                 Column(horizontalAlignment = Alignment.End) {
                                     Text(
                                         if (ended) "SELESAI LIVE" else if (live) "LIVE" else formatWib(stream.scheduledStartAt),
@@ -561,8 +558,9 @@ fun PublicStreamScreen(
                                             .padding(horizontal = 10.dp, vertical = 8.dp)
                                     )
                                     Text(
-                                        if (ended) "Selesai ${formatWib(stream.scheduledEndAt)}"
-                                        else "Mulai ${formatWib(stream.scheduledStartAt)}",
+                                        if (ended) "Admin mengakhiri siaran"
+                                        else if (stream.scheduledStartAt > 0L) "Jadwal ${formatWib(stream.scheduledStartAt)}"
+                                        else "Menunggu admin memulai",
                                         color = Color(0xFF454C54),
                                         fontSize = 9.sp
                                     )
@@ -783,29 +781,10 @@ private fun StreamPlayerDialog(
         0L
     }
 
-    LaunchedEffect(stream.id, startTime) {
-        if (startTime > 0L) {
-            while (true) {
-                currentTime = System.currentTimeMillis()
-
-                val liveElapsed = currentTime - startTime
-
-                if (
-                    liveElapsed >= LIVE_WARNING_MS &&
-                    liveElapsed < LIVE_LIMIT_MS &&
-                    !warningShown
-                ) {
-                    warningShown = true
-                    showWarning = true
-                }
-
-                if (liveElapsed >= LIVE_LIMIT_MS) {
-                    onExpired()
-                    break
-                }
-
-                delay(1000L)
-            }
+    LaunchedEffect(stream.id, startTime, stream.liveEnded) {
+        while (!stream.liveEnded) {
+            currentTime = System.currentTimeMillis()
+            delay(1000L)
         }
     }
 
@@ -833,7 +812,18 @@ private fun StreamPlayerDialog(
             usePlatformDefaultWidth = false
         )
     ) {
-        if (fullScreen) {
+        if (stream.liveEnded) {
+            Box(
+                modifier = Modifier.fillMaxSize().background(StreamBackground),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text("SELESAI LIVE", color = StreamWhite, fontWeight = FontWeight.Bold)
+                    Text("Admin telah mengakhiri siaran channel ini.", color = StreamMuted)
+                    TextButton(onClick = onDismiss) { Text("TUTUP", color = StreamBlue) }
+                }
+            }
+        } else if (fullScreen) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -999,7 +989,7 @@ private fun StreamPlayerDialog(
         }
     }
 
-    if (showWarning) {
+    if (false && showWarning) {
         AlertDialog(
             onDismissRequest = {
                 showWarning = false
@@ -1014,7 +1004,7 @@ private fun StreamPlayerDialog(
             },
             text = {
                 Text(
-                    "Siaran sudah berjalan 115 menit. Pemutar akan otomatis ditutup pada menit ke-120.",
+                    "Siaran sedang berjalan.",
                     color = StreamWhite
                 )
             },
