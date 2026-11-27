@@ -188,7 +188,7 @@ fun ZoraSportsApp() {
         AppTab("Siaran", Icons.Default.PlayCircle),
         AppTab("Jadwal", Icons.Default.CalendarMonth),
         AppTab("Liga", Icons.Default.EmojiEvents),
-        AppTab("Favorit", Icons.Default.Star)
+        AppTab("Market", Icons.Default.Store)
     )
 
     MaterialTheme(
@@ -255,9 +255,6 @@ fun ZoraSportsApp() {
                     FootballNewsPage(modifier = pageModifier)
                 }
 
-                extraPage == "TRANSFER" -> {
-                    TransferCenterPage(modifier = pageModifier)
-                }
 
                 showNotifications -> {
                     NotificationsScreen(
@@ -302,7 +299,7 @@ fun ZoraSportsApp() {
                         )
 
                         4 -> LeaguePage(modifier = pageModifier)
-                        5 -> FavoritePage(modifier = pageModifier)
+                        5 -> TransferCenterPage(modifier = pageModifier)
                     }
                 }
             }
@@ -323,10 +320,6 @@ fun ZoraSportsApp() {
             onNews = {
                 showHamburger = false
                 extraPage = "BERITA"
-            },
-            onTransfers = {
-                showHamburger = false
-                extraPage = "TRANSFER"
             },
             lightMode = lightMode,
             onThemeChange = {
@@ -458,7 +451,6 @@ fun HamburgerMenu(
     onSupport: () -> Unit,
     onInfo: () -> Unit,
     onNews: () -> Unit,
-    onTransfers: () -> Unit,
     lightMode: Boolean,
     onThemeChange: (Boolean) -> Unit
 ) {
@@ -539,13 +531,6 @@ fun HamburgerMenu(
                     subtitle = "Berita sepak bola terbaru",
                     icon = Icons.Default.Newspaper,
                     onClick = onNews
-                )
-
-                MenuOption(
-                    title = "TRANSFER CENTER",
-                    subtitle = "Kabar transfer dan bursa pemain",
-                    icon = Icons.Default.SwapHoriz,
-                    onClick = onTransfers
                 )
 
                 MenuOption(
